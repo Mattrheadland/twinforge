@@ -1,0 +1,240 @@
+// Headless playthrough at iPhone 16 Pro landscape size (Chromium, not Safari).
+// Usage: node test/e2e.mjs [shotsDir]
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const SHOTS = process.argv[2] || 'scratch/shots';
+fs.mkdirSync(SHOTS, { recursive: true });
+const root = path.resolve('dist');
+const types = { '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.json': 'application/json' };
+const server = http.createServer((req, res) => {
+  let p = decodeURIComponent(req.url.split('?')[0]);
+  if (p.endsWith('/')) p += 'index.html';
+  const f = path.join(root, p);
+  if (!f.startsWith(root) || !fs.existsSync(f)) { res.writeHead(404); return res.end(); }
+  res.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream' });
+  fs.createReadStream(f).pipe(res);
+}).listen(0);
+const URL0 = `http://localhost:${server.address().port}/`;
+
+const results = [];
+const check = (name, ok, extra = '') => { results.push({ name, ok: !!ok, extra }); console.log(`${ok ? 'PASS' : 'FAIL'} ${name} ${extra}`); };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: [...chromium.args.filter((a) => a !== '--single-process'), '--disable-dev-shm-usage', '--disable-gpu-compositing'], headless: true });
+const page = await browser.newPage();
+await page.setViewport({ width: 874, height: 402, deviceScaleFactor: +(process.env.DPR || 2), isMobile: true, hasTouch: true, isLandscape: true });
+await page.evaluateOnNewDocument(() => { window.__TBB_TEST__ = true; });
+const errors = [];
+page.on('pageerror', (e) => errors.push(e.message));
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+
+async function tap(sel, { wait = 0 } = {}) {
+  const el = await page.waitForSelector(sel, { visible: true, timeout: 15000 });
+  const b = await el.boundingBox();
+  await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+  if (wait) await sleep(wait);
+}
+const phase = () => page.evaluate(() => window.__tbb.phase);
+async function waitPhase(p, timeout = 20000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < timeout) {
+    if ((await phase()) === p) return true;
+    await sleep(60);
+  }
+  return false;
+}
+const shot = (n) => page.screenshot({ path: `${SHOTS}/${n}.png` });
+async function answerChallenge({ wrong = 0 } = {}) {
+  await page.waitForSelector('.challenge.in .opt', { visible: true });
+  await sleep(700);
+  const info = await page.evaluate(() => {
+    const items = document.querySelectorAll('.cnt-item').length;
+    const card = document.querySelector('.ltr-card');
+    const opts = [...document.querySelectorAll('.opt')].map((o) => o.dataset.value);
+    const answer = card ? opts.find((o) => o.toLowerCase() === card.textContent.toLowerCase()) : String(items);
+    return { opts, answer, kind: card ? 'letter' : 'count' };
+  });
+  const wrongs = info.opts.filter((o) => o !== info.answer);
+  for (let i = 0; i < wrong; i++) {
+    await tap(`.opt[data-value="${wrongs[i]}"]`);
+    await sleep(1400);
+  }
+  await tap(`.opt[data-value="${info.answer}"]`);
+  return info;
+}
+
+// ---------- title ----------
+await page.goto(URL0, { waitUntil: 'load' });
+await sleep(1600);
+await shot('01-title');
+check('title renders', await page.$('.title-screen .big-play'));
+
+// ---------- select ----------
+await tap('.big-play', { wait: 700 });
+check('audio unlocked by first tap', await page.evaluate(() => window.__tbb.app.audio.ctx && window.__tbb.app.audio.ctx.state), await page.evaluate(() => window.__tbb.app.audio.ctx?.state));
+await shot('02-select');
+const cards = await page.$$('.pick-card');
+check('two characters to pick', cards.length === 2);
+await tap(`.pick-card:nth-child(${process.env.HERO || 2})`, { wait: 500 });
+await shot('03-selected');
+await tap('.go-btn', { wait: 300 });
+await sleep(400);
+await shot('04-vs');
+
+// ---------- battle intro ----------
+check('battle reaches player turn', await waitPhase('choose'));
+await sleep(500);
+await shot('05-battle-choose');
+check('tutorial hand points at attack on first battle', await page.$eval('.tut-hand', (n) => !n.classList.contains('hidden')));
+
+// locked special does nothing
+await tap('.act-special', { wait: 400 });
+check('locked special does not start a challenge', !(await page.$('.challenge')) && (await phase()) === 'choose');
+
+// rapid repeated taps: only one challenge
+const atk = await (await page.$('.act-attack')).boundingBox();
+for (let i = 0; i < 6; i++) await page.touchscreen.tap(atk.x + atk.width / 2, atk.y + atk.height / 2);
+await sleep(500);
+check('six fast taps open exactly one challenge', (await page.$$('.challenge')).length === 1);
+await shot('06-count-challenge');
+
+// wrong -> hint, wrong -> support, then correct
+await page.waitForSelector('.challenge.in .opt', { visible: true });
+await sleep(700);
+const info1 = await page.evaluate(() => ({ n: document.querySelectorAll('.cnt-item').length, opts: [...document.querySelectorAll('.opt')].map((o) => o.dataset.value) }));
+const wrong1 = info1.opts.filter((o) => o !== String(info1.n));
+const foeHp0 = await page.evaluate(() => window.__tbb.app.battle.state.foe.hp);
+await tap(`.opt[data-value="${wrong1[0]}"]`);
+await sleep(1600);
+await shot('07-after-one-wrong');
+check('first wrong answer removes that choice', await page.$eval(`.opt[data-value="${wrong1[0]}"]`, (n) => n.classList.contains('gone')));
+await tap(`.opt[data-value="${wrong1[1]}"]`);
+await sleep(600 + info1.n * 300);
+await shot('08-support');
+check('second wrong answer leaves only the glowing answer + count-along', await page.$eval(`.opt[data-value="${info1.n}"]`, (n) => n.classList.contains('glow')) && (await page.$$('.cnt-item.counted')).length === info1.n);
+await tap(`.opt[data-value="${info1.n}"]`);
+await sleep(350);
+await shot('09-hit');
+await waitPhase('foe');
+const st1 = await page.evaluate(() => window.__tbb.app.battle.state);
+const bonus = await page.evaluate(() => { const a = window.__tbb.app; return { stompy: 3, blocko: 0 }[a.battle.state.heroId]; });
+check('supported answer still lands a modest hit (never a miss)', st1.foe.hp < foeHp0 && foeHp0 - st1.foe.hp === 12 + bonus, `${foeHp0}->${st1.foe.hp}`);
+check('stats record a supported answer', st1.stats.support === 1);
+
+// ---------- save / resume mid-battle ----------
+check('reaches next player turn after foe', await waitPhase('choose', 20000));
+await sleep(300);
+const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('tbb.save')).battle);
+check('battle snapshot saved at turn start', saved && saved.turn === 'hero' && saved.foe.hp === st1.foe.hp);
+await page.reload({ waitUntil: 'load' });
+await sleep(1400);
+check('title shows resume badge', await page.$('.big-play.resume'));
+await tap('.big-play');
+check('resumed battle reaches player turn', await waitPhase('choose'));
+const st2 = await page.evaluate(() => window.__tbb.app.battle.state);
+check('resumed with same HP', st2.foe.hp === st1.foe.hp && st2.hero.hp === saved.hero.hp, `foe ${st2.foe.hp}`);
+
+// ---------- play to victory ----------
+let turns = 0, specials = 0, defends = 0, sawCharge = false;
+while (turns++ < 30) {
+  const ph = await phase();
+  if (ph === 'end') break;
+  if (ph !== 'choose') { await sleep(100); continue; }
+  const s = await page.evaluate(() => window.__tbb.app.battle.state);
+  const foeCharged = s.foe.charged;
+  if (foeCharged) sawCharge = true;
+  if (s.hero.energy >= 3) {
+    await tap('.act-special');
+    await answerChallenge();
+    specials++;
+    if (specials === 1) { await sleep(900); await shot('11-special'); await sleep(900); await shot('11b-special'); }
+  } else if (foeCharged) {
+    await shot('10-foe-charged');
+    await tap('.act-defend');
+    defends++;
+  } else {
+    await tap('.act-attack');
+    const inf = await answerChallenge();
+    if (inf.kind !== 'count') check('attack uses counting', false);
+  }
+  await sleep(300);
+  const t0 = Date.now();
+  while (Date.now() - t0 < 25000) {
+    const p = await phase();
+    if (p === 'choose' || p === 'end') break;
+    await sleep(80);
+  }
+}
+check('used a special', specials > 0, `specials=${specials}`);
+check('saw enemy telegraph and answered it (defend or special)', sawCharge && defends + specials > 0, `defends=${defends}`);
+const endState = await page.evaluate(() => window.__tbb.app.battle.state);
+check('battle won', endState.result === 'win', `hero ${endState.hero.hp}/${endState.hero.maxHp}`);
+await page.waitForSelector('.overlay.result', { timeout: 15000 });
+await sleep(2200);
+await shot('12-victory');
+const prog = await page.evaluate(() => JSON.parse(localStorage.getItem('tbb.save')));
+check('stars saved and battle cleared', prog.progress.stars > 0 && prog.battle === null, `stars=${prog.progress.stars}`);
+check('energy never above max', endState.hero.energy <= 3);
+
+// ---------- retry + lose path ----------
+await tap('.round-btn.again');
+check('play again starts a fresh battle', await waitPhase('choose'));
+await page.evaluate(() => { const b = window.__tbb.app.battle; b.state.hero.hp = 1; b.hud.setHP('hero', 1, b.state.hero.maxHp, true); });
+await tap('.act-attack');
+await answerChallenge();
+await page.waitForSelector('.overlay.result', { timeout: 30000 });
+await sleep(1500);
+await shot('13-nap');
+check('losing shows friendly nap screen with retry', await page.$('.result-card.nap') && await page.$('.round-btn.again.pulse'));
+
+// ---------- letter challenge screenshot ----------
+await tap('.round-btn.again');
+await waitPhase('choose');
+await page.evaluate(() => { const b = window.__tbb.app.battle; b.state.hero.energy = 3; b.hud.setEnergy(3); });
+await tap('.act-special');
+await page.waitForSelector('.challenge.in .opt-letter', { visible: true });
+await sleep(900);
+await shot('14-letter-challenge');
+check('special uses letter matching', true);
+await answerChallenge();
+
+// ---------- pause / home ----------
+await waitPhase('choose', 25000);
+await tap('.pause-btn', { wait: 300 });
+await shot('15-pause');
+await tap('.overlay.pause .round-btn.home', { wait: 800 });
+check('home from pause returns to title', await page.$('.title-screen'));
+
+// ---------- mute ----------
+const muted = await page.evaluate(() => {
+  const a = window.__tbb.app.audio;
+  const s = window.__tbb.app.save.data.settings;
+  s.sfx = 0; s.music = 0; window.__tbb.app.applySettings();
+  return a.sfxBus.gain.value <= 0.05 || a.sfxVol === 0;
+});
+check('mute sets volumes to zero', muted);
+
+// ---------- parent gate ----------
+const gear = await (await page.$('.gear')).boundingBox();
+await page.touchscreen.tap(gear.x + 20, gear.y + 20);
+await sleep(300);
+check('quick tap on gear does NOT open parent panel', !(await page.$('.overlay.parent')));
+await page.evaluate(() => window.__tbb.app.openParent());
+await sleep(300);
+await shot('16-parent');
+check('parent panel opens', await page.$('.overlay.parent'));
+
+// ---------- perf sample (headless Chromium, not iPhone) ----------
+const fps = await page.evaluate(() => window.__tbb.app.stage.fps);
+console.log('headless fps sample', JSON.stringify(fps));
+
+check('no page errors', errors.length === 0, errors.slice(0, 5).join(' | '));
+await browser.close();
+server.close();
+const failed = results.filter((r) => !r.ok);
+console.log(`\n${results.length - failed.length}/${results.length} passed`);
+process.exit(failed.length ? 1 : 0);

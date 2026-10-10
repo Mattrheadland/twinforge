@@ -1,0 +1,22 @@
+{
+  "name": "toy-box-battleground",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "node build.mjs",
+    "e2e": "node test/e2e.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@sparticuz/chromium": "^153.0.0",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.64.0",
+    "puppeteer-core": "^25.13.0"
+  },
+  "private": "true"
+}
