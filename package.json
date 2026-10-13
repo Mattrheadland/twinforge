@@ -7,7 +7,8 @@
   "scripts": {
     "test": "node --test test/*.test.mjs",
     "build": "node build.mjs",
-    "e2e": "node test/e2e.mjs"
+    "e2e": "node test/e2e.mjs",
+    "deploy": "bash scripts/deploy.sh"
   },
   "keywords": [],
   "author": "",

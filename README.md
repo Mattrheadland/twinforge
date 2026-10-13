@@ -21,6 +21,7 @@ npm install
 npm test           # rules, challenges, difficulty, saves, music data
 node build.mjs     # → dist/ (single-file index.html + manifest, service worker, icons)
 node test/e2e.mjs  # headless playthrough + screenshots (Chromium, not Safari)
+npm run deploy     # build and push to the gh-pages branch that GitHub Pages serves
 ```
 Code map: `src/logic` (pure rules, no DOM) · `src/game` (battle state machine, choreography) · `src/render` (canvas stage, toys, arena, effects) · `src/ui` (HUD, challenges, menus) · `src/audio` · `src/save.js` · `src/data` (characters as editable data).
 
