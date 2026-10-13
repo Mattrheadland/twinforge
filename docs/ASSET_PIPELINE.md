@@ -8,17 +8,23 @@ Toy **photos stay private**. They go to Astra only as references and never into 
 Front, back, left side, right side, 3/4 view, close-ups of the face and any accessory. Plain background, daylight, no flash, the whole toy in frame. A ruler or hand in one shot helps with scale.
 
 ## 2. Reference plate (one per toy, approve before poses)
-Paste into Astra with the photos attached:
+Send the one-time setup message to Astra first, then one plate request per toy (one toy per message, with that toy's photos attached).
 
+One-time setup:
 ```
-ASTRA ASSET REQUEST — <TOY-ID>-PLATE v1 (reference plate, not a game asset)
-Purpose: master look for Luca's toy "<NAME>" in TwinForge: Toy Box Tactics. Everything later is drawn from this.
+We're making character art for "TwinForge: Toy Box Tactics," a kids' turn-based battle game starring my son's real toys. For every image in this project, use one locked style: crisp 2D toy illustration; one dark outline in deep ink purple (#1D1530) on every shape, same even weight everywhere; flat colors with ONE cel-shade band per surface, light from the upper left; one small soft highlight on big surfaces; no gradients, textures, painterly strokes, or realistic rendering. Toys must stay recognizable as the real toy: same silhouette, face, proportions, colors, markings and accessories, just cleaner and slightly brighter. Friendly and playful, never scary. I'll send one toy at a time with photos. Don't generate anything yet. Just reply "Ready."
+```
+
+Per toy:
+```
+ASTRA ASSET REQUEST — <TOY NAME> reference plate v1
+Purpose: master reference for this toy in TwinForge. All later game art will be drawn from this, so accuracy matters more than flair.
 References: the attached photos of the real toy.
-Style (must follow): crisp 2D toy illustration; one dark outline #1D1530 on every shape, even weight; flat colors with ONE cel-shade band per surface, light from the upper left; one small soft highlight per large surface; no gradients, textures or painterly strokes. Keep the toy's exact silhouette, face, proportions, colors and accessories: <LIST THE MUST-KEEP DETAILS>.
-Layout: one landscape sheet showing the same toy 4 times at the same scale, standing on one invisible floor line: front, 3/4 facing right, right side, back. Plain light gray background (#EEEEEE). Neutral idle pose, friendly expression.
-Do not: add text, labels, color swatches, shadows, a floor, scenery or other characters. Do not crop any part of the toy.
-Deliver: 1 PNG, the largest landscape size available.
-Acceptance: all 4 views clearly the same toy, matching the photos; nothing cropped; no text.
+Before drawing, list in 3–6 short bullets the details you must keep (shape, face, colors, markings, accessories) and anything the photos don't show that you'll have to guess.
+Then draw ONE landscape image: the same toy shown 4 times side by side at the same size, all standing on one invisible floor line: front view, 3/4 view facing right, right side view, back view. Neutral standing pose, friendly expression. Plain flat light gray background (#EEEEEE).
+Style: the locked TwinForge style (dark #1D1530 outline, flat color, one cel-shade band, light from upper left).
+Do not: add text, labels, numbers, logos, color swatches, a floor, shadows, scenery or other characters. Do not crop any part of the toy (check ears, tails, horns, wheels, capes, weapons).
+If anything is unclear in the photos, keep it simple and true to the toy rather than inventing new details.
 ```
 
 ## 3. Battle poses (after the plate is approved)
