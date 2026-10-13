@@ -12,7 +12,7 @@ Paste into Astra with the photos attached:
 
 ```
 ASTRA ASSET REQUEST — <TOY-ID>-PLATE v1 (reference plate, not a game asset)
-Purpose: master look for Luca's toy "<NAME>" in Toy Box Battleground. Everything later is drawn from this.
+Purpose: master look for Luca's toy "<NAME>" in TwinForge: Toy Box Tactics. Everything later is drawn from this.
 References: the attached photos of the real toy.
 Style (must follow): crisp 2D toy illustration; one dark outline #1D1530 on every shape, even weight; flat colors with ONE cel-shade band per surface, light from the upper left; one small soft highlight per large surface; no gradients, textures or painterly strokes. Keep the toy's exact silhouette, face, proportions, colors and accessories: <LIST THE MUST-KEEP DETAILS>.
 Layout: one landscape sheet showing the same toy 4 times at the same scale, standing on one invisible floor line: front, 3/4 facing right, right side, back. Plain light gray background (#EEEEEE). Neutral idle pose, friendly expression.

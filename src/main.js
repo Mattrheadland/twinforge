@@ -1,4 +1,4 @@
-// Toy Box Battleground — app shell: layout, screens, audio unlock, saves, PWA.
+// TwinForge: Toy Box Tactics — app shell: layout, screens, audio unlock, saves, PWA.
 import { CHARACTERS, ROSTER, opponentFor } from './data/characters.js';
 import { Stage, VH } from './render/stage.js';
 import { Audio } from './audio/audio.js';
@@ -216,7 +216,7 @@ class App {
           this.ui.toast('Backup imported');
           this.goTitle();
         } catch (e) {
-          this.ui.toast('That file isn’t a Toy Box Battleground backup');
+          this.ui.toast('That file isn’t a TwinForge backup');
         }
       },
       onReset: () => {
@@ -230,11 +230,11 @@ class App {
 
   async exportSave() {
     const txt = this.save.exportText();
-    const name = `toy-box-battleground-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    const name = `twinforge-backup-${new Date().toISOString().slice(0, 10)}.json`;
     try {
       const file = new File([txt], name, { type: 'application/json' });
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Toy Box Battleground backup' });
+        await navigator.share({ files: [file], title: 'TwinForge backup' });
         return;
       }
     } catch (e) {

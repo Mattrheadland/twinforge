@@ -45,5 +45,5 @@ const preview = html
   .replace(/<\/body>\s*<\/html>\s*$/i, '')
   .replace(/<link rel="(manifest|apple-touch-icon|icon)"[^>]*>\n?/g, '');
 fs.mkdirSync('preview', { recursive: true });
-fs.writeFileSync('preview/toy-box-battleground.html', preview);
+fs.writeFileSync('preview/twinforge.html', preview);
 console.log(`built ${BUILD}: index.html ${(html.length / 1024).toFixed(0)} KB`);

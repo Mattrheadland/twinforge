@@ -27,9 +27,9 @@ export class UI {
   // ---------------- title ----------------
   showTitle({ stars, hasBattle, onPlay, onParent, showInstallTip }) {
     this.clear();
-    const logoTop = h('div', { class: 'logo-row' }, ...'TOY BOX'.split('').map((ch, i) =>
+    const logoTop = h('div', { class: 'logo-row' }, ...'TWINFORGE'.split('').map((ch, i) =>
       ch === ' ' ? h('span', { class: 'logo-gap' }) : h('span', { class: 'logo-blk', style: { '--c': LOGO_COLORS[i % LOGO_COLORS.length], '--d': i * 70 + 'ms' } }, ch)));
-    const banner = h('div', { class: 'logo-banner' }, 'BATTLEGROUND');
+    const banner = h('div', { class: 'logo-banner' }, 'TOY BOX TACTICS');
     const play = h('button', { class: `big-play ${hasBattle ? 'resume' : ''}`, 'aria-label': 'Play', html: ICON.play });
     onTap(play, onPlay, 600);
     const gear = h('button', { class: 'gear', 'aria-label': 'Grown-ups: press and hold', html: ICON.gear + '<i class="hold-ring"></i>' });
@@ -38,7 +38,7 @@ export class UI {
     const kids = [h('div', { class: 'logo' }, logoTop, banner), play, starBox, gear];
     if (showInstallTip) {
       const tip = h('div', { class: 'install-tip' },
-        h('b', {}, 'Grown-ups: '), 'tap Share, then “Add to Home Screen” so Toy Box Battleground opens full-screen and keeps its save.');
+        h('b', {}, 'Grown-ups: '), 'tap Share, then “Add to Home Screen” so TwinForge opens full-screen and keeps its save.');
       const x = h('button', { class: 'tip-x', 'aria-label': 'Dismiss' }, '×');
       onTap(x, () => tip.remove());
       tip.appendChild(x);

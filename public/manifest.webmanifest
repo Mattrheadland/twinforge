@@ -1,6 +1,6 @@
 {
-  "name": "Toy Box Battleground",
-  "short_name": "Toy Box",
+  "name": "TwinForge: Toy Box Tactics",
+  "short_name": "TwinForge",
   "description": "A toy battle adventure for Luca.",
   "start_url": "./",
   "scope": "./",

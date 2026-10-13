@@ -1,4 +1,4 @@
-# Toy Box Battleground: art style guide (v1, approved 2026-10-10)
+# TwinForge: Toy Box Tactics: art style guide (v1, approved 2026-10-10)
 
 Every image Astra makes for the game follows these rules, so toys from different photos look like they belong in the same world.
 

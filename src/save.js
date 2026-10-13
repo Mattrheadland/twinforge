@@ -100,11 +100,12 @@ export class SaveStore {
     }
   }
   exportText() {
-    return JSON.stringify({ app: 'toy-box-battleground', ...this.data }, null, 2);
+    return JSON.stringify({ app: 'twinforge', ...this.data }, null, 2);
   }
   importText(txt) {
     const raw = JSON.parse(txt);
-    if (raw.app && raw.app !== 'toy-box-battleground') throw new Error('not a Toy Box Battleground backup');
+    // 'toy-box-battleground' = backups made before the game was renamed
+    if (raw.app && raw.app !== 'twinforge' && raw.app !== 'toy-box-battleground') throw new Error('not a TwinForge backup');
     delete raw.app;
     this.data = migrate(raw, this.chars);
     this.save();
