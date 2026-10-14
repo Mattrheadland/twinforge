@@ -29,8 +29,16 @@ export const CHARACTERS = {
     foePattern: ['quick', 'power', 'charge', 'slam'],
     art: {
       kind: 'procedural', draw: 'rex', model: 'battle-rex',
-      // effect points in rig units (190 tall, facing +x); tune once the model is in
-      anchors: { muzzle: [70, 196, 0] },
+      // imported model (Hunyuan 3D, static): toy joints and effect points in rig units
+      anchors: { muzzle: [64, 186, 0] },
+      armScale: 0.6,
+      joints: {
+        head: { pivot: [74, 128, 0], box: [[72, 120, -60], [150, 200, 60]] },
+        jaw: { pivot: [86, 127, 0], box: [[86, 95, -40], [150, 126, 40]] },
+        armF: { pivot: [60, 114, 14], box: [[60, 86, 3], [92, 120, 60]] },
+        armB: { pivot: [60, 114, -14], box: [[60, 86, -60], [92, 120, -3]] },
+        tail: { pivot: [-34, 116, 0], box: [[-200, 80, -60], [-34, 160, 60]] },
+      },
     },
   },
   tree: {

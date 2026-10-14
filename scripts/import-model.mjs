@@ -13,11 +13,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, prune, resample, textureCompress, unpartition } from '@gltf-transform/functions';
-import { MeshoptDecoder } from 'meshoptimizer';
+import { dedup, prune, resample, textureCompress, unpartition, weld, simplify } from '@gltf-transform/functions';
+import { MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 
-const [id, main, ...extra] = process.argv.slice(2);
+// --tris N: simplify to about N triangles (default 9000; the toon shader draws
+// every triangle as a flat facet, so fewer triangles = chunkier, more '90s look)
+const args = process.argv.slice(2);
+const ti = args.indexOf('--tris');
+const TARGET_TRIS = ti >= 0 ? +args.splice(ti, 2)[1] : 9000;
+const [id, main, ...extra] = args;
 if (!id || !main) {
   console.error('usage: node scripts/import-model.mjs <asset-id> <main.glb> [more.glb ...]');
   process.exit(1);
@@ -72,13 +77,32 @@ function copyAccessor(a) {
   return doc.createAccessor().setType(a.getType()).setArray(a.getArray().slice()).setBuffer(buffer);
 }
 
+// the game's toon shader uses only the base color; drop PBR extras
+for (const m of root.listMaterials()) {
+  m.setNormalTexture(null).setMetallicRoughnessTexture(null).setOcclusionTexture(null).setEmissiveTexture(null);
+  for (const ext of m.listExtensions()) ext.dispose();
+}
+const countTris = () => {
+  let n = 0;
+  for (const mesh of root.listMeshes()) for (const p of mesh.listPrimitives()) {
+    const idx = p.getIndices();
+    n += (idx ? idx.getCount() : p.getAttribute('POSITION').getCount()) / 3;
+  }
+  return n;
+};
+const before = countTris();
+await MeshoptSimplifier.ready;
+const hasSkin = root.listSkins().length > 0;
+const ratio = Math.min(1, TARGET_TRIS / Math.max(1, before));
 await doc.transform(
   dedup(),
   resample(),
-  textureCompress({ encoder: sharp, resize: [1024, 1024] }),
+  ...(ratio < 1 && !hasSkin ? [weld(), simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.01, lockBorder: false })] : []),
+  textureCompress({ encoder: sharp, targetFormat: 'jpeg', quality: 88, resize: [1024, 1024] }),
   prune(),
   unpartition()
 );
+console.log(`  simplified ${Math.round(before)} → ${Math.round(countTris())} triangles`);
 // keep the output plain (no compression extensions the game would need decoders for)
 for (const ext of root.listExtensionsUsed()) if (/draco|meshopt|ktx|webp|avif/i.test(ext.extensionName)) ext.dispose();
 
