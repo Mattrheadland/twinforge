@@ -12,12 +12,20 @@ export class FX {
     this.bodies = [];
     this.bursts = [];
     this.lines = [];
+    this.ents = [];
     this.reduced = false;
     this.seed = 1;
   }
   clear() {
-    this.parts.length = this.words.length = this.rings.length = this.bodies.length = this.bursts.length = this.lines.length = 0;
+    this.parts.length = this.words.length = this.rings.length = this.bodies.length = this.bursts.length = this.lines.length = this.ents.length = 0;
   }
+  // Move effect entity from render/fx-moves.js. Resolves when it finishes.
+  add(e) {
+    e.life = -(e.delay || 0);
+    this.ents.push(e);
+    return new Promise((r) => { e._done = r; });
+  }
+
   // Cel impact starburst: jagged red/gold shape with heavy ink and a white core.
   impact(x, y, o = {}) {
     this.bursts.push({ x, y, life: 0, max: o.life ?? 300, size: o.size ?? 80, colors: o.colors ?? ['#D7263D', '#FFC914'], seed: this.seed++, rot: Math.random() * 6 });
@@ -124,6 +132,12 @@ export class FX {
     this.bodies = this.bodies.filter((b) => b.life < b.max);
     for (const b of this.bursts) b.life += dt;
     this.bursts = this.bursts.filter((b) => b.life < b.max);
+    for (const e of this.ents) {
+      const was = e.life;
+      e.life += dt;
+      if (was < e.max && e.life >= e.max) { e.onDone && e.onDone(); e._done && e._done(); }
+    }
+    this.ents = this.ents.filter((e) => e.life < e.max);
     for (const l of this.lines) l.life += dt;
     this.lines = this.lines.filter((l) => l.life < l.max);
   }
@@ -166,6 +180,14 @@ export class FX {
   }
 
   draw(ctx) {
+    this.t = (this.t || 0);
+    for (const e of this.ents) {
+      if (e.life < 0) continue;
+      ctx.save();
+      e.draw(ctx, Math.min(1, e.life / e.max), performance.now());
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
     this.drawBursts(ctx);
     for (const r of this.rings) {
       const k = r.life / r.max;

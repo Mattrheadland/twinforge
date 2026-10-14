@@ -47,7 +47,7 @@ export function portrait(def, size, px, bg) {
 }
 
 export class Hud {
-  constructor(layer, { heroDef, foeDef, px, toVirtual }) {
+  constructor(layer, { heroDef, foeDef, px, toVirtual, ...opts }) {
     this.layer = layer;
     this.toVirtual = toVirtual;
     this.heroDef = heroDef;
@@ -62,19 +62,31 @@ export class Hud {
     this.pauseBtn = h('button', { class: 'pause-btn', 'aria-label': 'Pause', html: ICON.pause });
     onTap(this.pauseBtn, () => this.handlers.pause && this.handlers.pause());
 
-    const mk = (kind, icon, cls) => {
-      const b = h('button', { class: `act act-${kind} ${cls || ''}`, 'aria-label': kind, html: `<span class="ico">${icon}</span>` });
-      onTap(b, () => this.handlers.action && this.handlers.action(kind), 400);
+    // 2×2 move menu (quick · power / guard · special), Pokémon-style.
+    const learning = opts.learning !== false;
+    const mk = (move) => {
+      const slot = move.slot;
+      const q = learning ? (slot === 'power' ? '123' : slot === 'special' ? 'ABC' : '') : '';
+      const b = h('button', {
+        class: `move move-${slot}`,
+        style: { '--mc': move.color || '#FFC914' },
+        'aria-label': move.name,
+      },
+      h('span', { class: 'move-ico', html: ICON[move.icon] || ICON.fist }),
+      h('span', { class: 'move-name' }, pixelLabel(move.name, 14, '#ffffff', { maxW: 150 })),
+      q ? h('span', { class: `move-q move-q-${slot}` }, q) : null);
+      b.dataset.slot = slot;
+      onTap(b, () => this.handlers.action && this.handlers.action(slot), 400);
       return b;
     };
-    this.btn = {
-      attack: mk('attack', ICON.fist),
-      defend: mk('defend', ICON.shield),
-      special: mk('special', ICON.bolt),
-    };
+    const moves = Object.fromEntries((heroDef.moves || []).map((m) => [m.slot, m]));
+    this.btn = {};
+    for (const slot of ['quick', 'power', 'guard', 'special']) {
+      this.btn[slot] = mk(moves[slot] || { slot, name: slot, icon: 'fist' });
+    }
     this.ring = h('div', { class: 'special-ring' }, ...Array.from({ length: RULES.maxEnergy }, (_, i) => h('i', { style: { '--i': i } })));
     this.btn.special.appendChild(this.ring);
-    this.actions = h('div', { class: 'actions hidden' }, this.btn.defend, this.btn.attack, this.btn.special);
+    this.actions = h('div', { class: 'actions moves hidden' }, this.btn.quick, this.btn.power, this.btn.guard, this.btn.special);
     this.hand = h('div', { class: 'tut-hand hidden', html: ICON.hand });
     this.el.append(this.panels.hero.root, this.panels.foe.root, this.ko, this.pauseBtn, this.actions, this.hand);
     layer.appendChild(this.el);
@@ -147,7 +159,7 @@ export class Hud {
 
   showActions(on, opts = {}) {
     this.actions.classList.toggle('hidden', !on);
-    this.btn.defend.classList.toggle('suggest', !!(on && opts.suggestDefend));
+    this.btn.guard.classList.toggle('suggest', !!(on && opts.suggestDefend));
     this.btn.special.classList.toggle('suggest', !!(on && opts.suggestSpecial));
   }
 

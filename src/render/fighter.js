@@ -24,6 +24,9 @@ export class Fighter {
     this.antenna = 0; this.antV = 0;
     this.tail = 0;
     this.shield = 0; // 0..1 visual amount
+    this.guardType = 'block';
+    this.guardColor = '#4EA8DE';
+    this.cannon = 0;
     this.aura = 0; this.auraColor = '#F46036';
     this.dizzy = false;
     this.charged = false;
@@ -103,6 +106,8 @@ export class Fighter {
       antenna: this.antenna,
       tail: this.tail,
       headBob: breathe * 1.6,
+      cannon: this.cannon,
+      fly: this.oy < -40,
       glow: this.aura > 0.3,
       pose: this.tired ? 'tired' : this.cheer ? 'victory' : 'idle',
     };
@@ -230,6 +235,22 @@ export class Fighter {
   drawShield(ctx, t) {
     const s = this.shield;
     const c = this.center();
+    if (this.guardType === 'dodge') {
+      // wind swirls: ready to dodge
+      ctx.save();
+      ctx.globalAlpha = 0.8 * Math.min(1, s);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 3; i++) {
+        const a = t / 220 + (i * Math.PI * 2) / 3;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y + 20 - i * 40, 90 * this.scale, 26 * this.scale, 0, a, a + 1.6);
+        ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
     if (this.def.shieldStyle === 'blocks') {
       // stack of toy blocks in front of the hero
       const fx = c.x + 92 * this.scale * this.flip;
@@ -264,10 +285,11 @@ export class Fighter {
     ctx.globalAlpha = Math.min(1, s);
     ctx.beginPath();
     ellipse(ctx, c.x, c.y, rx, ry);
-    ctx.fillStyle = 'rgba(78,168,222,0.2)';
+    const gc = this.guardType === 'reflect' ? '#FF8A1F' : this.guardColor || '#4EA8DE';
+    ctx.fillStyle = rgbaHex(gc, 0.22);
     ctx.fill();
     ctx.lineWidth = 7;
-    ctx.strokeStyle = 'rgba(27,79,216,0.85)';
+    ctx.strokeStyle = rgbaHex(gc, 0.9);
     ctx.stroke();
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#DDF4FF';
@@ -277,7 +299,7 @@ export class Fighter {
     ctx.beginPath();
     ellipse(ctx, c.x, c.y, rx, ry);
     ellipse(ctx, c.x - rx * 0.12, c.y - ry * 0.1, rx * 0.95, ry * 0.95);
-    ctx.fillStyle = 'rgba(27,79,216,0.28)';
+    ctx.fillStyle = rgbaHex(gc, 0.3);
     ctx.fill('evenodd');
     ctx.strokeStyle = 'rgba(255,255,255,.22)';
     ctx.lineWidth = 2;
@@ -321,5 +343,10 @@ function hex(ctx, x, y, r) {
 
 function hexA(hex, a) {
   const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+function rgbaHex(hex, a) {
+  const n = parseInt(String(hex).slice(1, 7), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }

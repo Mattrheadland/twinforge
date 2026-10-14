@@ -225,7 +225,9 @@ export function pixelLabel(text, size, fill = '#FFC914', opts = {}) {
   c.width = cv.width; c.height = cv.height;
   c.getContext('2d').drawImage(cv, 0, 0);
   c.className = 'px-label ' + (opts.cls || '');
-  c.style.width = cv.width / scale + 'px';
-  c.style.height = cv.height / scale + 'px';
+  let w = cv.width / scale, hh = cv.height / scale;
+  if (opts.maxW && w > opts.maxW) { hh *= opts.maxW / w; w = opts.maxW; }
+  c.style.width = w + 'px';
+  c.style.height = hh + 'px';
   return c;
 }

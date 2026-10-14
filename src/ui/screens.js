@@ -58,7 +58,7 @@ export class UI {
     const cards = roster.map((id, i) => {
       const def = chars[id];
       const cv = document.createElement('canvas');
-      const W = 170, H = 190, px = isPixel() ? getArtScale() : this.app.px * 1.1;
+      const W = 150, H = 128, px = isPixel() ? getArtScale() : this.app.px * 1.1;
       cv.width = W * px; cv.height = H * px;
       if (isPixel()) cv.classList.add('pxl');
       cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -80,14 +80,11 @@ export class UI {
       draw('open');
       const statRow = (icon, n) => h('div', { class: 'stat' }, ...Array.from({ length: n }, () => h('span', { html: icon })));
       const card = h('button', { class: 'pick-card', style: { '--c': def.color, '--d': i * 120 + 'ms' }, 'aria-label': def.name },
-        def.placeholder ? h('span', { class: 'temp-tag' }, 'TEMP ART') : null,
         h('span', { class: 'p1-tag' }, pixelLabel('1P', 20, '#FF4A3A')),
         h('div', { class: 'pick-art' }, cv),
-        h('div', { class: 'pick-name' }, pixelLabel(def.name, 19, '#FFC914')),
-        h('div', { class: 'pick-stats' },
-          statRow(ICON.heart, def.stats.hearts),
-          statRow(ICON.fist, def.stats.punch),
-          h('div', { class: 'stat special' }, h('span', { html: ICON.bolt }), h('span', { html: def.special.effect === 'wall' ? ICON.shield : ICON.dizzy }))));
+        h('div', { class: 'pick-name' }, pixelLabel(def.name, 15, '#FFC914', { maxW: 178 })),
+        h('div', { class: 'pick-moves' }, ...(def.moves || []).map((m) => h('span', { class: `pm pm-${m.slot}`, style: { '--mc': m.color }, html: ICON[m.icon] || ICON.fist }))));
+      void statRow;
       card._draw = draw;
       onTap(card, () => {
         chosen = id;
@@ -104,7 +101,7 @@ export class UI {
     onTap(go, () => chosen && onPick(chosen), 800);
     const home = h('button', { class: 'corner-btn home-btn', 'aria-label': 'Home', html: ICON.home });
     onTap(home, onHome, 500);
-    const scr = h('div', { class: 'screen select-screen' }, h('div', { class: 'pick-row' }, ...cards), go, home);
+    const scr = h('div', { class: 'screen select-screen' }, h('div', { class: 'pick-grid' }, ...cards), go, home);
     this.layer.appendChild(scr);
     if (lastHero) {
       const i = roster.indexOf(lastHero);
@@ -254,6 +251,7 @@ export class UI {
         h('h2', {}, 'Grown-up settings'),
         h('section', {}, h('h3', {}, 'Sound'), slider('Music', 'music'), slider('Effects', 'sfx')),
         h('section', {}, h('h3', {}, 'Learning'),
+          toggle('Learning questions', 'learning', 'On: power moves ask a math question, specials ask a reading one. Off: just battle.'),
           level('Counting (Attack)', 'math', MATH),
           level('Letters (Special)', 'letters', LET),
           h('p', { class: 'note' }, 'Auto moves up after 3 independent answers in a row, and down if he needs full help twice in his last 4. Answers with a hint never move it up.')),

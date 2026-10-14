@@ -27,7 +27,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: [...chromium.args.filter((a) => a !== '--single-process'), '--disable-dev-shm-usage', '--disable-gpu-compositing'], headless: true });
 const page = await browser.newPage();
 await page.setViewport({ width: 874, height: 402, deviceScaleFactor: +(process.env.DPR || 2), isMobile: true, hasTouch: true, isLandscape: true });
-await page.evaluateOnNewDocument(() => { window.__TBB_TEST__ = true; });
+await page.evaluateOnNewDocument(() => { window.__TBB_TEST__ = true; window.__TBB_FORCE__ = { math: 'count' }; });
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
@@ -59,11 +59,9 @@ async function answerChallenge({ wrong = 0 } = {}) {
   await page.waitForSelector('.challenge.in .opt', { visible: true });
   await sleep(700);
   const info = await page.evaluate(() => {
-    const items = document.querySelectorAll('.cnt-item').length;
-    const card = document.querySelector('.ltr-card');
+    const ch = window.__tbb.app.battle.currentChallenge;
     const opts = [...document.querySelectorAll('.opt')].map((o) => o.dataset.value);
-    const answer = card ? opts.find((o) => o.toLowerCase() === card.textContent.toLowerCase()) : String(items);
-    return { opts, answer, kind: card ? 'letter' : 'count' };
+    return { opts, answer: String(ch.answer), kind: ch.kind };
   });
   const wrongs = info.opts.filter((o) => o !== info.answer);
   for (let i = 0; i < wrong; i++) {
@@ -73,19 +71,19 @@ async function answerChallenge({ wrong = 0 } = {}) {
   await tap(`.opt[data-value="${info.answer}"]`);
   return info;
 }
-
 // ---------- title ----------
 await page.goto(URL0, { waitUntil: 'load' });
+await page.waitForSelector('.title-screen .big-play', { timeout: 20000 }).catch(() => {});
 await sleep(1600);
 await shot('01-title');
-check('title renders', await page.$('.title-screen .big-play'));
+check('title renders', await page.$('.title-screen .big-play'), errors.join(' | '));
 
 // ---------- select ----------
 await tap('.big-play', { wait: 700 });
 check('audio unlocked by first tap', await page.evaluate(() => window.__tbb.app.audio.ctx && window.__tbb.app.audio.ctx.state), await page.evaluate(() => window.__tbb.app.audio.ctx?.state));
 await shot('02-select');
 const cards = await page.$$('.pick-card');
-check('two characters to pick', cards.length === 2);
+check('six characters to pick', cards.length === 6);
 await tap(`.pick-card:nth-child(${process.env.HERO || 2})`, { wait: 500 });
 await shot('03-selected');
 await tap('.go-btn', { wait: 300 });
@@ -99,11 +97,11 @@ await shot('05-battle-choose');
 check('tutorial hand points at attack on first battle', await page.$eval('.tut-hand', (n) => !n.classList.contains('hidden')));
 
 // locked special does nothing
-await tap('.act-special', { wait: 400 });
+await tap('.move-special', { wait: 400 });
 check('locked special does not start a challenge', !(await page.$('.challenge')) && (await phase()) === 'choose');
 
 // rapid repeated taps: only one challenge
-const atk = await (await page.$('.act-attack')).boundingBox();
+const atk = await (await page.$('.move-power')).boundingBox();
 for (let i = 0; i < 6; i++) await page.touchscreen.tap(atk.x + atk.width / 2, atk.y + atk.height / 2);
 await sleep(500);
 check('six fast taps open exactly one challenge', (await page.$$('.challenge')).length === 1);
@@ -128,8 +126,8 @@ await sleep(350);
 await shot('09-hit');
 await waitPhase('foe');
 const st1 = await page.evaluate(() => window.__tbb.app.battle.state);
-const bonus = await page.evaluate(() => { const a = window.__tbb.app; return { stompy: 3, blocko: 0 }[a.battle.state.heroId]; });
-check('supported answer still lands a modest hit (never a miss)', st1.foe.hp < foeHp0 && foeHp0 - st1.foe.hp === 12 + bonus, `${foeHp0}->${st1.foe.hp}`);
+const bonus = await page.evaluate(() => ({ rex: 2, tree: 0, rockfish: 1, arthur: 2, witch: 3, nightwing: 0 })[window.__tbb.app.battle.state.heroId]);
+check('supported answer still lands a modest hit (never a miss)', st1.foe.hp < foeHp0 && foeHp0 - st1.foe.hp === 14 + bonus, `${foeHp0}->${st1.foe.hp}`);
 check('stats record a supported answer', st1.stats.support === 1);
 
 // ---------- save / resume mid-battle ----------
@@ -146,6 +144,7 @@ const st2 = await page.evaluate(() => window.__tbb.app.battle.state);
 check('resumed with same HP', st2.foe.hp === st1.foe.hp && st2.hero.hp === saved.hero.hp, `foe ${st2.foe.hp}`);
 
 // ---------- play to victory ----------
+await page.evaluate(() => { window.__TBB_FORCE__ = {}; });
 let turns = 0, specials = 0, defends = 0, sawCharge = false;
 while (turns++ < 30) {
   const ph = await phase();
@@ -155,18 +154,17 @@ while (turns++ < 30) {
   const foeCharged = s.foe.charged;
   if (foeCharged) sawCharge = true;
   if (s.hero.energy >= 3) {
-    await tap('.act-special');
+    await tap('.move-special');
     await answerChallenge();
     specials++;
     if (specials === 1) { await sleep(900); await shot('11-special'); await sleep(900); await shot('11b-special'); }
-  } else if (foeCharged) {
+  } else if (foeCharged && s.hero.lastSlot !== 'guard') {
     await shot('10-foe-charged');
-    await tap('.act-defend');
+    await tap('.move-guard');
     defends++;
   } else {
-    await tap('.act-attack');
-    const inf = await answerChallenge();
-    if (inf.kind !== 'count') check('attack uses counting', false);
+    await tap('.move-power');
+    await answerChallenge();
   }
   await sleep(300);
   const t0 = Date.now();
@@ -191,8 +189,7 @@ check('energy never above max', endState.hero.energy <= 3);
 await tap('.round-btn.again');
 check('play again starts a fresh battle', await waitPhase('choose'));
 await page.evaluate(() => { const b = window.__tbb.app.battle; b.state.hero.hp = 1; b.hud.setHP('hero', 1, b.state.hero.maxHp, true); });
-await tap('.act-attack');
-await answerChallenge();
+await tap('.move-quick');
 await page.waitForSelector('.overlay.result', { timeout: 30000 });
 await sleep(1500);
 await shot('13-nap');
@@ -201,16 +198,39 @@ check('losing shows friendly nap screen with retry', await page.$('.result-card.
 // ---------- letter challenge screenshot ----------
 await tap('.round-btn.again');
 await waitPhase('choose');
-await page.evaluate(() => { const b = window.__tbb.app.battle; b.state.hero.energy = 3; b.hud.setEnergy(3); });
-await tap('.act-special');
+await page.evaluate(() => { window.__TBB_FORCE__ = { reading: 'starts' }; const b = window.__tbb.app.battle; b.state.hero.energy = 3; b.hud.setEnergy(3); });
+await tap('.move-special');
 await page.waitForSelector('.challenge.in .opt-letter', { visible: true });
 await sleep(900);
-await shot('14-letter-challenge');
-check('special uses letter matching', true);
+await shot('14-reading-challenge');
+check('special asks a reading question', (await page.evaluate(() => window.__tbb.app.battle.currentChallenge.kind)) === 'starts');
 await answerChallenge();
+await waitPhase('choose', 30000);
+
+// ---------- every challenge type renders ----------
+const kinds = [['math', 'add'], ['math', 'sub'], ['math', 'compare'], ['math', 'pattern'], ['math', 'numeral'], ['math', 'shape'], ['reading', 'rhyme'], ['reading', 'word'], ['reading', 'letter']];
+for (const [domain, kind] of kinds) {
+  await waitPhase('choose', 30000);
+  await page.evaluate((domain, kind) => { window.__TBB_FORCE__ = { [domain]: kind }; const b = window.__tbb.app.battle; b.state.hero.energy = 3; b.hud.setEnergy(3); for (const k of ['hero', 'foe']) { b.state[k].hp = b.state[k].maxHp; b.hud.setHP(k, b.state[k].hp, b.state[k].maxHp, true); } }, domain, kind);
+  await tap(domain === 'math' ? '.move-power' : '.move-special');
+  await page.waitForSelector('.challenge.in .opt', { visible: true });
+  await sleep(800);
+  await shot(`17-${kind}`);
+  const ok = await page.evaluate(() => { const ch = window.__tbb.app.battle.currentChallenge; return !!document.querySelector(`.challenge .ch-${ch.kind}`) && document.querySelectorAll('.challenge .opt').length === 3; });
+  check(`${kind} challenge renders`, ok);
+  await answerChallenge();
+}
+
+// ---------- learning off: moves fire straight away ----------
+await waitPhase('choose', 30000);
+await page.evaluate(() => { const a = window.__tbb.app; a.save.data.settings.learning = false; a.applySettings(); });
+await tap('.move-power');
+await sleep(500);
+check('learning off: no question, the move just happens', !(await page.$('.challenge')) && (await phase()) !== 'challenge');
+await page.evaluate(() => { const a = window.__tbb.app; a.save.data.settings.learning = true; a.applySettings(); });
 
 // ---------- pause / home ----------
-await waitPhase('choose', 25000);
+await waitPhase('choose', 30000);
 await tap('.pause-btn', { wait: 300 });
 await shot('15-pause');
 await tap('.overlay.pause .round-btn.home', { wait: 800 });

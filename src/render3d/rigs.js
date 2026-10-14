@@ -4,6 +4,7 @@
 // battle choreography already animates (arms, head bob, antenna, tail, face).
 import * as THREE from 'three';
 import { toonMat, glowMat, part, inked } from './toon.js';
+import { ROSTER_BUILDERS } from './roster-rigs.js';
 
 const C = {
   red: 0xd7263d, blue: 0x2456e0, yellow: 0xffc914, boot: 0x2a2f55, head: 0x4ea8de, steel: 0xc4cad8,
@@ -323,7 +324,7 @@ function buildStompy(flash) {
   };
 }
 
-const BUILDERS = { blocko: buildBlocko, stompy: buildStompy };
+const BUILDERS = { blocko: buildBlocko, stompy: buildStompy, ...ROSTER_BUILDERS };
 
 // Returns { root, apply(pose), anchors, headR, flash } for a character def.
 export function buildRig(def) {

@@ -2,6 +2,7 @@
 // reaction -> recovery, with sound and haptics fired at the moment of impact.
 import { Ease } from '../engine/time.js';
 import { buzz } from '../haptics.js';
+import * as FXM from '../render/fx-moves.js';
 
 const WORDS = { indep: ['WHAM!', 'POW!!', 'KAPOW!'], hint: ['POW!', 'BAM!'], support: ['pow!', 'bop!'] };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -96,9 +97,9 @@ export class Director {
   }
 
   // ---------------- attacks ----------------
-  async lunge(att, def, { onImpact, power = 1, word = 'POW!', big = false }) {
+  async lunge(att, def, { onImpact, power = 1, word = 'POW!', big = false, dash = false }) {
     const gap = def.x - att.x;
-    const dx = gap - Math.sign(gap) * 140;
+    const dx = gap - Math.sign(gap) * (dash ? 110 : 140);
     // anticipation: gritted, determined wind-up
     att.mouth = 'grit';
     this.audio.sfx('whoosh');
@@ -157,92 +158,180 @@ export class Director {
     });
   }
 
-  async heroAttack(quality, applyHit) {
-    const power = quality === 'indep' ? 1.2 : quality === 'hint' ? 1 : 0.75;
-    await this.lunge(this.hero, this.foe, {
-      power,
-      onImpact: async () => {
-        this.impactAt(this.foe, { power, word: pick(WORDS[quality]) });
-        applyHit();
-        await this.wait(220);
-      },
-    });
+  // ======================================================================
+  // Moves. Every move works both ways (hero → foe and foe → hero), so the
+  // opponent fights with its own moveset and its own special.
+  // `ev` is the damage event for the final hit: { blocked, dodged, perfect, guard }.
+  // ======================================================================
+
+  pt(f, name) {
+    return (f.point && f.point(name)) || (name === 'head' ? f.head() : f.center());
   }
 
-  async foeAttack(ev, applyHit) {
-    const { foe, hero } = this;
-    if (ev.kind === 'slam') return this.foeSlam(ev, applyHit);
-    await this.lunge(foe, hero, {
-      onImpact: async () => {
-        this.impactAt(hero, { power: 0.9, word: ev.blocked ? '' : pick(['BONK!', 'BOP!']), blocked: ev.blocked, color: '#F46036' });
-        applyHit();
-        await this.wait(240);
-      },
-    });
-  }
-
-  async foeSlam(ev, applyHit) {
-    const { foe, hero } = this;
-    foe.aura = 1;
-    this.audio.sfx('jump');
-    await this.to(foe, { sy: 0.75, sx: 1.15 }, 160);
-    const dx = hero.x - foe.x + 130;
-    await Promise.all([
-      this.to(foe, { sy: 1.1, sx: 0.92 }, 120),
-      this.to(foe, { oy: -170 }, 340, Ease.outQuad),
-      this.to(foe, { ox: dx * 0.6, rot: 0.3 }, 360, Ease.linear),
-    ]);
-    this.audio.sfx('fall');
-    await Promise.all([
-      this.to(foe, { oy: hero.y - foe.y - 20, ox: dx, rot: 0 }, 220, Ease.inQuad),
-    ]);
-    // impact
-    const c = hero.center();
-    this.stage.shake(ev.blocked ? 0.4 : 0.85);
-    this.fx.ring(hero.x, hero.y, { rx: 40, ry: 10, grow: 260, color: '#ffd23f', width: 10 });
-    this.fx.puff(hero.x + 60, hero.y, 12);
+  // Final hit of any move: impact / block / dodge visuals.
+  strike(def, ev = {}, { power = 1, word = 'POW!', big = false, color } = {}) {
+    if (ev.dodged) return this.dodgeAway(def, ev);
     if (ev.perfect) {
+      const c = def.center();
       this.audio.sfx('block');
       this.audio.sfx('perfect');
       buzz('medium');
       this.stage.hitStop(120);
       this.stage.flash(0.35, '#bfefff');
-      this.fx.burst(c.x + 40, c.y - 20, { count: 22, colors: ['#ffffff', '#7fd3f7', '#ffd23f'], kind: 'star', speed: 380 });
-      this.fx.word('PERFECT!', c.x + 20, c.y - 120, { color: '#4EA8DE', size: 58 });
-      hero.shield = 1.35;
-      this.to(hero, { shield: 1 }, 300);
-      hero.eyes = 'happy';
-    } else {
-      this.audio.sfx('boom');
-      buzz('heavy');
-      this.stage.hitStop(140);
-      this.stage.flash(0.3);
-      this.impactAt(hero, { power: 1.3, word: 'SLAM!', big: true, color: '#F46036' });
+      this.fx.burst(c.x, c.y - 20, { count: 22, colors: ['#ffffff', '#4EA8DE', '#FFC914'], kind: 'star', speed: 380 });
+      this.fx.word('PERFECT!', c.x, c.y - 120, { color: '#4EA8DE', size: 58 });
+      def.shield = 1.35;
+      this.to(def, { shield: 1 }, 300);
+      def.eyes = 'happy';
+      return;
     }
-    applyHit();
-    foe.aura = 0;
-    await this.wait(380);
-    // hop back home
-    await Promise.all([
-      this.to(foe, { ox: 0 }, 420, Ease.inOutQuad),
-      this.to(foe, { oy: -90 }, 210, Ease.outQuad).then(() => this.to(foe, { oy: 0 }, 210, Ease.inQuad)),
-    ]);
-    this.squash(foe, 1.15, 0.85, 240);
-    this.audio.sfx('land');
-    if (!hero.tired) { hero.eyes = 'open'; hero.mouth = 'smile'; }
+    this.impactAt(def, { power, word, big, blocked: ev.blocked, color });
   }
 
-  async foeCharge() {
+  async dodgeAway(def, ev) {
+    const c = def.center();
+    this.audio.sfx('whoosh');
+    this.fx.word(ev.perfect ? 'DODGE!' : 'MISS!', c.x, c.y - 120, { color: '#B9D8FF', size: 52 });
+    this.fx.speed(def.x + def.ox, c.y, -def.flip);
+    def.trailOn = true;
+    await Promise.all([
+      this.to(def, { ox: -70 * def.flip, alpha: 0.45 }, 140, Ease.outQuad),
+      this.to(def, { oy: -60 }, 140, Ease.outQuad),
+    ]);
+    def.trailOn = false;
+    await Promise.all([this.to(def, { ox: 0, oy: 0, alpha: 1 }, 320, Ease.outBack)]);
+    def.eyes = 'happy';
+    def.mouth = 'smile';
+  }
+
+  qualityPower(quality, slot) {
+    const base = { indep: 1.2, hint: 1, support: 0.8, none: 1 }[quality] || 1;
+    return slot === 'quick' ? base * 0.8 : base;
+  }
+
+  // quick / power moves
+  async attack(att, def, move, { quality = 'none', ev = {}, applyHit = () => {} } = {}) {
+    const power = this.qualityPower(quality, move.slot);
+    const word = quality === 'indep' && move.slot === 'power' ? (move.word || 'POW!').replace('!', '!!') : move.word || 'POW!';
+    const big = move.slot === 'power' && quality === 'indep';
+    const onHit = async () => {
+      this.strike(def, ev, { power, word, big, color: move.color });
+      applyHit();
+      await this.wait(240);
+    };
+    switch (move.anim) {
+      case 'shot': return this.shot(att, def, move, onHit);
+      case 'ground': return this.ground(att, def, move, onHit);
+      case 'dancers': return this.dancers(att, def, move, onHit);
+      default: return this.lunge(att, def, { power, onImpact: onHit, dash: move.dash });
+    }
+  }
+
+  async shot(att, def, move, onHit) {
+    const shots = move.shots || 1;
+    att.mouth = 'grit';
+    att.cannon = 0;
+    this.audio.sfx('charge');
+    await Promise.all([this.to(att, { sx: 1.06, sy: 0.94, armF: -1.4, cannon: 1 }, 220, Ease.outQuad)]);
+    const target = def.center();
+    let last;
+    for (let i = 0; i < shots; i++) {
+      const m = this.pt(att, shots > 1 ? (i ? 'muzzle2' : 'muzzle') : 'muzzle');
+      this.audio.sfx('whoosh');
+      this.to(att, { ox: -16 * att.flip }, 60).then(() => this.to(att, { ox: 0 }, 160));
+      last = this.fx.add(FXM.bolt({ x0: m.x, y0: m.y, x1: target.x + (i - (shots - 1) / 2) * 20, y1: target.y - 10, color: move.color, size: move.lob ? 18 : 15, life: move.lob ? 560 : 340, arc: move.lob ? 140 : 18 }));
+      if (i < shots - 1) {
+        await last;
+        this.fx.burst(target.x, target.y, { count: 8, colors: [move.color, '#ffffff'], speed: 240 });
+        this.audio.sfx('hit');
+        def.flash = 0.6;
+      }
+    }
+    await last;
+    if (move.lob) this.fx.burst(target.x, target.y, { count: 18, colors: [move.color, '#ffffff'], kind: 'puff', speed: 200 });
+    await onHit();
+    att.mouth = 'smile';
+    await this.to(att, { sx: 1, sy: 1, armF: -0.2, cannon: 0 }, 260, Ease.outCubic);
+  }
+
+  async ground(att, def, move, onHit) {
+    att.mouth = 'grit';
+    this.audio.sfx('jump');
+    await this.to(att, { sy: 0.82, sx: 1.12 }, 180);
+    this.audio.sfx('boom');
+    this.stage.shake(0.3);
+    await this.to(att, { sy: 1, sx: 1 }, 160, Ease.outBack);
+    this.fx.puff(def.x, def.y, 8, '#8A5A3C');
+    const p = this.fx.add(FXM.spikes({ x: def.x, y: def.y + 4, color: move.color, count: 5, spread: 70, height: 130, life: 800 }));
+    await this.wait(220);
+    await onHit();
+    await p;
+    att.mouth = 'smile';
+  }
+
+  async dancers(att, def, move, onHit) {
+    att.mouth = 'open';
+    att.eyes = 'happy';
+    this.audio.sfx('powerUp');
+    const x0 = att.x + 60 * att.flip, x1 = def.x - 30 * att.flip;
+    let last;
+    for (let i = 0; i < 3; i++) {
+      last = this.fx.add(FXM.hopper({ x0: x0 + i * 12 * att.flip, x1, y: def.y - 12, color: i === 1 ? '#FFC914' : move.color, size: 15 + i * 2, hops: 4 + i, life: 900, delay: i * 150 }));
+    }
+    await this.wait(900);
+    this.fx.burst(def.x, def.y - 40, { count: 16, colors: ['#FF7A1A', '#FFC914', '#ffffff'], kind: 'spark', speed: 300, gravity: -200 });
+    await last;
+    await onHit();
+    att.eyes = 'open';
+    att.mouth = 'smile';
+  }
+
+  // ---------------- guards ----------------
+  async guardUp(f, move) {
+    f.guardType = move.guard || 'block';
+    f.guardColor = move.color || '#4EA8DE';
+    this.audio.sfx(f.guardType === 'dodge' ? 'whoosh' : 'shieldUp');
+    buzz('light');
+    await this.to(f, { sy: 0.9, sx: 1.06, armF: -1.2 }, 150);
+    await Promise.all([
+      this.to(f, { shield: 1 }, 360, Ease.outBack),
+      this.to(f, { sy: 1, sx: 1 }, 300, Ease.outBack),
+    ]);
+    const c = f.center();
+    this.fx.word(move.name.toUpperCase(), c.x, c.y - 150, { color: move.color, size: 34, life: 800 });
+    this.fx.burst(c.x + 60 * f.flip, c.y, { count: 10, colors: ['#ffffff', move.color], speed: 200, gravity: -50 });
+    await this.to(f, { armF: -0.5 }, 200);
+  }
+
+  shieldOff(f) {
+    if (f.shield > 0) {
+      this.fx.burst(f.center().x + 60 * f.flip, f.center().y, { count: 8, colors: ['#ffffff', f.guardColor || '#4EA8DE'], speed: 160, gravity: 200 });
+      this.to(f, { shield: 0 }, 300);
+    }
+  }
+
+  // Blazing Bark: the attacker gets singed.
+  singe(f, applyHit) {
+    const c = f.center();
+    this.audio.sfx('hit');
+    f.flash = 0.8;
+    this.fx.burst(c.x, c.y, { count: 14, colors: ['#FF8A1F', '#FFC914', '#ffffff'], kind: 'spark', speed: 260, gravity: -220 });
+    this.fx.word('SINGED!', c.x, c.y - 120, { color: '#FF8A1F', size: 40 });
+    applyHit && applyHit();
+  }
+
+  // ---------------- foe telegraph ----------------
+  async foeCharge(move) {
     const { foe } = this;
     this.audio.sfx('charge');
-    foe.auraColor = '#ff6b2b';
+    foe.auraColor = (move && move.color) || '#ff6b2b';
     this.stage.zoomTo(1.07, 400, foe.x, foe.y - 100);
     foe.eyes = 'angry';
     await this.to(foe, { aura: 1, sy: 0.9, sx: 1.08 }, 600, Ease.outQuad);
     for (let i = 0; i < 6; i++) {
       const a = Math.random() * Math.PI * 2;
       const c = foe.center();
-      this.fx.orb(c.x + Math.cos(a) * 140, c.y + Math.sin(a) * 110, c.x, c.y, '#ff9f1c', i * 50);
+      this.fx.orb(c.x + Math.cos(a) * 140, c.y + Math.sin(a) * 110, c.x, c.y, foe.auraColor, i * 50);
     }
     foe.charged = true;
     this.audio.sfx('warn');
@@ -268,28 +357,6 @@ export class Director {
     await this.wait(250);
   }
 
-  // ---------------- defend ----------------
-  async heroDefend() {
-    const { hero } = this;
-    const blocks = hero.def.shieldStyle === 'blocks';
-    this.audio.sfx(blocks ? 'blocksStack' : 'shieldUp');
-    buzz('light');
-    await this.to(hero, { sy: 0.9, sx: 1.06, armF: -1.2 }, 150);
-    await Promise.all([
-      this.to(hero, { shield: 1 }, blocks ? 520 : 360, blocks ? Ease.linear : Ease.outBack),
-      this.to(hero, { sy: 1, sx: 1 }, 300, Ease.outBack),
-    ]);
-    this.fx.burst(hero.center().x + 60, hero.center().y, { count: 10, colors: ['#ffffff', '#7fd3f7'], speed: 200, gravity: -50 });
-    await this.to(hero, { armF: -0.5 }, 200);
-  }
-
-  shieldOff(f) {
-    if (f.shield > 0) {
-      this.fx.burst(f.center().x + 60 * f.flip, f.center().y, { count: 8, colors: ['#ffffff', '#7fd3f7'], speed: 160, gravity: 200 });
-      this.to(f, { shield: 0 }, 300);
-    }
-  }
-
   // ---------------- specials ----------------
   async chargeUp(f, color) {
     f.auraColor = color;
@@ -299,108 +366,177 @@ export class Director {
     this.stage.zoomTo(1.1, 500, f.x, f.y - 110);
     f.eyes = 'angry';
     f.mouth = 'open';
-    const pulls = [];
     for (let i = 0; i < 12; i++) {
       const a = (i / 12) * Math.PI * 2;
       const c = f.center();
       this.fx.orb(c.x + Math.cos(a) * 170, c.y + Math.sin(a) * 130, c.x, c.y, color, i * 40);
     }
-    pulls.push(this.to(f, { aura: 1, sy: 0.86, sx: 1.1 }, 700, Ease.outQuad));
-    await Promise.all(pulls);
+    await this.to(f, { aura: 1, sy: 0.86, sx: 1.1 }, 700, Ease.outQuad);
+    await this.to(f, { sy: 1, sx: 1 }, 200, Ease.outBack);
   }
 
-  async heroSpecial(specialId, quality, applyHit) {
-    if (specialId === 'barrage') return this.barrage(quality, applyHit);
-    return this.megaStomp(quality, applyHit);
-  }
-
-  async barrage(quality, applyHit) {
-    const { hero, foe } = this;
-    await this.chargeUp(hero, '#ffd23f');
-    hero.cheer = true;
-    this.audio.sfx('jump');
-    await this.wait(380);
-    hero.cheer = false;
-    hero.oy = 0;
-    await this.stage.zoomTo(1.06, 300, foe.x, foe.y - 150);
-    const n = quality === 'indep' ? 7 : quality === 'hint' ? 6 : 5;
-    const letters = 'TOYBOXGO';
-    let landed = 0;
-    const done = new Promise((resolve) => {
-      for (let i = 0; i < n; i++) {
-        this.clock.wait(i * 150).then(() => {
-          const last = i === n - 1;
-          const x = foe.x + (Math.random() - 0.5) * 90;
-          this.fx.block(x, -60 - Math.random() * 40, foe.head().top + 60 + Math.random() * 30, {
-            size: last ? 64 : 40 + Math.random() * 12,
-            letter: letters[i % letters.length],
-            vx: (Math.random() - 0.5) * 60,
-            onLand: (b) => {
-              b.floorY = foe.y; // bonk the head, then tumble to the floor
-              landed++;
-              if (last) {
-                this.impactAt(foe, { power: 1.4, word: 'BOOM!', big: true });
-                applyHit();
-                resolve();
-              } else {
-                this.audio.sfx('blockDrop', i);
-                buzz('light');
-                this.stage.shake(0.18);
-                foe.flash = 0.7;
-                foe.eyes = 'squint';
-                this.fx.burst(b.x, b.y - 10, { count: 6, speed: 200, size: 7 });
-              }
-            },
-          });
-        });
-      }
-    });
-    await done;
-    hero.aura = 0;
-    hero.eyes = 'open';
-    hero.mouth = 'smile';
-    await this.wait(500);
-    await this.stage.zoomTo(1, 350);
-  }
-
-  async megaStomp(quality, applyHit) {
-    const { hero, foe } = this;
-    await this.chargeUp(hero, '#5cff7a');
-    this.audio.sfx('jump');
-    await this.to(hero, { sy: 0.7, sx: 1.2 }, 140);
-    await Promise.all([
-      this.to(hero, { sy: 1.15, sx: 0.9 }, 120),
-      this.to(hero, { oy: -620 }, 320, Ease.inQuad),
-    ]);
-    await this.stage.zoomTo(1, 200);
+  // Small hit during a multi-hit special (no HP change).
+  tap(def, color) {
+    const c = def.center();
+    this.audio.sfx('softHit');
+    buzz('light');
+    def.flash = 0.7;
+    def.eyes = 'squint';
     this.stage.shake(0.15);
-    await this.wait(260);
-    this.audio.sfx('fall');
-    await this.to(hero, { oy: 0, sy: 1.1, sx: 0.9 }, 230, Ease.inQuad);
-    // landing quake
-    this.audio.sfx('boom');
-    buzz('heavy');
-    this.stage.hitStop(90);
-    this.stage.shake(0.9);
-    this.stage.flash(0.3);
-    this.squash(hero, 1.35, 0.7, 380);
-    this.fx.puff(hero.x - 40, hero.y, 10);
-    this.fx.puff(hero.x + 40, hero.y, 10);
-    this.fx.ring(hero.x, hero.y, { rx: 50, ry: 12, grow: 160, color: '#5cff7a', width: 12 });
-    // shockwave travels to the foe
-    const dist = foe.x - hero.x;
-    const travel = 360;
-    for (let k = 0; k < 3; k++) this.fx.ring(hero.x, hero.y - 2 - k * 4, { rx: 26, ry: 8, grow: 40, life: travel + 120, color: k ? '#ffffff' : '#5cff7a', width: 9 - k * 2, vx: dist / (travel / 1000) });
-    this.fx.word(quality === 'indep' ? 'MEGA STOMP!' : 'STOMP!', hero.x + 60, hero.y - 230, { size: 52, color: '#7EE07A' });
-    await this.wait(travel);
-    this.impactAt(foe, { power: 1.4, word: 'BOOM!', big: true });
+    this.fx.impact(c.x + (Math.random() - 0.5) * 50, c.y + (Math.random() - 0.5) * 60, { size: 54, colors: [color, '#FFC914'], life: 220 });
+  }
+
+  async finishSpecial(att, def, ev, color, word, applyHit) {
+    this.strike(def, ev, { power: 1.4, word, big: true, color });
+    if (!ev.blocked && !ev.dodged) {
+      this.audio.sfx('boom');
+      buzz('heavy');
+      this.stage.hitStop(140);
+      this.stage.flash(0.3);
+    }
     applyHit();
-    await Promise.all([
-      this.to(foe, { oy: -110, rot: -0.4 }, 240, Ease.outQuad).then(() => this.to(foe, { oy: 0, rot: 0 }, 280, Ease.outBounce)),
-    ]);
-    hero.aura = 0;
-    hero.eyes = 'open';
-    hero.mouth = 'smile';
+    att.aura = 0;
+    await this.wait(420);
+    await this.stage.zoomTo(1, 300);
+    if (!att.tired) { att.eyes = 'open'; att.mouth = 'smile'; }
+  }
+
+  async special(att, def, move, { quality = 'none', ev = {}, applyHit = () => {} } = {}) {
+    const fn = {
+      rexCannon: this.spRexCannon, hauntedForest: this.spHauntedForest, tidalRage: this.spTidalRage,
+      swordInStone: this.spSwordInStone, potionStorm: this.spPotionStorm, midnightStorm: this.spMidnightStorm,
+    }[move.id] || this.spGeneric;
+    await fn.call(this, att, def, move, quality, ev, applyHit);
+  }
+
+  async spGeneric(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    await this.lunge(att, def, { power: 1.4, onImpact: () => this.finishSpecial(att, def, ev, move.color, 'BOOM!', applyHit) });
+  }
+
+  async spRexCannon(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    this.audio.sfx('charge');
+    await this.to(att, { cannon: 1, sy: 0.92 }, 360, Ease.outBack);
+    const m = this.pt(att, 'muzzle');
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * Math.PI * 2;
+      this.fx.orb(m.x + Math.cos(a) * 90, m.y + Math.sin(a) * 70, m.x, m.y, '#FFC914', i * 35);
+    }
+    await this.wait(480);
+    const c = def.center();
+    this.audio.sfx('boom');
+    this.stage.shake(0.5);
+    this.to(att, { ox: -40 * att.flip }, 90).then(() => this.to(att, { ox: 0 }, 500, Ease.outCubic));
+    const b = this.fx.add(FXM.beam({ x0: m.x, y0: m.y, x1: c.x, y1: c.y - 10, color: move.color, width: q === 'indep' ? 58 : 46, life: 760 }));
+    await this.wait(160);
+    this.fx.word('REX CANNON!', (m.x + c.x) / 2, m.y - 70, { size: 46, color: '#FF7A1A' });
+    for (let i = 0; i < 2; i++) { await this.wait(150); this.tap(def, move.color); }
+    await this.finishSpecial(att, def, ev, move.color, 'KA-BOOM!', applyHit);
+    await b;
+    await this.to(att, { cannon: 0, sy: 1 }, 300);
+  }
+
+  async spHauntedForest(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    this.stage.dim = 0.3;
+    this.audio.sfx('warn');
+    const spots = [-150, 150, -80, 90];
+    const trees = spots.map((dx, i) => this.fx.add(FXM.shadowTree({ x: def.x + dx, y: def.y + 8 - (i % 2) * 10, h: 190 + (i % 3) * 30, dir: dx < 0 ? 1 : -1, swatAt: 0.35 + i * 0.12, life: 1700, delay: i * 120, glow: move.color })));
+    this.fx.word('HAUNTED FOREST!', def.x, def.y - 260, { size: 44, color: move.color, life: 1200 });
+    await this.wait(700);
+    for (let i = 0; i < 3; i++) { this.tap(def, move.color); await this.wait(200); }
+    await this.finishSpecial(att, def, ev, move.color, 'BOO-OOM!', applyHit);
+    await Promise.all(trees);
+    this.stage.dim = 0;
+  }
+
+  async spTidalRage(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    const dir = att.flip;
+    const W = this.stage.W;
+    this.audio.sfx('boom');
+    this.fx.word('TIDAL RAGE!', W / 2, 140, { size: 52, color: move.color, life: 1100 });
+    const w = this.fx.add(FXM.wave({ x0: dir > 0 ? -200 : W + 200, x1: dir > 0 ? W + 300 : -300, y: Math.max(att.y, def.y) + 30, height: 300, dir, color: move.color, life: 1300 }));
+    this.stage.shake(0.6);
+    await this.wait(620);
+    this.tap(def, move.color);
+    await this.wait(300);
+    // the school swoops in
+    const c = def.center();
+    const n = q === 'indep' ? 6 : 4;
+    let last;
+    for (let i = 0; i < n; i++) {
+      const fromX = dir > 0 ? -60 - i * 30 : W + 60 + i * 30;
+      last = this.fx.add(FXM.fish({ x0: fromX, y0: 80 + (i % 3) * 60, x1: c.x + (Math.random() - 0.5) * 40, y1: c.y + (Math.random() - 0.5) * 50, life: 560, arc: 80 + i * 10, delay: i * 130, size: 24, onHit: () => this.tap(def, '#4EA8DE') }));
+    }
+    await last;
+    await this.finishSpecial(att, def, ev, move.color, 'SPLASH!', applyHit);
+    await w;
+  }
+
+  async spSwordInStone(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    const sx = att.x + 90 * att.flip;
+    this.audio.sfx('boom');
+    this.stage.shake(0.3);
+    const st = this.fx.add(FXM.stone({ x: sx, y: att.y + 4, pullAt: 0.5, life: 1700 }));
+    await this.wait(500);
+    // pull the sword free
+    await this.to(att, { ox: 40 * att.flip, armF: -0.8 }, 220, Ease.outQuad);
+    await this.wait(250);
+    this.audio.sfx('perfect');
+    this.stage.flash(0.45, '#FFE77A');
+    att.cheer = true;
+    this.fx.burst(sx, att.y - 150, { count: 24, colors: ['#FFC914', '#ffffff'], kind: 'star', speed: 320 });
+    this.fx.word('SWORD IN THE STONE!', this.stage.W / 2, 130, { size: 40, color: '#FFC914', life: 1200 });
+    await this.wait(600);
+    att.cheer = false;
+    att.oy = 0;
+    const c = def.center();
+    await this.lunge(att, def, {
+      power: 1.5,
+      onImpact: async () => {
+        this.fx.add(FXM.slash({ x: c.x, y: c.y, r: 150, dir: att.flip, color: '#FFC914', life: 460 }));
+        await this.finishSpecial(att, def, ev, '#FFC914', 'EXCALI-BAM!', applyHit);
+      },
+    });
+    await st;
+  }
+
+  async spPotionStorm(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    const c = def.center();
+    const sw = this.fx.add(FXM.swirl({ cx: c.x, cy: c.y, r: 150, color: move.color, life: 1500 }));
+    this.fx.word('POTION STORM!', c.x, 120, { size: 48, color: move.color, life: 1100 });
+    let last;
+    for (let i = 0; i < 4; i++) {
+      last = this.fx.add(FXM.potion({ x: c.x + (i - 1.5) * 40, y0: -60, y1: c.y - 20 + (i % 2) * 20, color: i % 2 ? '#A777E0' : move.color, life: 480, delay: i * 180, onHit: () => { this.tap(def, move.color); this.fx.burst(c.x, c.y, { count: 8, kind: 'puff', colors: [move.color], speed: 160 }); } }));
+    }
+    await last;
+    await this.finishSpecial(att, def, ev, move.color, 'KA-POOF!', applyHit);
+    await sw;
+  }
+
+  async spMidnightStorm(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    this.stage.dim = 0.35;
+    this.audio.sfx('jump');
+    await this.to(att, { oy: -150 }, 400, Ease.outQuad);
+    const c = def.center();
+    this.fx.word('MIDNIGHT STORM!', this.stage.W / 2, 120, { size: 48, color: move.color, life: 1300 });
+    const sw = this.fx.add(FXM.swirl({ cx: c.x, cy: c.y, r: 190, color: move.color, life: 1800, arms: 5 }));
+    const n = q === 'indep' ? 8 : 6;
+    let last;
+    for (let i = 0; i < n; i++) {
+      last = this.fx.add(FXM.ghost({ cx: c.x, cy: c.y, r0: 230, phase: (i / n) * Math.PI * 2, life: 1300, delay: i * 80, size: 20 + (i % 3) * 4, onHit: i % 2 ? () => this.tap(def, move.color) : null }));
+    }
+    await last;
+    await this.finishSpecial(att, def, ev, move.color, 'BOO-YAH!', applyHit);
+    await this.to(att, { oy: 0 }, 380, Ease.inQuad);
+    this.squash(att, 1.2, 0.8, 300);
+    await sw;
+    this.stage.dim = 0;
   }
 
   setDizzy(f, on) {

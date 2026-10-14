@@ -1,8 +1,8 @@
 // Explicit battle state machine. Rules come from logic/battle.js, animation from
 // Director, questions from ChallengeUI. Input is only accepted in CHOOSE, and the
 // first accepted tap locks it until the whole turn has resolved.
-import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor } from '../logic/battle.js';
-import { makeCounting, makeLetter } from '../logic/challenges.js';
+import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor, moveFor, learningFor } from '../logic/battle.js';
+import { makeMath, makeReading } from '../logic/challenges.js';
 import { recordResult } from '../logic/difficulty.js';
 import { Rng } from '../logic/rng.js';
 import { Hud } from '../ui/hud.js';
@@ -29,6 +29,11 @@ export class BattleController {
     this.locked = true;
     this.token = 0;
     this.log = []; // phase history, used by tests
+    this.currentChallenge = null;
+  }
+
+  get learning() {
+    return this.save.data.settings.learning !== false;
   }
 
   setPhase(p) {
@@ -42,7 +47,7 @@ export class BattleController {
     const heroDef = this.chars[s.heroId], foeDef = this.chars[s.foeId];
     this.stage.setFighters(heroDef, foeDef);
     this.director = new Director(this.stage, this.audio);
-    this.hud = new Hud(this.app.ui.layer, { heroDef, foeDef, px: this.app.px, toVirtual: this.app.ui.toVirtual });
+    this.hud = new Hud(this.app.ui.layer, { heroDef, foeDef, px: this.app.px, toVirtual: this.app.ui.toVirtual, learning: this.learning });
     this.challenge = new ChallengeUI(this.app.ui.layer, this.audio, buzz);
     this.hud.on('action', (k) => this.onAction(k));
     this.hud.on('pause', () => this.pause());
@@ -61,14 +66,19 @@ export class BattleController {
     f.foe.charged = s.foe.charged;
     f.foe.dizzy = s.foe.dizzy;
     if (s.foe.charged) f.foe.aura = 0.45;
-    f.hero.shield = s.hero.shield ? 1 : 0;
+    if (s.hero.guard || s.hero.shield) {
+      const gm = moveFor(heroDef, 'guard') || {};
+      f.hero.guardType = s.hero.guard || 'block';
+      f.hero.guardColor = gm.color;
+      f.hero.shield = 1;
+    }
     if (s.turn === 'foe') return this.foeTurn();
     return this.heroTurn();
   }
 
   syncStatus() {
     const s = this.state;
-    this.hud.setStatus('hero', { shield: s.hero.shield });
+    this.hud.setStatus('hero', { shield: !!(s.hero.guard || s.hero.shield) });
     this.hud.setStatus('foe', { charged: s.foe.charged, dizzy: s.foe.dizzy });
   }
 
@@ -88,14 +98,16 @@ export class BattleController {
     const intent = foeIntent({ ...s, turn: 'foe' }, this.chars);
     const tut = this.save.data.progress.tutorial;
     this.hud.setEnergy(s.hero.energy);
+    this.hud.btn.guard.classList.toggle('locked', !canAct(s, 'guard'));
     this.hud.showActions(true, {
       suggestDefend: intent === 'slam',
       suggestSpecial: canAct(s, 'special'),
     });
     // first-battle helper hand
-    if (!tut.attack) this.hud.pointAt('attack');
+    const first = this.learning ? 'power' : 'quick';
+    if (!tut[first]) this.hud.pointAt(first);
     else if (canAct(s, 'special') && !tut.special) this.hud.pointAt('special');
-    else if (intent === 'slam' && !tut.defend) this.hud.pointAt('defend');
+    else if (intent === 'slam' && !tut.guard) this.hud.pointAt('guard');
     else this.hud.pointAt(null);
     this.locked = false;
   }
@@ -104,11 +116,12 @@ export class BattleController {
   async onAction(kind) {
     if (this.phase !== PHASE.CHOOSE || this.locked) return;
     if (!canAct(this.state, kind)) {
-      if (kind === 'special') {
+      const b = this.hud.btn[kind];
+      if (b) {
         this.audio.sfx('tryAgain');
-        this.hud.btn.special.classList.remove('nudge');
-        void this.hud.btn.special.offsetWidth;
-        this.hud.btn.special.classList.add('nudge');
+        b.classList.remove('nudge');
+        void b.offsetWidth;
+        b.classList.add('nudge');
       }
       return;
     }
@@ -122,17 +135,21 @@ export class BattleController {
     this.director.setTurn(null);
     const tok = this.token;
 
-    let quality = null;
-    if (kind === 'attack' || kind === 'special') {
+    let quality = 'none';
+    const domain = this.learning ? learningFor(kind) : null;
+    if (domain) {
       this.setPhase(PHASE.CHALLENGE);
-      const domain = kind === 'attack' ? 'math' : 'letters';
-      const lvl = this.save.data.skills[domain].level;
-      const ch = kind === 'attack' ? makeCounting(lvl, this.rng) : makeLetter(lvl, this.rng);
+      const skillKey = domain === 'math' ? 'math' : 'letters';
+      const lvl = this.save.data.skills[skillKey].level;
+      const force = window.__TBB_FORCE__ || {};
+      const ch = domain === 'math' ? makeMath(lvl, this.rng, force.math) : makeReading(lvl, this.rng, force.reading);
+      this.currentChallenge = ch;
       this.stage.dim = 0.35;
-      quality = await this.challenge.run(ch, kind);
+      quality = await this.challenge.run(ch, kind === 'special' ? 'special' : 'attack', moveFor(this.chars[this.state.heroId], kind));
+      this.currentChallenge = null;
       this.stage.dim = 0;
       if (tok !== this.token) return;
-      this.save.data.skills[domain] = recordResult(this.save.data.skills[domain], quality);
+      this.save.data.skills[skillKey] = recordResult(this.save.data.skills[skillKey], quality);
     }
 
     this.setPhase(PHASE.HERO_ANIM);
@@ -149,29 +166,33 @@ export class BattleController {
 
   async playHeroEvents(kind, quality, events, before) {
     const d = this.director;
+    const { hero, foe } = this.stage.fighters;
+    const move = moveFor(this.chars[this.state.heroId], kind) || { slot: kind, name: kind, color: '#FFC914' };
     const dmg = events.find((e) => e.type === 'damage');
     const applyHit = () => dmg && this.hud.setHP('foe', dmg.hp, dmg.maxHp);
-    if (kind === 'attack') await d.heroAttack(quality, applyHit);
-    else if (kind === 'defend') await d.heroDefend();
+    if (kind === 'quick' || kind === 'power') await d.attack(hero, foe, move, { quality, applyHit });
+    else if (kind === 'guard') await d.guardUp(hero, move);
     else if (kind === 'special') {
       this.hud.setEnergy(0);
-      await d.heroSpecial(this.chars[this.state.heroId].special.id, quality, applyHit);
+      await d.special(hero, foe, move, { quality, applyHit });
       const dz = events.find((e) => e.type === 'dizzy');
       if (dz) {
-        d.setDizzy(this.stage.fighters.foe, true);
+        d.setDizzy(foe, true);
         if (dz.cancelledCharge) {
-          const hd = this.stage.fighters.foe.head();
-          this.stage.fx.word('fizzle!', hd.x, hd.top - 30, { size: 40, color: '#ff9f1c' });
+          const hd = foe.head();
+          this.stage.fx.word('FIZZLE!', hd.x, hd.top - 30, { size: 40, color: '#F46036' });
         }
       }
       const sh = events.find((e) => e.type === 'shield' && e.on);
-      if (sh) await d.heroDefend();
+      if (sh) await d.guardUp(hero, { name: 'Shielded', guard: 'block', color: move.color });
+      const heal = events.find((e) => e.type === 'heal');
+      if (heal) this.hud.setHP('hero', heal.hp, heal.maxHp);
     }
     for (const e of events) {
       if (e.type === 'ko') return d.wait(200);
       if (e.type === 'energy' && e.gained > 0) {
         const start = e.energy - e.gained;
-        if (e.reason === 'bonus') this.stage.fx.word('+⚡', this.stage.fighters.hero.center().x, this.stage.fighters.hero.center().y - 150, { size: 40, color: '#ffd23f' });
+        if (e.reason === 'bonus') this.stage.fx.word('BONUS!', hero.center().x, hero.center().y - 150, { size: 40, color: '#FFC914' });
         await d.energyOrbs(e.gained, (i) => this.hud.energyAnchor(i), start);
         this.hud.setEnergy(e.energy, true);
         if (e.energy >= RULES.maxEnergy) this.audio.sfx('ready');
@@ -193,14 +214,19 @@ export class BattleController {
     const { state, events } = foeAct(before, this.chars);
     this.state = state;
     const act = events.find((e) => e.type === 'action');
-    const dmg = events.find((e) => e.type === 'damage');
+    const dmg = events.find((e) => e.type === 'damage' && e.target === 'hero');
+    const reflect = events.find((e) => e.type === 'damage' && e.kind === 'reflect');
+    const foeDef = this.chars[this.state.foeId];
+    const { hero, foe } = this.stage.fighters;
     d.setTurn(null);
     if (act.action === 'dizzy') await d.foeDizzySkip();
-    else if (act.action === 'charge') await d.foeCharge();
+    else if (act.action === 'charge') await d.foeCharge(moveFor(foeDef, 'special'));
     else {
-      const f = this.stage.fighters.foe;
-      f.charged = false;
-      await d.foeAttack(dmg, () => this.hud.setHP('hero', dmg.hp, dmg.maxHp));
+      foe.charged = false;
+      const applyHit = () => this.hud.setHP('hero', dmg.hp, dmg.maxHp);
+      if (act.action === 'slam') await d.special(foe, hero, moveFor(foeDef, 'special'), { ev: dmg, applyHit });
+      else await d.attack(foe, hero, moveFor(foeDef, act.action), { ev: dmg, applyHit });
+      if (reflect) d.singe(foe, () => this.hud.setHP('foe', reflect.hp, reflect.maxHp));
     }
     if (tok !== this.token) return;
     for (const e of events) {

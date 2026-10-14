@@ -65,7 +65,9 @@ export function canAct(s, action) {
   if (!s || s.result || s.turn !== 'hero') return false;
   const slot = slotOf(action);
   if (slot === 'special') return s.hero.energy >= RULES.maxEnergy;
-  return slot === 'quick' || slot === 'power' || slot === 'guard';
+  // a guard can't be used twice in a row (otherwise a dodger could never be hit)
+  if (slot === 'guard') return s.hero.lastSlot !== 'guard';
+  return slot === 'quick' || slot === 'power';
 }
 
 function gainEnergy(s, amount, events, reason) {
@@ -141,6 +143,7 @@ export function heroAct(s0, action, quality, chars) {
     }
   }
 
+  s.hero.lastSlot = slot;
   if (!s.result) s.turn = 'foe';
   return { state: s, events: ev };
 }

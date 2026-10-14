@@ -95,6 +95,11 @@ class Fighter3D extends Fighter {
     return this.stage3.project(local.clone().applyMatrix4(this.rig.root.matrixWorld));
   }
 
+  point(name) {
+    const a = this.rig.anchors[name];
+    return a ? this.project(a) : null;
+  }
+
   head() {
     const h = this.project(this.rig.anchors.head);
     const top = this.project(this.rig.anchors.top);

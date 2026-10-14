@@ -18,6 +18,7 @@ export function defaultSave() {
       haptics: true,
       showFps: false,
       tvLook: true,
+      learning: true,
       pixelArt: true,
     },
     progress: { stars: 0, wins: 0, battles: 0, lastHero: null, tutorial: {} },

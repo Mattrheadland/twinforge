@@ -151,7 +151,7 @@ class App {
   goTitle() {
     this.endBattle();
     const d = this.save.data;
-    const heroId = d.progress.lastHero || ROSTER[0];
+    const heroId = CHARACTERS[d.progress.lastHero] ? d.progress.lastHero : ROSTER[0];
     this.stage.setFighters(CHARACTERS[heroId], CHARACTERS[opponentFor(heroId)]);
     this.stage.cam.drift = 1;
     this.stage.cam.zoom = 1;
@@ -182,8 +182,9 @@ class App {
         this.save.data.progress.lastHero = heroId;
         this.save.save();
         this.audio.sfx('powerUp');
-        await this.ui.showVS(CHARACTERS[heroId], CHARACTERS[opponentFor(heroId)]);
-        this.startBattle(heroId, opponentFor(heroId));
+        const foeId = opponentFor(heroId);
+        await this.ui.showVS(CHARACTERS[heroId], CHARACTERS[foeId]);
+        this.startBattle(heroId, foeId);
       },
       onHome: () => this.goTitle(),
     });
