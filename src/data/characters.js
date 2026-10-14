@@ -142,7 +142,6 @@ export const CHARACTERS = {
   nightwing: {
     id: 'nightwing',
     name: 'Czernobog',
-    pendingDesign: true,
     color: '#2A2470',
     accent: '#A777E0',
     maxHp: 120,
@@ -154,7 +153,19 @@ export const CHARACTERS = {
       { slot: 'special', id: 'midnightStorm', name: 'Midnight Storm', icon: 'ghost', color: '#B98CFF', power: 1.2, hits: 5 },
     ],
     foePattern: ['power', 'charge', 'slam', 'quick'],
-    art: { kind: 'procedural', draw: 'nightwing' },
+    art: {
+      kind: 'procedural', draw: 'nightwing', model: 'czernobog',
+      // imported model (Hunyuan 3D, static): the giant demon god. Head from the chin up (horns included),
+      // arms from the shoulders, wings behind the back sway as the tail; the painted glowing eyes stay.
+      anchors: { muzzle: [30, 148, 0] },
+      armScale: 0.6,
+      joints: {
+        head: { pivot: [4, 150, 0], box: [[-14, 152, -24], [40, 200, 24]] },
+        armF: { pivot: [0, 130, 36], box: [[-16, 60, 30], [30, 142, 70]] },
+        armB: { pivot: [0, 130, -36], box: [[-16, 60, -70], [30, 142, -30]] },
+        tail: { pivot: [-14, 150, 0], box: [[-50, 40, -70], [-13, 180, 70]] },
+      },
+    },
   },
   // the family dog: quick and loyal; Power Paws also patches him up ("Good boy!")
   roo: {
