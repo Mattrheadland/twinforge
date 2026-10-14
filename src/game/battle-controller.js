@@ -1,6 +1,7 @@
 // Explicit battle state machine. Rules come from logic/battle.js, animation from
 // Director, questions from ChallengeUI. Input is only accepted in CHOOSE, and the
 // first accepted tap locks it until the whole turn has resolved.
+import { arenaFor } from '../data/arenas.js';
 import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor, moveFor, learningFor } from '../logic/battle.js';
 import { makeMath, makeReading } from '../logic/challenges.js';
 import { recordResult } from '../logic/difficulty.js';
@@ -45,6 +46,7 @@ export class BattleController {
   async start() {
     const s = this.state;
     const heroDef = this.chars[s.heroId], foeDef = this.chars[s.foeId];
+    this.stage.setArena(arenaFor(s.foeId));
     this.stage.setFighters(heroDef, foeDef);
     this.director = new Director(this.stage, this.audio);
     this.hud = new Hud(this.app.ui.layer, { heroDef, foeDef, px: this.app.px, toVirtual: this.app.ui.toVirtual, learning: this.learning });

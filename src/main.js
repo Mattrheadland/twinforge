@@ -3,6 +3,7 @@ import { CHARACTERS, ROSTER, opponentFor } from './data/characters.js';
 import { VH } from './render/stage.js';
 import { createStage } from './render3d/stage3d.js';
 import { preloadModels } from './render3d/models.js';
+import { preloadFxSprites } from './render/fx.js';
 import { Audio } from './audio/audio.js';
 import { SaveStore } from './save.js';
 import { UI } from './ui/screens.js';
@@ -19,6 +20,7 @@ class App {
     this.layerEl = document.getElementById('ui');
     this.stage = createStage(this.canvas);
     if (this.stage.is3D) preloadModels(Object.values(CHARACTERS));
+    preloadFxSprites();
     this.audio = new Audio();
     this.save = new SaveStore(CHARACTERS);
     this.ui = new UI(this.layerEl, this);
@@ -154,6 +156,7 @@ class App {
     this.endBattle();
     const d = this.save.data;
     const heroId = CHARACTERS[d.progress.lastHero] ? d.progress.lastHero : ROSTER[0];
+    this.stage.setArena('bedroom');
     this.stage.setFighters(CHARACTERS[heroId], CHARACTERS[opponentFor(heroId)]);
     this.stage.cam.drift = 1;
     this.stage.cam.zoom = 1;

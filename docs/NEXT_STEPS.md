@@ -17,15 +17,16 @@
 ## In progress: option A (characters as real 3D models)
 - **Loader shipped** (`src/render3d/models.js`): GLBs in `assets/models/<id>/` get the toon shader and ink outlines, are scaled and turned to face the foe, play clips matched to idle / attack / hit / guard / special / win / tired, pose the bones from the old pose values when a clip is missing, keep the head / center / muzzle anchors, and fall back to the code-built toy if the file is missing or broken. Tested with a stand-in rigged model.
 - **Toy joints**: static models (what free image-to-3D tools export) get head / jaw / arm / tail bones cut by region (`art.joints`), so no rigging tool is needed.
-- **Battle Rex**: Matt is generating him free in Hunyuan 3D (steps in ASSET_PIPELINE §4). Then: import, set joints, muzzle, face and height, check in game, then the other five sheet characters.
+- **Battle Rex**: in game as a real 3D model (Hunyuan 3D, free). Spooky Tree, Ragin' Rockfish and Young Arthur are generating; Remy Roo and Billy Bass are next (Hunyuan runs 3 jobs at a time). Claude drives Hunyuan in Matt's Chrome and pulls the GLBs from his Downloads folder.
+- **Arenas**: Castle, Fishing Pier, Haunted Forest and Bog Shack are in; each opponent fights on its home turf (`src/data/arenas.js`). Bedroom stays for Rex, Remy and the title screen.
+- **Effects art**: Astra's effects sheet is in as painted sprites on hits, shots, splashes, heals, dizzy and power-ups.
 - **Remy Roo** (the family dog) and **Billy Bass** (the talking wall fish) are in the roster with code-built 3D stand-ins:
   - Remy Roo: Zoomies (dash) · Big Bark (two bark blasts, math) · Roll Over (dodge) · Power Paws (glowing paw-print flurry and a pounce, then heals him: "GOOD BOY!"). 108 HP, +2 attack.
   - Billy Bass: Tail Flop · Take Me to the River (a river surge, math) · Wall Mount (block) · Encore! (music notes spin the foe dizzy). 104 HP, +2 attack.
   - The select screen is now 4 × 2.
 
 ## Next
-1. Battle Rex in game and looking right, then the other four sheet characters the same way.
-2. **Arenas:** build Castle, Fishing Pier, Haunted Forest and Bog Shack from `assets/arenas/` (backdrop plane + tiled floor + props) and add an arena pick or rotation. Bog Shack still needs a floor texture.
-3. **UI and effects art:** swap the code-drawn effects and menu frames for `assets/ui/` sheets where they look better.
+1. Import the other five sheet characters as their Hunyuan models finish.
+2. Bog Shack floor texture from Astra (IMAGE 2 of the arena prompt); menu-pieces sheet for HUD frames if it beats the code-drawn ones.
 4. Matt plays it with Luca and reports moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Gloomwing.
 5. Then game modes (campaign / tournament / arcade).

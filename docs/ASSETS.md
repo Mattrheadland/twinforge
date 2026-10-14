@@ -28,7 +28,7 @@ Not in the repo: the Hocus Pocus and Chernabog sheets (Disney characters). Their
 | fishing-pier | sunny bay, lighthouse | honey-brown planks | piling, cooler, life ring, bucket, crate, lantern |
 | haunted-forest | moonlit forest | purple earth | tree, lamp post, mossy rock, stump, mushroom, log |
 
-The Bedroom Block Fortress arena is built in code (`src/render3d/room.js`).
+The Bedroom Block Fortress arena is built in code (`src/render3d/room.js`). The other four are in the game: `python3 scripts/build-arenas.py` turns these sheets into `public/arenas/<id>/` (backdrop.jpg, floor.jpg, prop-1..6.png cut-outs); `src/data/arenas.js` sets each arena's horizon, floor tile size and prop layout, and which opponent fights where (each foe's home turf). Bog Shack's floor is the Fishing Pier planks, tinted darker, until Astra makes its own.
 
 ## UI and effects — `assets/ui/`
 All on flat magenta (#FF00FF) to be keyed out.
@@ -39,6 +39,8 @@ All on flat magenta (#FF00FF) to be keyed out.
 | `ui-sheet-2-menu-pieces.png` (3×3) | move-button plate · portrait frame · health-bar frame / arcade button · panel frame · trophy / gold star · empty star · ribbon banner |
 | `ui-sheet-3-transitions.png` (2×2) | stripe wipe · radial burst / VS split · title starry swirl |
 
+`python3 scripts/build-ui.py` keys out the magenta and writes `public/ui/fx-<name>.png` (impact, spark, dust, speed, fire, splash, magic, slash, swirl, dizzy, bubble, muzzle, aura, heal, leaves, sleepy) and `public/ui/tr-<name>.jpg`. In game (`FX.sprite`, `src/render/fx.js`): impact/spark on hits, muzzle flash on shots and Rex Cannon, splash on Take Me to the River and Tidal Rage, magic on Potion Storm, dust on ground moves, heal sparkles, dizzy stars, power-up aura, swirl on Midnight Storm. The menu-pieces and transition sheets aren't used yet (the code-drawn HUD and VS screen use each character's colors).
+
 Each character folder also has `views/` (made by `scripts/split-turnaround.py`): the four turnaround views as separate transparent 1024×1024 PNGs for image-to-3D tools.
 
 ## Models — `assets/models/<id>/<id>.glb`
@@ -46,6 +48,6 @@ Each character folder also has `views/` (made by `scripts/split-turnaround.py`):
 
 | id | Character | Status |
 |---|---|---|
-| battle-rex | rex | waiting on the Hunyuan export (first) |
+| battle-rex | rex | in game (Hunyuan 3D, 9k triangles, toy joints) |
 | spooky-tree, ragin-rockfish, young-arthur | tree, rockfish, arthur | after Rex |
 | remy-roo, billy-bass | roo, bass | after Rex; code-built stand-ins in game now |

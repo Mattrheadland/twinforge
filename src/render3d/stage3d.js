@@ -15,6 +15,8 @@ import { setArtScale } from '../render/pixel.js';
 import { buildRig } from './rigs.js';
 import { modelReady, modelInfo } from './models.js';
 import { Room3D } from './room.js';
+import { ImageArena3D } from './arena-image.js';
+import { ARENAS } from '../data/arenas.js';
 
 export const RETRO_H = 400; // 3D render height in retro mode (chunky, early-3D)
 const FOV = 30;
@@ -184,6 +186,7 @@ export class Stage3D extends Stage {
     this.camera = new THREE.PerspectiveCamera(FOV, 2, 10, 4000);
     this.rcam = this.camera.clone();
     this.room = new Room3D();
+    this.arenaId = 'bedroom';
     this.scene.add(this.room.group);
     this.arena = { excite: 0, spots: (W) => this.spots(W) };
     this.homes = { hero: new THREE.Vector3(-240, 0, HERO_Z), foe: new THREE.Vector3(240, 0, FOE_Z) };
@@ -237,11 +240,24 @@ export class Stage3D extends Stage {
     const halfW = DIST * tanH * aspect;
     this.homes.hero.set(-halfW * 0.5, 0, HERO_Z);
     this.homes.foe.set(halfW * 0.5, 0, FOE_Z);
-    this.room.placeFront((HERO_Z + DIST - 380) * tanH * aspect);
+    this.frontHalfW = (HERO_Z + DIST - 380) * tanH * aspect;
+    this.room.placeFront(this.frontHalfW);
     for (const side of ['hero', 'foe']) {
       const f = this.fighters[side];
       if (f) f.setHome(this.homes[side]);
     }
+  }
+
+  // Switch the arena ('bedroom' or an id from data/arenas.js).
+  setArena(id) {
+    const def = ARENAS[id] || ARENAS.bedroom;
+    if (def.id === this.arenaId) return;
+    this.scene.remove(this.room.group);
+    this.room.dispose && this.room.dispose();
+    this.room = def.built ? new Room3D() : new ImageArena3D(def);
+    this.arenaId = def.id;
+    this.scene.add(this.room.group);
+    if (this.frontHalfW) this.room.placeFront(this.frontHalfW);
   }
 
   setFighters(heroDef, foeDef) {

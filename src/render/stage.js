@@ -75,6 +75,8 @@ export class Stage {
     }
   }
 
+  setArena() {} // the 2D fallback stage has only the bedroom
+
   setFighters(heroDef, foeDef) {
     const spots = this.arena.spots(this.W);
     this.fighters.hero = heroDef ? new Fighter(heroDef, 'hero', spots.hero) : null;

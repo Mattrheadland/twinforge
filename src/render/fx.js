@@ -13,12 +13,22 @@ export class FX {
     this.bursts = [];
     this.lines = [];
     this.ents = [];
+    this.sprites = [];
     this.reduced = false;
     this.seed = 1;
   }
   clear() {
-    this.parts.length = this.words.length = this.rings.length = this.bodies.length = this.bursts.length = this.lines.length = this.ents.length = 0;
+    this.parts.length = this.words.length = this.rings.length = this.bodies.length = this.bursts.length = this.lines.length = this.ents.length = this.sprites.length = 0;
   }
+  // Painted effect sprite from Astra's effects sheet (public/ui/fx-<name>.png,
+  // scripts/build-ui.py): pops in, holds, fades. Skipped quietly until loaded.
+  //   o: size (longest side, world units), life ms, rot, spin, drift {x,y} units/s, delay
+  sprite(name, x, y, o = {}) {
+    const img = fxImage(name);
+    if (!img) return;
+    this.sprites.push({ img, x, y, life: -(o.delay || 0), max: o.life ?? 420, size: o.size ?? 120, rot: o.rot ?? 0, spin: o.spin ?? 0, dx: o.drift?.x || 0, dy: o.drift?.y || 0, alpha: o.alpha ?? 1, flip: o.flip ? -1 : 1 });
+  }
+
   // Move effect entity from render/fx-moves.js. Resolves when it finishes.
   add(e) {
     e.life = -(e.delay || 0);
@@ -140,6 +150,26 @@ export class FX {
     this.ents = this.ents.filter((e) => e.life < e.max);
     for (const l of this.lines) l.life += dt;
     this.lines = this.lines.filter((l) => l.life < l.max);
+    for (const sp of this.sprites) sp.life += dt;
+    this.sprites = this.sprites.filter((sp) => sp.life < sp.max);
+  }
+
+  drawSprites(ctx) {
+    for (const sp of this.sprites) {
+      if (sp.life < 0) continue;
+      const k = sp.life / sp.max;
+      const pop = k < 0.18 ? 0.55 + (k / 0.18) * 0.6 : k < 0.3 ? 1.15 - ((k - 0.18) / 0.12) * 0.15 : 1;
+      const t = sp.life / 1000;
+      const w = sp.img.width, h = sp.img.height, s = (sp.size / Math.max(w, h)) * pop;
+      ctx.save();
+      ctx.globalAlpha = sp.alpha * (k > 0.6 ? 1 - (k - 0.6) / 0.4 : 1);
+      ctx.translate(sp.x + sp.dx * t, sp.y + sp.dy * t);
+      ctx.rotate(sp.rot + sp.spin * t);
+      ctx.scale(s * sp.flip, s);
+      ctx.drawImage(sp.img, -w / 2, -h / 2);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
   }
 
   drawBursts(ctx) {
@@ -188,6 +218,7 @@ export class FX {
       ctx.restore();
     }
     ctx.globalAlpha = 1;
+    this.drawSprites(ctx);
     this.drawBursts(ctx);
     for (const r of this.rings) {
       const k = r.life / r.max;
@@ -291,3 +322,21 @@ export class FX {
     ctx.globalAlpha = 1;
   }
 }
+
+// ---------- painted effect sprites ----------
+const FX_NAMES = ['impact', 'spark', 'dust', 'speed', 'fire', 'splash', 'magic', 'slash', 'swirl', 'dizzy', 'bubble', 'muzzle', 'aura', 'heal', 'leaves', 'sleepy'];
+const fxImages = {};
+let fxLoading = false;
+function fxImage(name) {
+  if (!fxLoading && typeof Image !== 'undefined') {
+    fxLoading = true;
+    for (const n of FX_NAMES) {
+      const im = new Image();
+      im.onload = () => { fxImages[n] = im; };
+      im.src = `ui/fx-${n}.png`;
+    }
+  }
+  return fxImages[name] || null;
+}
+// start loading as soon as the module is used
+export const preloadFxSprites = () => fxImage('impact');

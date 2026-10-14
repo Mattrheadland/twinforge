@@ -144,6 +144,7 @@ export class Director {
     this.stage.shake(big ? 0.75 : 0.32 * power);
     if (big) this.stage.flash(0.3);
     this.fx.impact(hx, hy, { size: big ? 120 : 78 * Math.max(0.8, power) });
+    this.fx.sprite(big ? 'impact' : 'spark', hx, hy, { size: big ? 210 : 120 * Math.max(0.8, power), rot: Math.random() * 0.6 - 0.3, life: big ? 460 : 320 });
     this.fx.burst(hx, hy, { count: big ? 26 : Math.round(14 * power), speed: big ? 480 : 320, size: big ? 13 : 10 });
     this.fx.ring(hx, hy, { rx: 10, ry: 10, grow: big ? 140 : 90, color: '#fff', width: 7 });
     this.fx.word(word, hx, hy - 80, { size: big ? 72 : 50 * Math.max(0.8, power), color: color || '#ffd23f' });
@@ -239,6 +240,7 @@ export class Director {
     for (let i = 0; i < shots; i++) {
       const m = this.pt(att, shots > 1 ? (i ? 'muzzle2' : 'muzzle') : 'muzzle');
       this.audio.sfx('whoosh');
+      this.fx.sprite('muzzle', m.x, m.y, { size: 96, rot: Math.atan2(target.y - m.y, target.x - m.x), life: 220 });
       this.to(att, { ox: -16 * att.flip }, 60).then(() => this.to(att, { ox: 0 }, 160));
       last = this.fx.add(FXM.bolt({ x0: m.x, y0: m.y, x1: target.x + (i - (shots - 1) / 2) * 20, y1: target.y - 10, color: move.color, size: move.lob ? 18 : 15, life: move.lob ? 560 : 340, arc: move.lob ? 140 : 18 }));
       if (i < shots - 1) {
@@ -263,6 +265,7 @@ export class Director {
     this.stage.shake(0.3);
     await this.to(att, { sy: 1, sx: 1 }, 160, Ease.outBack);
     this.fx.puff(def.x, def.y, 8, '#8A5A3C');
+    this.fx.sprite('dust', att.x, att.y - 30, { size: 150, life: 520, drift: { x: 0, y: -30 } });
     const p = this.fx.add(FXM.spikes({ x: def.x, y: def.y + 4, color: move.color, count: 5, spread: 70, height: 130, life: 800 }));
     await this.wait(220);
     await onHit();
@@ -300,6 +303,7 @@ export class Director {
     const w = this.fx.add(FXM.wave({ x0: att.x - dir * 40, x1: def.x + dir * 90, y: Math.max(att.y, def.y) + 20, height: 150, dir, color: move.color, life: 1000 }));
     await this.wait(600);
     this.fx.burst(def.x, def.y - 40, { count: 14, colors: ['#ffffff', move.color], kind: 'puff', speed: 240, gravity: 300 });
+    this.fx.sprite('splash', def.x, def.y - 70, { size: 230, life: 620 });
     await onHit();
     await w;
     att.eyes = 'open';
@@ -391,6 +395,8 @@ export class Director {
       const c = f.center();
       this.fx.orb(c.x + Math.cos(a) * 170, c.y + Math.sin(a) * 130, c.x, c.y, color, i * 40);
     }
+    const cc = f.center();
+    this.fx.sprite('aura', cc.x, cc.y + 40, { size: 200, life: 800, alpha: 0.8 });
     await this.to(f, { aura: 1, sy: 0.86, sx: 1.1 }, 700, Ease.outQuad);
     await this.to(f, { sy: 1, sx: 1 }, 200, Ease.outBack);
   }
@@ -450,6 +456,7 @@ export class Director {
     this.stage.shake(0.5);
     this.to(att, { ox: -40 * att.flip }, 90).then(() => this.to(att, { ox: 0 }, 500, Ease.outCubic));
     const b = this.fx.add(FXM.beam({ x0: m.x, y0: m.y, x1: c.x, y1: c.y - 10, color: move.color, width: q === 'indep' ? 58 : 46, life: 760 }));
+    this.fx.sprite('muzzle', m.x, m.y, { size: 170, rot: Math.atan2(c.y - 10 - m.y, c.x - m.x), life: 380 });
     await this.wait(160);
     this.fx.word('REX CANNON!', (m.x + c.x) / 2, m.y - 70, { size: 46, color: '#FF7A1A' });
     for (let i = 0; i < 2; i++) { await this.wait(150); this.tap(def, move.color); }
@@ -492,6 +499,7 @@ export class Director {
       last = this.fx.add(FXM.fish({ x0: fromX, y0: 80 + (i % 3) * 60, x1: c.x + (Math.random() - 0.5) * 40, y1: c.y + (Math.random() - 0.5) * 50, life: 560, arc: 80 + i * 10, delay: i * 130, size: 24, onHit: () => this.tap(def, '#4EA8DE') }));
     }
     await last;
+    this.fx.sprite('splash', c.x, c.y - 20, { size: 260, life: 700 });
     await this.finishSpecial(att, def, ev, move.color, 'SPLASH!', applyHit);
     await w;
   }
@@ -532,7 +540,7 @@ export class Director {
     this.fx.word('POTION STORM!', c.x, 120, { size: 48, color: move.color, life: 1100 });
     let last;
     for (let i = 0; i < 4; i++) {
-      last = this.fx.add(FXM.potion({ x: c.x + (i - 1.5) * 40, y0: -60, y1: c.y - 20 + (i % 2) * 20, color: i % 2 ? '#A777E0' : move.color, life: 480, delay: i * 180, onHit: () => { this.tap(def, move.color); this.fx.burst(c.x, c.y, { count: 8, kind: 'puff', colors: [move.color], speed: 160 }); } }));
+      last = this.fx.add(FXM.potion({ x: c.x + (i - 1.5) * 40, y0: -60, y1: c.y - 20 + (i % 2) * 20, color: i % 2 ? '#A777E0' : move.color, life: 480, delay: i * 180, onHit: () => { this.tap(def, move.color); this.fx.burst(c.x, c.y, { count: 8, kind: 'puff', colors: [move.color], speed: 160 }); this.fx.sprite('magic', c.x + (Math.random() - 0.5) * 60, c.y + (Math.random() - 0.5) * 60, { size: 110, life: 340, spin: 3 }); } }));
     }
     await last;
     await this.finishSpecial(att, def, ev, move.color, 'KA-POOF!', applyHit);
@@ -547,6 +555,7 @@ export class Director {
     const c = def.center();
     this.fx.word('MIDNIGHT STORM!', this.stage.W / 2, 120, { size: 48, color: move.color, life: 1300 });
     const sw = this.fx.add(FXM.swirl({ cx: c.x, cy: c.y, r: 190, color: move.color, life: 1800, arms: 5 }));
+    this.fx.sprite('swirl', c.x, c.y, { size: 240, life: 1500, spin: 2.5, alpha: 0.85 });
     const n = q === 'indep' ? 8 : 6;
     let last;
     for (let i = 0; i < n; i++) {
@@ -617,6 +626,7 @@ export class Director {
     this.audio.sfx('perfect');
     this.fx.burst(c.x, c.y - 20, { count: 16, colors: ['#5CE07A', '#ffffff', '#FFC914'], kind: 'star', speed: 220, gravity: -160 });
     this.fx.word(`${word} +${amount}`, c.x, c.y - 160, { size: 38, color: '#5CE07A', life: 1000 });
+    this.fx.sprite('heal', c.x, c.y - 30, { size: 200, life: 900, drift: { x: 0, y: -50 } });
     f.eyes = 'happy';
   }
 
@@ -624,6 +634,8 @@ export class Director {
     f.dizzy = on;
     if (on) {
       this.audio.sfx('dizzy');
+      const hd = f.head();
+      this.fx.sprite('dizzy', hd.x, hd.top - 6, { size: 130, life: 1100, spin: 4 });
       f.charged = false;
       this.to(f, { aura: 0 }, 200);
     }
