@@ -52,16 +52,23 @@ IMAGE 3 — PROP SHEET (landscape, 1536×1024): 4 to 6 standalone props from thi
 If you can only make one image per reply, make IMAGE 1 now, then IMAGE 2 and IMAGE 3 each time I reply "next", without changing the arena.
 ```
 
+## Status (2026-10-14)
+- Battle Rex: imported (6k triangles, 469 KB), toy joints and side-eye decals set.
+- Spooky Tree, Ragin' Rockfish, Young Arthur: generated on Hunyuan, waiting to be downloaded from Matt's PC.
+- Remy Roo: views uploaded, waiting for a free job slot. Billy Bass: not started.
+- Wanda Wickwhistle, Czernobog: waiting on Astra's sheets (`ASTRA_REQUESTS.md`).
+- Wild creatures (campaign minions) don't go through this pipeline; they're code-built on purpose (STYLE_GUIDE → Wild creatures).
+
 ## 3. Effects & menu pack
 Done (see ASSETS.md → UI and effects). To redo or extend it, ask Astra for sheets on flat #FF00FF magenta, one item per equal grid cell, no text, same style block as above.
 
 ## 4. Characters in 3D (option A)
 Turnaround sheet → image-to-3D → `assets/models/<id>/<id>.glb` → loaded by `src/render3d/models.js`, which swaps in the toon shader and ink outlines, scales the toy to ~190 units, turns it to face the foe, adds toy joints or plays its clips, and falls back to the code-built toy if the file is missing or broken.
 
-**Tool: Hunyuan 3D** (Tencent, 3d.hunyuanglobal.com; checked Oct 2026). Free: 20 generations a day, up to 8 views of the same toy, GLB export. It doesn't rig, and doesn't need to: the game gives static models **toy joints** (below). Paid tools (Meshy, Tripo) aren't needed; their free tiers lock downloads or rigged exports.
+**Tool: Hunyuan 3D** (Tencent, 3d.hunyuanglobal.com; checked Oct 2026). Free: 20 generations a day, at most 3 jobs running at once, up to 8 views of the same toy (Front, Back, Left, Right, Left45, Right45, Top, Bottom), GLB export. It doesn't rig, and doesn't need to: the game gives static models **toy joints** (below). Paid tools (Meshy, Tripo) aren't needed; their free tiers lock downloads or rigged exports.
 
 1. Split the sheet into clean views: `python3 scripts/split-turnaround.py <id>` → `assets/characters/<id>/views/` (front, side, side-mirrored, back, three-quarter; background removed).
-2. Hunyuan 3D → **Image to 3D → multi-view**. Slots: front → front, back → back, side → left, side-mirrored → right; add three-quarter if there's room.
+2. Hunyuan 3D → **Image to 3D → multi-view**. Slots: front → Front, back → Back, side → Left, side-mirrored → Right; three-quarter → Left45 if there's room. Upload one view at a time, about 10 s apart, on a white background (transparent or rushed uploads give "Detection failed"; just retry). "The current concurrency exceeds the limit" means 3 jobs are already running: wait for one to finish.
 3. Low / smart topology and the lowest face count if offered; texture on. Regenerate until the silhouette matches the sheet (cannon, arms, tail all there).
 4. Download **GLB** and send it to Claude.
 5. In the repo: `npm run model:import -- <id> <file.glb>` (simplifies to about 6,000 triangles, shrinks textures to 1024 px JPEG, strips compression, merges extra clip files if a tool ever gives them) → `assets/models/<id>/<id>.glb`.

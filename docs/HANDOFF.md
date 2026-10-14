@@ -48,7 +48,7 @@ Commands: `npm test` (unit), `npm run build`, `npm run e2e` (Puppeteer, ~5 min),
 - **Conflicts settled when merging the two chats**: the name is Czernobog everywhere (not Gloomwing); the mode list is Campaign / Tournament / Arcade / Toy Box (the older Story / endless Arcade / Quick Fight list is gone).
 
 ## Next up (needs Matt's PC online with Chrome + the Claude extension)
-1. **Pull the finished Hunyuan models.** Open the Hunyuan tabs in Matt's Chrome (hy3d.tencent.ai, free, 20 a day, 3 jobs at once). Download Spooky Tree, Ragin' Rockfish and Young Arthur GLBs. Stage them from `C:\Users\mattr\Downloads` (Matt approved access), then `npm run model:import <id> <file>`.
+1. **Pull the finished Hunyuan models.** Open the Hunyuan tabs in Matt's Chrome (3d.hunyuanglobal.com, free, 20 a day, 3 jobs at once). Download Spooky Tree, Ragin' Rockfish and Young Arthur GLBs. Stage them from `C:\Users\mattr\Downloads` (Matt approved access), then `npm run model:import <id> <file>`.
 2. For each: set `art.model`, `art.joints` (head / jaw / arms / tail boxes), `art.face` and anchors in `characters.js`, the way Battle Rex is set up. Check with `CHAR=<id> npm run model:check`, then in game.
 3. **Remy Roo**: views are already uploaded in a Hunyuan tab; press Generate once a slot is free. **Billy Bass**: not started. Upload views one at a time about 10 s apart on white backgrounds ("Detection failed" means retry).
 4. Import Remy and Billy the same way. Test, commit, deploy after each batch.

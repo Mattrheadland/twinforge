@@ -1,6 +1,6 @@
-# TwinForge: Toy Box Tactics: art style guide (v5, 2026-10-13)
+# TwinForge: Toy Box Tactics: art style guide (v5.1, 2026-10-14)
 
-v5 replaces v1–v4. Target: **chunky 1980s action figures brought to life inside an early-3D arcade engine.** Low-poly faceted models like PS1 / Sega Saturn / Virtua Fighter-era fighters, shaded and inked like a 1980s action cartoon (He-Man, ThunderCats), on a 2.5D stage: the fight stays on a flat line, but the room has real polygon depth. The HUD stays 2D arcade (segmented bars, bitmap lettering, cabinet buttons) with CRT scanlines on top. Motion is modern: 60 fps, eased lunges, squash and stretch, shake, hit-stop, particles. Still made for a 4-year-old: tough, never scary.
+v5 replaces v1–v4; v5.1 adds the campaign board, wild creatures, giants and the learning cards. Target: **chunky 1980s action figures brought to life inside an early-3D arcade engine.** Low-poly faceted models like PS1 / Sega Saturn / Virtua Fighter-era fighters, shaded and inked like a 1980s action cartoon (He-Man, ThunderCats), on a 2.5D stage: the fight stays on a flat line, but the room has real polygon depth. The HUD stays 2D arcade (segmented bars, bitmap lettering, cabinet buttons) with CRT scanlines on top. Motion is modern: 60 fps, eased lunges, squash and stretch, shake, hit-stop, particles. Still made for a 4-year-old: tough, never scary.
 
 ## How it's built
 - **3D engine:** three.js (WebGL) renders the toys and the stage. The battle logic is unchanged. Toys are posed by the same values as before (arm swings, lean, squash, head bob, face), and their 3D positions are projected so hit effects, words and status icons land on the right spot.
@@ -39,6 +39,28 @@ Toys keep their own colors. Shared palette:
 | Ink | #14111A | all outlines |
 | Cool shadow tint | #3A2F5B | shadow multiply |
 
+## Wild creatures (campaign minions)
+- Cheap on purpose: one builder each in `minion-rigs.js`, about two dozen boxes, cones and low spheres, one painted-eye decal. No sheets or image-to-3D needed.
+- Built about 120–150 units tall (smaller than the main toys), shown at 1.2× in battle.
+- Each fits its boss's lore: Rexlet (baby Rex), Spooky Sprout (walking stump), Rock Minnow, Little Squire, Bog Frog, Sneaky Squirrel (Remy's backyard rival), Bubble Crab, and Czernobog's night crew: Shadow Imp (horned shadow, glowing pink eyes, always dancing) and Jitterbones (chunky rounded skeleton in a purple bow tie). Spooky-cute, never scary: no skulls with teeth bared at the camera, no gore.
+
+## Giants
+A boss at the end of a tournament or a campaign world is a GIANT: the same toy at 1.22× (a giant wild creature at 1.6×), more health, a crown on the VS screen.
+
+## Campaign board (diorama)
+- A little 3D tabletop world, not a flat map: one chunky low-poly island per world over flat blue water, dirt sides and a thin colored top slab, wooden plank bridges between islands.
+- Island tops: Bedroom warm wood, Castle green, Fishing Pier sand, Bog Shack mossy green, Haunted Forest dusky purple. Sky and water darken toward the forest.
+- Spaces are octagon discs with a flat icon on top: fight red, star yellow, lucky green (dice), boss purple (crown, bigger), start white (house). Cleared spaces dim and show a green check.
+- The hero's real 3D toy is the game piece at half size and hops along a dotted pebble path. Foes stand on their spaces as flat "cardboard standee" snapshots that face the camera; giants are bigger.
+- A few props per world, tall ones behind the path only (block towers, castle keep and towers, pier posts and a lighthouse, reeds and a shack, dark cone trees), and Czernobog's dark mountain with a glowing peak behind the last space.
+- Same toon shader and ink outlines as the battle. The camera looks down at about 35° and follows the piece.
+
+## Learning cards
+- A cream card with a thick ink border, centered over the dimmed battle; picture first, a small grown-up line on top that the phone reads aloud (speaker button top right).
+- Pictures are emoji, chosen so the picture is named the way the answer expects. Numbers, letters and words use the upright rounded font.
+- Answer buttons: three big colored circles (letters in rounded squares, words in pills). Wrong: the button shakes and drops away. Second wrong: only the right one is left, glowing yellow.
+- Number pieces: cream number tiles, purple "?" tiles, dice-face dots for quick look, blue ten-frames for teen numbers; letter slots for missing letters and spelling (dashed when empty, green when filled).
+
 ## Arenas
 Each arena is a painted backdrop plane behind a 3D floor (seamless floor texture) with a few 3D props at the sides, so the fight still has depth. Art: `assets/arenas/` (see ASSETS.md).
 
@@ -53,4 +75,4 @@ Low-poly bedroom at dusk: faceted wooden floorboards, blue-violet striped wallpa
 - Numbers and letters in the learning challenges stay in the upright rounded font, so a 4-year-old reads the shapes cleanly.
 
 ## Code map
-`src/render3d/toon.js` (shader and outlines) · `src/render3d/rigs.js` (code-built toys and faces) · `src/render3d/models.js` (imported GLB toys) · `src/render3d/clipmap.js` (clip → action) · `src/render3d/family-rigs.js` (Remy Roo, Billy Bass) · `src/render3d/room.js` (stage) · `src/render3d/stage3d.js` (camera, layers, projection, portraits) · `src/render/` (2D effects, lettering and the 2D fallback).
+`src/render3d/toon.js` (shader and outlines) · `src/render3d/rigs.js` (code-built toys and faces) · `src/render3d/models.js` (imported GLB toys) · `src/render3d/clipmap.js` (clip → action) · `src/render3d/family-rigs.js` (Remy Roo, Billy Bass) · `src/render3d/room.js` (stage) · `src/render3d/stage3d.js` (camera, layers, projection, portraits) · `src/render3d/minion-rigs.js` (wild creatures) · `src/render3d/board3d.js` (campaign diorama) · `src/ui/challenge.js` (learning cards) · `src/render/` (2D effects, lettering and the 2D fallback).
