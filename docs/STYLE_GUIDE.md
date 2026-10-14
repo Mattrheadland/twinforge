@@ -42,7 +42,7 @@ Toys keep their own colors. Shared palette:
 ## Wild creatures (campaign minions)
 - Cheap on purpose: one builder each in `minion-rigs.js`, about two dozen boxes, cones and low spheres, one painted-eye decal. No sheets or image-to-3D needed.
 - Built about 120–150 units tall (smaller than the main toys), shown at 1.2× in battle.
-- Each fits its boss's lore: Rexlet (baby Rex), Spooky Sprout (walking stump), Rock Minnow, Little Squire, Bog Frog, Sneaky Squirrel (Remy's backyard rival), Bubble Crab, and Czernobog's night crew: Shadow Imp (horned shadow, glowing pink eyes, always dancing) and Jitterbones (chunky rounded skeleton in a purple bow tie). Spooky-cute, never scary: no skulls with teeth bared at the camera, no gore.
+- Each fits its boss's lore: Rexlet (baby Rex), Spooky Sprout (walking stump), Rock Minnow, Little Squire, Bog Frog, Sneaky Squirrel (Remy's backyard rival), Bubble Crab, and Czernobog's night crew, who dance on his mountaintop like ink spilled in moonlight (Matt's mountaintop reference): lanky silhouettes with crooked bent knees and elbows, long spread claw fingers, arms flung about in a wild dance. Shadow Imp (inky indigo, swept-back horns, glowing pink eyes, a grin, a whip tail) and Jitterbones (chunky rounded skeleton in a purple bow tie, arms flung over its head). Spooky-cute, never scary: no skulls with teeth bared at the camera, no gore. Our own designs only: no known game or film characters.
 
 ## Giants
 A boss at the end of a tournament or a campaign world is a GIANT: the same toy at 1.22× (a giant wild creature at 1.6×), more health, a crown on the VS screen.

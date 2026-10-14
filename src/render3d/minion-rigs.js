@@ -132,77 +132,124 @@ function frog(flash) {
     extra: (p) => { head.position.y = Math.abs(Math.sin((p.t || 0) / 340)) * 5 + (p.headBob || 0); } });
 }
 
-// Shadow Imp: a little horned shadow from Czernobog's mountain. Skinny arms,
-// glowing pink eyes, and it never stops dancing.
+// Czernobog's night crew dance on his mountaintop like ink spilled in the
+// moonlight: lanky silhouettes, crooked knees, long claw fingers, arms flung
+// about. Spooky-cute, never scary: glowing eyes, grins, a bow tie.
+
+// A crooked two-part limb: upper bone from the pivot, then a bent lower bone
+// on a joint group (elbow or knee) so the dance can flex it.
+function limb(P, parent, x, y, z, color, { upper = 24, lower = 22, r = 2.2, bend = 0.8, ink = 1 } = {}) {
+  const pv = group(parent, x, y, z);
+  const g1 = cyl(r * 0.85, r, upper, 5); g1.translate(0, -upper / 2, 0);
+  pv.add(P(g1, color, { ink }));
+  const joint = group(pv, 0, -upper, 0);
+  joint.rotation.z = bend;
+  const g2 = cyl(r * 0.7, r * 0.85, lower, 5); g2.translate(0, -lower / 2, 0);
+  joint.add(P(g2, color, { ink }));
+  const end = group(joint, 0, -lower, 0);
+  return { pv, joint, end, bend };
+}
+// Three spread claw fingers at the end of an arm.
+function claws(P, end, color, { len = 12, r = 1.4, round = false } = {}) {
+  for (const [a, tilt] of [[-0.55, 0.35], [0, 0], [0.55, -0.35]]) {
+    const g = round ? cyl(r * 0.8, r, len, 4) : cone(r, len, 3);
+    g.translate(0, len / 2, 0);
+    end.add(P(g, color, { rot: [tilt, 0, Math.PI + a], ink: 0.8 }));
+    if (round) end.add(P(ico(0), color, { scale: [r * 1.2, r * 1.2, r * 1.2], pos: [Math.sin(a) * len, -Math.cos(a) * len, -tilt * len * 0.6], ink: 0.8 }));
+  }
+}
+// The dance: arms flung up and down out of step, knees kicking, a sway.
+// Calmer while the toy is attacking or hit, so its moves still read.
+function nightDance(p, { body, armF, armB, legs, speed = 170, fling = 0.95, lift = 0.6 }) {
+  const t = (p.t || 0) / speed;
+  const k = !p.action || p.action === 'idle' || p.action === 'win' ? 1 : 0.3;
+  armF.pv.rotation.z += (lift + Math.sin(t) * fling) * k;
+  armB.pv.rotation.z += (lift + Math.sin(t + Math.PI) * fling) * k;
+  armF.joint.rotation.z = armF.bend + Math.sin(t * 2) * 0.5 * k;
+  armB.joint.rotation.z = armB.bend - Math.sin(t * 2) * 0.5 * k;
+  legs.forEach((L, i) => {
+    const s = Math.sin(t + i * Math.PI);
+    L.pv.rotation.z = 0.45 + Math.max(0, s) * 0.7 * k; // kick forward
+    L.joint.rotation.z = L.bend - Math.max(0, s) * 0.6 * k;
+  });
+  body.position.y = Math.abs(Math.sin(t)) * 7 * k;
+  body.rotation.y = Math.sin(t / 2) * 0.35 * k;
+  body.rotation.x = Math.sin(t) * 0.12 * k;
+}
+
+// Shadow Imp: a scrap of shadow off Czernobog's mountain. Lanky and crooked,
+// little swept-back horns, glowing pink eyes, and it never stops dancing.
 function imp(flash) {
   const P = maker(flash);
   const root = new THREE.Group();
-  const SHADOW = 0x3a2a6a, DEEP = 0x251a48, HORN = 0xff5a8a;
+  const INK = 0x2a2048, DEEP = 0x1c1534, HORN = 0x4a3480;
   const body = group(root, 0, 0, 0);
-  for (const z of [-10, 10]) body.add(P(cyl(3, 4, 34, 5), DEEP, { pos: [0, 17, z] }), P(box(14, 5, 8), DEEP, { pos: [5, 2, z], ink: 1 }));
-  body.add(P(cone(24, 60, 6), SHADOW, { pos: [0, 60, 0], rot: [Math.PI, 0, 0] })); // upside-down cone torso
-  const tail = group(body, -14, 40, 0);
-  const tg = cyl(1.5, 2.5, 40, 4); tg.rotateZ(1.1); tg.translate(-16, -6, 0);
-  tail.add(P(tg, DEEP, { ink: 1 }), P(cone(5, 10, 3), HORN, { pos: [-34, -14, 0], rot: [0, 0, 2.2], ink: 1 }));
-  const head = group(body, 4, 102, 0);
-  head.add(P(ico(1), SHADOW, { scale: [24, 22, 22] }));
-  for (const z of [-12, 12]) head.add(P(cone(5, 22, 4), HORN, { pos: [-2, 22, z], rot: [z > 0 ? -0.35 : 0.35, 0, -0.2], ink: 1.2 }));
-  head.add(P(box(3, 4, 14), HORN, { pos: [23, -10, 0], ink: false })); // little grin
+  const legs = [-9, 9].map((z) => {
+    const L = limb(P, body, 0, 42, z, DEEP, { upper: 22, lower: 22, r: 2.6, bend: -1.0 });
+    L.pv.rotation.z = 0.45;
+    L.end.add(P(cone(3.5, 15, 3), DEEP, { pos: [6, 0, 0], rot: [0, 0, -Math.PI / 2], ink: 1 })); // pointed foot
+    return L;
+  });
+  body.add(P(ico(1), INK, { scale: [15, 30, 13], pos: [2, 66, 0], rot: [0, 0, -0.22] })); // hunched, skinny torso
+  body.add(P(cone(7, 14, 4), INK, { pos: [-12, 40, 0], rot: [0, 0, 2.4] })); // ragged hem
+  const tail = group(body, -12, 46, 0);
+  const tg = cyl(1.2, 2.4, 34, 4); tg.rotateZ(1.2); tg.translate(-14, -6, 0);
+  tail.add(P(tg, DEEP, { ink: 1 }), P(cone(4, 9, 3), DEEP, { pos: [-30, -13, 0], rot: [0, 0, 2.3], ink: 1 }));
+  const head = group(body, 9, 98, 0);
+  head.add(P(ico(1), INK, { scale: [19, 17, 17] }));
+  for (const z of [-9, 9]) head.add(P(cone(4.5, 24, 4), HORN, { pos: [-3, 18, z], rot: [z > 0 ? -0.55 : 0.55, 0, 0.5], ink: 1.1 }));
+  head.add(P(box(3, 3, 12), 0xff5a8a, { pos: [18, -7, 0], ink: false })); // little grin
   const arm = (z) => {
-    const pv = group(body, 6, 82, z);
-    const g = cyl(2, 3, 34, 4); g.translate(0, -17, 0);
-    pv.add(P(g, DEEP, { ink: 1 }), P(cone(4, 9, 3), DEEP, { pos: [0, -36, 0], rot: [Math.PI, 0, 0], ink: 1 }));
-    return pv;
+    const A1 = limb(P, body, 6, 82, z, DEEP, { upper: 26, lower: 24, r: 2, bend: 0.9 });
+    A1.pv.rotation.x = z > 0 ? -0.75 : 0.75; // arms splayed wide
+    claws(P, A1.end, DEEP, { len: 16, r: 2 });
+    return A1;
   };
-  const armB = arm(-24), armF = arm(24);
-  const eyes = decal(head, 26, 12, 128, 58, [22.5, 3, 0]);
-  return rig({ root, head, headY: 102, armF, armB, eyes, eyeStyle: { glow: '#FF5A8A', size: 18, gap: 30 },
-    anchors: { head: A(26, 104), top: A(4, 134), center: A(4, 62), muzzle: A(30, 92) }, headR: 34, armK: 1,
+  const armB = arm(-19), armF = arm(19);
+  const eyes = decal(head, 22, 10, 128, 58, [18.4, 2, 0]);
+  const r = rig({ root, head, headY: 98, armF: armF.pv, armB: armB.pv, eyes, eyeStyle: { glow: '#FF5A8A', size: 18, gap: 30 },
+    anchors: { head: A(24, 100), top: A(6, 132), center: A(4, 62), muzzle: A(34, 86) }, headR: 32, armK: 1,
     extra: (p) => {
-      const t = p.t || 0;
-      body.position.y = Math.abs(Math.sin(t / 160)) * 8;
-      body.rotation.y = Math.sin(t / 320) * 0.35; // the jig
-      tail.rotation.z = Math.sin(t / 140) * 0.3;
+      nightDance(p, { body, armF, armB, legs, speed: 160, fling: 1.0, lift: 0.9 });
+      tail.rotation.z = Math.sin((p.t || 0) / 140) * 0.35;
     } });
+  return r;
 }
 
-// Jitterbones: a wobbly little skeleton who can't stop dancing. Chunky
-// rounded bones so it reads as a toy, not a scary one.
+// Jitterbones: a wobbly little skeleton who can't stop dancing, arms flung over
+// its head. Chunky rounded bones and a purple bow tie so it reads as a toy.
 function bones(flash) {
   const P = maker(flash);
   const root = new THREE.Group();
   const BONE = 0xe8e4f0, SHADE = 0xb8b0cc, BOW = 0xb98cff;
-  const legs = [];
-  for (const z of [-10, 10]) {
-    const pv = group(root, 0, 40, z);
-    pv.add(P(cyl(3.5, 3.5, 36, 5), BONE, { pos: [0, -18, 0] }), P(box(14, 6, 9), BONE, { pos: [5, -38, 0], ink: 1.2 }));
-    legs.push(pv);
-  }
   const body = group(root, 0, 0, 0);
-  body.add(P(box(22, 8, 22), SHADE, { pos: [0, 44, 0] })); // hips
-  body.add(P(cyl(3, 3, 26, 5), BONE, { pos: [0, 58, 0] })); // spine
-  for (let k = 0; k < 3; k++) body.add(P(box(16 - k * 2, 4, 30 - k * 4), BONE, { pos: [2, 76 - k * 8, 0], ink: 1.2 })); // ribs
-  body.add(P(box(8, 6, 8), BOW, { pos: [12, 86, 0], rot: [0, 0, 0.785], ink: 1.2 })); // a purple bow tie
-  const head = group(body, 2, 104, 0);
+  const legs = [-9, 9].map((z) => {
+    const L = limb(P, body, 0, 44, z, BONE, { upper: 22, lower: 22, r: 3.2, bend: -0.8 });
+    L.pv.rotation.z = 0.45;
+    L.end.add(P(box(14, 6, 9), BONE, { pos: [5, -1, 0], ink: 1.2 }));
+    return L;
+  });
+  body.add(P(box(22, 8, 22), SHADE, { pos: [0, 46, 0] })); // hips
+  body.add(P(cyl(3, 3, 24, 5), BONE, { pos: [0, 60, 0] })); // spine
+  for (let k = 0; k < 2; k++) body.add(P(box(16 - k * 2, 5, 30 - k * 4), BONE, { pos: [2, 78 - k * 9, 0], ink: 1.2 })); // ribs
+  body.add(P(box(8, 6, 8), BOW, { pos: [12, 87, 0], rot: [0, 0, 0.785], ink: 1.2 })); // bow tie
+  const head = group(body, 3, 105, 0);
   head.add(P(ico(1), BONE, { scale: [22, 20, 20] }), P(box(16, 8, 18), BONE, { pos: [8, -16, 0], ink: 1.2 }));
-  for (const z of [-5, 0, 5]) head.add(P(box(2, 4, 3), 0x14111a, { pos: [16.5, -14, z], ink: false })); // teeth gaps
+  for (const z of [-4, 4]) head.add(P(box(2, 4, 3), 0x14111a, { pos: [16.5, -14, z], ink: false })); // tooth gaps
   const arm = (z) => {
-    const pv = group(body, 2, 84, z);
-    const g = cyl(2.5, 2.5, 32, 5); g.translate(0, -16, 0);
-    pv.add(P(g, BONE, { ink: 1 }), P(ico(0), BONE, { scale: [6, 5, 5], pos: [0, -34, 0], ink: 1 }));
-    return pv;
+    const A1 = limb(P, body, 3, 86, z, BONE, { upper: 24, lower: 22, r: 2.6, bend: 0.7 });
+    A1.pv.rotation.x = z > 0 ? -0.6 : 0.6; // arms out wide
+    claws(P, A1.end, BONE, { len: 10, r: 1.7, round: true });
+    return A1;
   };
   const armB = arm(-20), armF = arm(20);
   const eyes = decal(head, 26, 12, 128, 58, [22.6, 3, 0]);
-  return rig({ root, head, headY: 104, armF, armB, eyes, eyeStyle: { iris: '#B98CFF', sclera: '#2A1F44', lid: '#E8E4F0', size: 20, gap: 30 },
-    anchors: { head: A(24, 106), top: A(2, 128), center: A(4, 66), muzzle: A(28, 92) }, headR: 32, armK: 1,
+  return rig({ root, head, headY: 105, armF: armF.pv, armB: armB.pv, eyes, eyeStyle: { iris: '#B98CFF', sclera: '#2A1F44', lid: '#E8E4F0', size: 20, gap: 30 },
+    anchors: { head: A(24, 107), top: A(2, 130), center: A(4, 66), muzzle: A(28, 92) }, headR: 32, armK: 1,
     extra: (p) => {
-      const t = p.t || 0;
-      // rattle: each part jiggles a little out of step
-      body.position.y = Math.abs(Math.sin(t / 150)) * 5;
-      head.rotation.y = Math.sin(t / 110) * 0.25;
-      legs[0].rotation.z = Math.sin(t / 150) * 0.25;
-      legs[1].rotation.z = -Math.sin(t / 150) * 0.25;
+      nightDance(p, { body, armF, armB, legs, speed: 150, fling: 1.2, lift: 1.4 }); // arms flung over its head
+      head.rotation.y = Math.sin((p.t || 0) / 110) * 0.25; // the rattle
+      head.rotation.x = Math.sin((p.t || 0) / 150) * 0.15;
     } });
 }
 
