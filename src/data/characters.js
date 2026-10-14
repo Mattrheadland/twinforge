@@ -1,53 +1,123 @@
-// Character roster. Everything gameplay-related lives here as plain data.
-// `art.kind: 'procedural'` = temporary placeholder drawn in code.
-// When Astra art arrives, switch to `art.kind: 'sprites'` with the pose files
-// listed in docs/ASSET_PIPELINE.md; the renderer swaps automatically.
+// Character roster. Everything gameplay-related lives here as plain data, so
+// moves, stats and looks can be tuned per character without touching the engine.
+//
+// moves: exactly one per slot — quick, power, guard, special.
+//   anim   how the attack plays: 'lunge' (melee), 'shot' (projectile), 'ground' (erupts under the foe)
+//   color  the move's effect color; icon: key in ui/icons.js
+//   guard  (guard slot) 'block' | 'reflect' (blocks + singes the attacker) | 'dodge'
+//   effect (special) 'dizzy' (foe loses a turn) | 'shield' (blocks the next hit) | 'heal'
+//   power  special damage multiplier; hits = how many impacts the animation shows
+// foePattern: what the character does when the game plays it as the opponent.
+// art.draw: which 3D rig to build (render3d/rigs.js).
 
 export const CHARACTERS = {
-  blocko: {
-    id: 'blocko',
-    name: 'Captain Blocko',
-    placeholder: true,
+  rex: {
+    id: 'rex',
+    name: 'Battle Rex',
     color: '#D7263D',
-    accent: '#1B4FD8',
-    maxHp: 110,
-    attackBonus: 0,
-    shieldStyle: 'blocks', // what his Defend looks like
-    special: {
-      id: 'barrage',
-      name: 'Block Barrage',
-      power: 1.1,
-      effect: 'wall', // rains blocks, then builds a wall that shields him next turn
-    },
-    foePattern: ['attack', 'attack', 'charge', 'slam'],
-    foePower: 1.0,
-    art: { kind: 'procedural', draw: 'blocko' },
-    stats: { hearts: 5, punch: 3, special: 'wall' },
+    accent: '#8E9AAE',
+    maxHp: 105,
+    attackBonus: 2,
+    moves: [
+      { slot: 'quick', id: 'tailWhip', name: 'Tail Whip', icon: 'tail', color: '#F46036', anim: 'lunge', word: 'WHAP!' },
+      { slot: 'power', id: 'chomp', name: 'Chomp', icon: 'jaw', color: '#FFC914', anim: 'lunge', word: 'CHOMP!' },
+      { slot: 'guard', id: 'battleArmor', name: 'Battle Armor', icon: 'armor', color: '#A9B4C8', guard: 'block' },
+      { slot: 'special', id: 'rexCannon', name: 'Rex Cannon', icon: 'cannon', color: '#FF7A1A', power: 1.15 },
+    ],
+    foePattern: ['quick', 'power', 'charge', 'slam'],
+    art: { kind: 'procedural', draw: 'rex' },
   },
-  stompy: {
-    id: 'stompy',
-    name: 'Stompy',
-    placeholder: true,
-    color: '#2E9E44',
+  tree: {
+    id: 'tree',
+    name: 'Spooky Tree',
+    color: '#2B2B36',
+    accent: '#FF8A1F',
+    maxHp: 115,
+    attackBonus: 0,
+    moves: [
+      { slot: 'quick', id: 'branchSwat', name: 'Branch Swat', icon: 'branch', color: '#FF8A1F', anim: 'lunge', word: 'SWAT!' },
+      { slot: 'power', id: 'rootGrab', name: 'Root Grab', icon: 'root', color: '#8A5A3C', anim: 'ground', word: 'GRAB!' },
+      { slot: 'guard', id: 'blazingBark', name: 'Blazing Bark', icon: 'fire', color: '#FF8A1F', guard: 'reflect' },
+      { slot: 'special', id: 'hauntedForest', name: 'Haunted Forest', icon: 'forest', color: '#FF8A1F', power: 1, effect: 'dizzy', hits: 3 },
+    ],
+    foePattern: ['quick', 'charge', 'slam', 'power'],
+    art: { kind: 'procedural', draw: 'tree' },
+  },
+  rockfish: {
+    id: 'rockfish',
+    name: "Ragin' Rockfish",
+    color: '#1B4FD8',
     accent: '#F46036',
+    maxHp: 110,
+    attackBonus: 1,
+    moves: [
+      { slot: 'quick', id: 'gauntletPunch', name: 'Gauntlet Punch', icon: 'fist', color: '#4EA8DE', anim: 'lunge', word: 'POW!' },
+      { slot: 'power', id: 'twinCannon', name: 'Twin Cannon Blast', icon: 'cannon', color: '#4EA8DE', anim: 'shot', shots: 2, word: 'BLAM!' },
+      { slot: 'guard', id: 'stoneScales', name: 'Stone Scales', icon: 'scales', color: '#9AA3B8', guard: 'block' },
+      { slot: 'special', id: 'tidalRage', name: 'Tidal Rage', icon: 'wave', color: '#33AFE4', power: 1.2, hits: 4 },
+    ],
+    foePattern: ['power', 'quick', 'charge', 'slam'],
+    art: { kind: 'procedural', draw: 'rockfish' },
+  },
+  arthur: {
+    id: 'arthur',
+    name: 'Young Arthur',
+    color: '#1B4FD8',
+    accent: '#D7263D',
+    maxHp: 100,
+    attackBonus: 2,
+    moves: [
+      { slot: 'quick', id: 'swordSwipe', name: 'Sword Swipe', icon: 'sword', color: '#DDE6F2', anim: 'lunge', word: 'SWISH!' },
+      { slot: 'power', id: 'knightCharge', name: "Knight's Charge", icon: 'charge', color: '#FFC914', anim: 'lunge', dash: true, word: 'CLANG!' },
+      { slot: 'guard', id: 'merlinsWard', name: "Merlin's Ward", icon: 'ward', color: '#4EA8DE', guard: 'block' },
+      { slot: 'special', id: 'swordInStone', name: 'Sword in the Stone', icon: 'stone', color: '#FFC914', power: 1.1, effect: 'shield' },
+    ],
+    foePattern: ['quick', 'quick', 'charge', 'slam'],
+    art: { kind: 'procedural', draw: 'arthur' },
+  },
+  witch: {
+    id: 'witch',
+    name: 'Wanda Wickwhistle',
+    pendingDesign: true,
+    color: '#6A3FA0',
+    accent: '#2E9E44',
     maxHp: 95,
     attackBonus: 3,
-    shieldStyle: 'bubble',
-    special: {
-      id: 'megastomp',
-      name: 'Mega Stomp',
-      power: 1.0,
-      effect: 'dizzy', // shockwave; foe gets dizzy and loses its next turn
-    },
-    foePattern: ['attack', 'charge', 'slam', 'attack'],
-    foePower: 1.0,
-    art: { kind: 'procedural', draw: 'stompy' },
-    stats: { hearts: 4, punch: 4, special: 'dizzy' },
+    moves: [
+      { slot: 'quick', id: 'sparkZap', name: 'Spark Zap', icon: 'spark', color: '#5CE07A', anim: 'shot', word: 'ZAP!' },
+      { slot: 'power', id: 'cauldronSplash', name: 'Cauldron Splash', icon: 'cauldron', color: '#5CE07A', anim: 'shot', lob: true, word: 'SPLOSH!' },
+      { slot: 'guard', id: 'broomDodge', name: 'Broom Dodge', icon: 'broom', color: '#C9A15A', guard: 'dodge' },
+      { slot: 'special', id: 'potionStorm', name: 'Potion Storm', icon: 'potion', color: '#5CE07A', power: 1, effect: 'dizzy', hits: 3 },
+    ],
+    foePattern: ['quick', 'power', 'charge', 'slam'],
+    art: { kind: 'procedural', draw: 'witch' },
+  },
+  nightwing: {
+    id: 'nightwing',
+    name: 'Gloomwing',
+    pendingDesign: true,
+    color: '#2A2470',
+    accent: '#A777E0',
+    maxHp: 120,
+    attackBonus: 0,
+    moves: [
+      { slot: 'quick', id: 'shadowClaw', name: 'Shadow Claw', icon: 'claw', color: '#A777E0', anim: 'lunge', word: 'SLASH!' },
+      { slot: 'power', id: 'flameDance', name: 'Flame Dance', icon: 'flames', color: '#FF7A1A', anim: 'dancers', word: 'SIZZLE!' },
+      { slot: 'guard', id: 'nightWings', name: 'Night Wings', icon: 'wings', color: '#6A3FA0', guard: 'dodge' },
+      { slot: 'special', id: 'midnightStorm', name: 'Midnight Storm', icon: 'ghost', color: '#B98CFF', power: 1.2, hits: 5 },
+    ],
+    foePattern: ['power', 'charge', 'slam', 'quick'],
+    art: { kind: 'procedural', draw: 'nightwing' },
   },
 };
 
-export const ROSTER = ['blocko', 'stompy'];
+export const ROSTER = ['rex', 'tree', 'rockfish', 'arthur', 'witch', 'nightwing'];
 
-export function opponentFor(heroId) {
-  return ROSTER.find((id) => id !== heroId) || ROSTER[0];
+// A different opponent each time (never the hero, avoids repeating the last foe).
+let lastFoe = null;
+export function opponentFor(heroId, rnd = Math.random) {
+  const pool = ROSTER.filter((id) => id !== heroId && id !== lastFoe);
+  const pick = pool[Math.floor(rnd() * pool.length)] || ROSTER.find((id) => id !== heroId);
+  lastFoe = pick;
+  return pick;
 }
