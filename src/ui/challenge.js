@@ -6,13 +6,13 @@ import { ICON } from './icons.js';
 import { isCorrect, qualityFor } from '../logic/challenges.js';
 
 const ITEM_SVG = {
-  block: (c) => `<svg viewBox="0 0 60 60"><rect x="6" y="6" width="48" height="48" rx="9" fill="${c}" stroke="#1d1530" stroke-width="5"/><rect x="12" y="12" width="20" height="8" rx="4" fill="#fff" opacity=".45"/></svg>`,
-  star: () => `<svg viewBox="0 0 60 60"><path d="M30 5 L37 22 L55 23 L41 34 L46 52 L30 42 L14 52 L19 34 L5 23 L23 22 Z" fill="#ffd23f" stroke="#1d1530" stroke-width="4.5" stroke-linejoin="round"/></svg>`,
-  ball: (c) => `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="${c}" stroke="#1d1530" stroke-width="5"/><path d="M8 26 Q30 36 52 26" fill="none" stroke="#fff" stroke-width="5"/><circle cx="21" cy="19" r="5" fill="#fff" opacity=".5"/></svg>`,
-  duck: () => `<svg viewBox="0 0 60 60"><path d="M10 34 Q10 52 30 52 Q52 52 52 36 Q52 28 44 28 Q46 12 32 10 Q20 10 20 22 Q20 28 26 30 Q16 30 10 34 Z" fill="#ffd23f" stroke="#1d1530" stroke-width="4.5" stroke-linejoin="round"/><path d="M42 18 L54 20 L44 25 Z" fill="#ff9f1c" stroke="#1d1530" stroke-width="3.5" stroke-linejoin="round"/><circle cx="35" cy="18" r="3" fill="#1d1530"/></svg>`,
+  block: (c) => `<svg viewBox="0 0 60 60"><rect x="6" y="6" width="48" height="48" rx="6" fill="${c}" stroke="#14111A" stroke-width="5"/><path d="M54 22 L54 48 Q54 54 48 54 L22 54 Z" fill="#14111A" opacity=".28"/><path d="M12 17 L24 11 L30 12 L15 20 Z" fill="#fff" opacity=".9"/></svg>`,
+  star: () => `<svg viewBox="0 0 60 60"><path d="M30 5 L37 22 L55 23 L41 34 L46 52 L30 42 L14 52 L19 34 L5 23 L23 22 Z" fill="#FFC914" stroke="#14111A" stroke-width="4.5" stroke-linejoin="round"/></svg>`,
+  ball: (c) => `<svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="${c}" stroke="#14111A" stroke-width="5"/><path d="M8 26 Q30 36 52 26" fill="none" stroke="#fff" stroke-width="5"/><path d="M52 30 A22 22 0 0 1 22 52 A26 26 0 0 0 52 30 Z" fill="#14111A" opacity=".28"/><path d="M14 22 L22 13 L26 14 L17 24 Z" fill="#fff" opacity=".9"/></svg>`,
+  duck: () => `<svg viewBox="0 0 60 60"><path d="M10 34 Q10 52 30 52 Q52 52 52 36 Q52 28 44 28 Q46 12 32 10 Q20 10 20 22 Q20 28 26 30 Q16 30 10 34 Z" fill="#FFC914" stroke="#14111A" stroke-width="4.5" stroke-linejoin="round"/><path d="M42 18 L54 20 L44 25 Z" fill="#F46036" stroke="#14111A" stroke-width="3.5" stroke-linejoin="round"/><circle cx="35" cy="18" r="3" fill="#14111A"/></svg>`,
 };
-const ITEM_COLORS = ['#ef4b3c', '#3d7bf2', '#5cc95a', '#8e5cf2', '#ff9f1c'];
-const OPT_COLORS = ['#ff7aa8', '#7fd3f7', '#b8f28c'];
+const ITEM_COLORS = ['#ef4b3c', '#3d7bf2', '#5cc95a', '#8e5cf2', '#F46036'];
+const OPT_COLORS = ['#FF8A5C', '#6CC4F0', '#8FE07A'];
 
 export class ChallengeUI {
   constructor(layer, audio, buzz) {

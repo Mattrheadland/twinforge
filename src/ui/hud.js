@@ -2,6 +2,7 @@
 import { h, onTap } from './dom.js';
 import { ICON } from './icons.js';
 import { drawToy, HEAD } from '../render/toys.js';
+import { mix } from '../render/draw.js';
 import { RULES } from '../logic/battle.js';
 
 export function portrait(def, size, px, bg) {
@@ -12,11 +13,21 @@ export function portrait(def, size, px, bg) {
   const hd = HEAD[def.art?.draw] || HEAD.blocko;
   const k = (size * 0.5) / (hd.r * 0.92);
   ctx.scale(px, px);
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-  ctx.fillStyle = bg || def.accent || '#fff';
-  ctx.fill();
-  ctx.clip();
+  // comic-panel backdrop: two-tone burst rays behind the head
+  const base = bg || def.accent || '#1B4FD8';
+  ctx.fillStyle = mix(base, '#14111A', 0.35);
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = mix(base, '#ffffff', 0.08);
+  const cx = size * 0.5, cy = size * 0.42;
+  for (let i = 0; i < 14; i += 2) {
+    const a0 = (i / 14) * Math.PI * 2, a1 = ((i + 1) / 14) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a0) * size, cy + Math.sin(a0) * size);
+    ctx.lineTo(cx + Math.cos(a1) * size, cy + Math.sin(a1) * size);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.translate(size / 2 - hd.x * k, size / 2 - hd.y * k + size * 0.08);
   ctx.scale(k, k);
   drawToy(ctx, def, { t: 1000, eyes: 'open', mouth: 'smile' });

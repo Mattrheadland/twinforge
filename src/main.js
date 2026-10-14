@@ -88,6 +88,7 @@ class App {
     setHaptics(st.haptics);
     this.fpsEl && this.fpsEl.classList.toggle('hidden', !st.showFps);
     document.documentElement.classList.toggle('reduced', !!st.reducedMotion);
+    document.documentElement.classList.toggle('tv', st.tvLook !== false);
   }
 
   updateFps() {

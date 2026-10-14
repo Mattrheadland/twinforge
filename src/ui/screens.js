@@ -6,7 +6,6 @@ import { portrait } from './hud.js';
 import { drawToy } from '../render/toys.js';
 import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
 
-const LOGO_COLORS = ['#ef4b3c', '#ffd23f', '#3d7bf2', '#5cc95a', '#ff9f1c', '#8e5cf2'];
 
 export class UI {
   constructor(root, app) {
@@ -28,7 +27,7 @@ export class UI {
   showTitle({ stars, hasBattle, onPlay, onParent, showInstallTip }) {
     this.clear();
     const logoTop = h('div', { class: 'logo-row' }, ...'TWINFORGE'.split('').map((ch, i) =>
-      ch === ' ' ? h('span', { class: 'logo-gap' }) : h('span', { class: 'logo-blk', style: { '--c': LOGO_COLORS[i % LOGO_COLORS.length], '--d': i * 70 + 'ms' } }, ch)));
+      h('span', { class: 'logo-ch', style: { '--d': i * 55 + 'ms' } }, ch)));
     const banner = h('div', { class: 'logo-banner' }, 'TOY BOX TACTICS');
     const play = h('button', { class: `big-play ${hasBattle ? 'resume' : ''}`, 'aria-label': 'Play', html: ICON.play });
     onTap(play, onPlay, 600);
@@ -106,9 +105,12 @@ export class UI {
     this.clear();
     const px = this.app.px;
     const scr = h('div', { class: 'overlay vs' },
-      h('div', { class: 'vs-side vs-hero', style: { '--c': heroDef.color } }, portrait(heroDef, 150, px * 1.2)),
+      h('div', { class: 'vs-bg vs-bg-hero', style: { '--c': heroDef.color } }),
+      h('div', { class: 'vs-bg vs-bg-foe', style: { '--c': foeDef.color } }),
+      h('div', { class: 'vs-slash' }),
+      h('div', { class: 'vs-side vs-hero', style: { '--c': heroDef.color } }, portrait(heroDef, 156, px * 1.2)),
       h('div', { class: 'vs-mid' }, 'VS'),
-      h('div', { class: 'vs-side vs-foe', style: { '--c': foeDef.color } }, portrait(foeDef, 150, px * 1.2)));
+      h('div', { class: 'vs-side vs-foe', style: { '--c': foeDef.color } }, portrait(foeDef, 156, px * 1.2)));
     this.layer.appendChild(scr);
     return new Promise((r) => setTimeout(() => {
       scr.classList.add('out');
@@ -246,6 +248,7 @@ export class UI {
         h('section', {}, h('h3', {}, 'Comfort'),
           toggle('Reduced motion', 'reducedMotion', 'No screen shake or big flashes'),
           toggle('Haptics', 'haptics', 'Light taps on iPhone (iOS 18+), where supported'),
+          toggle('TV look', 'tvLook', 'Faint scanlines and film grain, like an old cartoon'),
           toggle('Show FPS', 'showFps', 'Frame-rate readout for testing')),
         h('section', {}, h('h3', {}, 'Progress'),
           h('p', { class: 'note' }, `${p.stars} stars · ${p.wins} wins · ${p.battles} battles`),

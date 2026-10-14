@@ -23,13 +23,13 @@ export class Fighter {
     this.antenna = 0; this.antV = 0;
     this.tail = 0;
     this.shield = 0; // 0..1 visual amount
-    this.aura = 0; this.auraColor = '#ff9f1c';
+    this.aura = 0; this.auraColor = '#F46036';
     this.dizzy = false;
     this.charged = false;
     this.tired = false;
     this.cheer = false;
     this.arrow = 0;
-    this.arrowColor = '#ffd23f';
+    this.arrowColor = '#FFC914';
     this.trail = [];
     this.trailOn = false;
     this.idle = 1;
@@ -127,7 +127,7 @@ export class Fighter {
   drawShadow(ctx) {
     const lift = Math.max(0, -this.oy);
     const k = Math.max(0.35, 1 - lift / 260);
-    ctx.fillStyle = 'rgba(20,10,40,.28)';
+    ctx.fillStyle = 'rgba(12,8,30,.5)';
     ctx.beginPath();
     ctx.ellipse(this.x + this.ox, this.y + 2, 70 * this.scale * k, 15 * this.scale * k, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -144,19 +144,27 @@ export class Fighter {
     ctx.beginPath();
     ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
     ctx.fill();
-    // rays
+    // hard flame-tongue rays with a white core, like a power-up cel overlay
     ctx.save();
     ctx.translate(c.x, c.y);
     ctx.rotate(t / 900);
-    ctx.globalAlpha = 0.35 * this.aura;
-    ctx.fillStyle = this.auraColor;
-    for (let i = 0; i < 10; i++) {
-      ctx.rotate((Math.PI * 2) / 10);
+    ctx.globalAlpha = 0.6 * this.aura;
+    for (let i = 0; i < 12; i++) {
+      ctx.rotate((Math.PI * 2) / 12);
+      const L = r * (0.95 + 0.12 * Math.sin(t / 70 + i * 2));
       ctx.beginPath();
-      ctx.moveTo(0, -r * 0.35);
-      ctx.lineTo(10, -r * 1.05);
-      ctx.lineTo(-10, -r * 1.05);
+      ctx.moveTo(-9, -r * 0.4);
+      ctx.lineTo(0, -L);
+      ctx.lineTo(9, -r * 0.4);
       ctx.closePath();
+      ctx.fillStyle = this.auraColor;
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-3, -r * 0.45);
+      ctx.lineTo(0, -L * 0.8);
+      ctx.lineTo(3, -r * 0.45);
+      ctx.closePath();
+      ctx.fillStyle = '#ffffff';
       ctx.fill();
     }
     ctx.restore();
@@ -186,7 +194,7 @@ export class Fighter {
         const a = t / 260 + (i * Math.PI * 2) / 3;
         const x = h.x + Math.cos(a) * 40 * this.scale;
         const y = h.top + 6 + Math.sin(a) * 10 * this.scale;
-        ctx.fillStyle = '#ffd23f';
+        ctx.fillStyle = '#FFC914';
         ctx.beginPath();
         starPath(ctx, x, y, 11, 5);
         ctx.fill();
@@ -198,7 +206,7 @@ export class Fighter {
     if (this.charged && !this.tired) {
       const bob = Math.sin(t / 120) * 4;
       const bx = h.x - 78 * this.flip, by = h.top + 18 + bob;
-      toon(ctx, (c) => c.arc(bx, by, 20, 0, Math.PI * 2), '#ef4b3c', '#b8322a', { line: 3.5, shadeOffset: 3 });
+      toon(ctx, (c) => c.arc(bx, by, 20, 0, Math.PI * 2), '#D7263D', true, { line: 3.5 });
       comicText(ctx, '!', bx, by + 1, 30, '#ffffff');
     }
     if (this.arrow > 0.01) {
@@ -223,7 +231,7 @@ export class Fighter {
       const fx = c.x + 92 * this.scale * this.flip;
       const base = this.y + 4;
       const size = 36 * this.scale;
-      const cols = ['#ffd23f', '#5cc95a', '#3d7bf2', '#ef4b3c', '#8e5cf2'];
+      const cols = ['#FFC914', '#2E9E44', '#1B4FD8', '#D7263D', '#6A3FA0'];
       const stack = [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 2]];
       stack.forEach(([col, row], i) => {
         const appear = Math.max(0, Math.min(1, s * 5 - i));
@@ -231,7 +239,7 @@ export class Fighter {
         const x = fx + (col - 0.5) * size * this.flip;
         const y = base - (row + 1) * size + (1 - appear) * -60;
         ctx.globalAlpha = appear;
-        toon(ctx, (cc) => rr(cc, x - size / 2, y, size - 2, size - 2, 6), cols[i], 'rgba(0,0,0,.2)', { line: 3.5, shadeOffset: 4 });
+        toon(ctx, (cc) => rr(cc, x - size / 2, y, size - 2, size - 2, 5), cols[i], true, { line: 3.5, highlight: [x - size * 0.2, y + size * 0.22, size * 0.14, 4] });
       });
       ctx.globalAlpha = 1;
       // shimmer line
@@ -246,23 +254,28 @@ export class Fighter {
       ctx.globalAlpha = 1;
       return;
     }
-    // bubble shield
+    // energy shield: flat translucent shell, hard bright edge, angular glints
     const rx = 108 * this.scale * (0.6 + 0.4 * s), ry = 128 * this.scale * (0.6 + 0.4 * s);
     ctx.save();
-    ctx.globalAlpha = 0.85 * s;
-    const g = ctx.createRadialGradient(c.x, c.y, rx * 0.5, c.x, c.y, rx);
-    g.addColorStop(0, 'rgba(127,211,247,0.05)');
-    g.addColorStop(1, 'rgba(127,211,247,0.45)');
-    ctx.fillStyle = g;
+    ctx.globalAlpha = Math.min(1, s);
     ctx.beginPath();
     ellipse(ctx, c.x, c.y, rx, ry);
+    ctx.fillStyle = 'rgba(78,168,222,0.2)';
     ctx.fill();
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = 'rgba(220,250,255,.95)';
+    ctx.lineWidth = 7;
+    ctx.strokeStyle = 'rgba(27,79,216,0.85)';
     ctx.stroke();
-    // hex sparkle pattern
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#DDF4FF';
+    ctx.stroke();
     ctx.clip();
-    ctx.strokeStyle = 'rgba(255,255,255,.35)';
+    // inner hard band on the shadow side
+    ctx.beginPath();
+    ellipse(ctx, c.x, c.y, rx, ry);
+    ellipse(ctx, c.x - rx * 0.12, c.y - ry * 0.1, rx * 0.95, ry * 0.95);
+    ctx.fillStyle = 'rgba(27,79,216,0.28)';
+    ctx.fill('evenodd');
+    ctx.strokeStyle = 'rgba(255,255,255,.22)';
     ctx.lineWidth = 2;
     const hs = 18;
     for (let yy = c.y - ry; yy < c.y + ry; yy += hs * 1.5) {
@@ -271,10 +284,22 @@ export class Fighter {
         hex(ctx, xx + off, yy, hs * 0.55);
       }
     }
-    // moving glint
-    const gx = c.x - rx + ((t / 5) % (rx * 2.6));
-    ctx.fillStyle = 'rgba(255,255,255,.35)';
-    ctx.fillRect(gx, c.y - ry, 14, ry * 2);
+    // angular glints, upper left
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.85 * Math.min(1, s);
+    const gx = c.x - rx * 0.55, gy = c.y - ry * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(gx - 14, gy + 26); ctx.lineTo(gx + 22, gy - 14); ctx.lineTo(gx + 30, gy - 10); ctx.lineTo(gx - 6, gy + 30); ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(gx + 30, gy + 4); ctx.lineTo(gx + 38, gy - 4); ctx.lineTo(gx + 42, gy); ctx.lineTo(gx + 34, gy + 8); ctx.closePath();
+    ctx.fill();
+    // sweeping glint
+    const sw = c.x - rx + ((t / 5) % (rx * 2.6));
+    ctx.globalAlpha = 0.3 * Math.min(1, s);
+    ctx.beginPath();
+    ctx.moveTo(sw, c.y - ry); ctx.lineTo(sw + 14, c.y - ry); ctx.lineTo(sw - 26, c.y + ry); ctx.lineTo(sw - 40, c.y + ry); ctx.closePath();
+    ctx.fill();
     ctx.restore();
   }
 }

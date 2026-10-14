@@ -89,7 +89,8 @@ export class Director {
   async lunge(att, def, { onImpact, power = 1, word = 'POW!', big = false }) {
     const gap = def.x - att.x;
     const dx = gap - Math.sign(gap) * 140;
-    // anticipation
+    // anticipation: gritted, determined wind-up
+    att.mouth = 'grit';
     this.audio.sfx('whoosh');
     await Promise.all([
       this.to(att, { sx: 1.1, sy: 0.88, rot: -0.14, armF: 1.1 }, 200, Ease.outQuad),
@@ -98,6 +99,7 @@ export class Director {
     // strike
     att.trailOn = true;
     att.mouth = 'open';
+    this.fx.speed(att.x + att.ox, att.center().y - 10, att.flip);
     await Promise.all([
       this.to(att, { ox: dx, sx: 1, sy: 1, rot: 0.12, armF: -1.57 }, 170, Ease.inQuad),
       this.to(att, { oy: -26 }, 85, Ease.outQuad).then(() => this.to(att, { oy: 0 }, 85, Ease.inQuad)),
@@ -117,8 +119,9 @@ export class Director {
       buzz('light');
       this.stage.hitStop(60);
       this.stage.shake(0.15);
-      this.fx.burst(hx - 30 * def.flip, hy, { count: 12, colors: ['#ffffff', '#7fd3f7'], speed: 300, kind: 'spark', gravity: 0 });
-      this.fx.word('BLOCK!', hx, hy - 70, { color: '#7fd3f7', size: 46 });
+      this.fx.burst(hx - 30 * def.flip, hy, { count: 12, colors: ['#ffffff', '#4EA8DE'], speed: 300, kind: 'spark', gravity: 0 });
+      this.fx.impact(hx - 20 * def.flip, hy, { size: 60, colors: ['#4EA8DE', '#ffffff'], life: 260 });
+      this.fx.word('BLOCK!', hx, hy - 70, { color: '#4EA8DE', size: 46 });
       def.flash = 0.5;
       def.shield = 1.25;
       this.to(def, { shield: 1 }, 260);
@@ -129,6 +132,7 @@ export class Director {
     this.stage.hitStop(big ? 140 : power >= 1.1 ? 100 : 70);
     this.stage.shake(big ? 0.75 : 0.32 * power);
     if (big) this.stage.flash(0.3);
+    this.fx.impact(hx, hy, { size: big ? 120 : 78 * Math.max(0.8, power) });
     this.fx.burst(hx, hy, { count: big ? 26 : Math.round(14 * power), speed: big ? 480 : 320, size: big ? 13 : 10 });
     this.fx.ring(hx, hy, { rx: 10, ry: 10, grow: big ? 140 : 90, color: '#fff', width: 7 });
     this.fx.word(word, hx, hy - 80, { size: big ? 72 : 50 * Math.max(0.8, power), color: color || '#ffd23f' });
@@ -160,7 +164,7 @@ export class Director {
     if (ev.kind === 'slam') return this.foeSlam(ev, applyHit);
     await this.lunge(foe, hero, {
       onImpact: async () => {
-        this.impactAt(hero, { power: 0.9, word: ev.blocked ? '' : pick(['BONK!', 'BOP!']), blocked: ev.blocked, color: '#ff9fb8' });
+        this.impactAt(hero, { power: 0.9, word: ev.blocked ? '' : pick(['BONK!', 'BOP!']), blocked: ev.blocked, color: '#F46036' });
         applyHit();
         await this.wait(240);
       },
@@ -194,7 +198,7 @@ export class Director {
       this.stage.hitStop(120);
       this.stage.flash(0.35, '#bfefff');
       this.fx.burst(c.x + 40, c.y - 20, { count: 22, colors: ['#ffffff', '#7fd3f7', '#ffd23f'], kind: 'star', speed: 380 });
-      this.fx.word('PERFECT!', c.x + 20, c.y - 120, { color: '#7fd3f7', size: 58 });
+      this.fx.word('PERFECT!', c.x + 20, c.y - 120, { color: '#4EA8DE', size: 58 });
       hero.shield = 1.35;
       this.to(hero, { shield: 1 }, 300);
       hero.eyes = 'happy';
@@ -203,7 +207,7 @@ export class Director {
       buzz('heavy');
       this.stage.hitStop(140);
       this.stage.flash(0.3);
-      this.impactAt(hero, { power: 1.3, word: 'SLAM!', big: true, color: '#ff9fb8' });
+      this.impactAt(hero, { power: 1.3, word: 'SLAM!', big: true, color: '#F46036' });
     }
     applyHit();
     foe.aura = 0;
@@ -377,7 +381,7 @@ export class Director {
     const dist = foe.x - hero.x;
     const travel = 360;
     for (let k = 0; k < 3; k++) this.fx.ring(hero.x, hero.y - 2 - k * 4, { rx: 26, ry: 8, grow: 40, life: travel + 120, color: k ? '#ffffff' : '#5cff7a', width: 9 - k * 2, vx: dist / (travel / 1000) });
-    this.fx.word(quality === 'indep' ? 'MEGA STOMP!' : 'STOMP!', hero.x + 60, hero.y - 230, { size: 52, color: '#b8f28c' });
+    this.fx.word(quality === 'indep' ? 'MEGA STOMP!' : 'STOMP!', hero.x + 60, hero.y - 230, { size: 52, color: '#7EE07A' });
     await this.wait(travel);
     this.impactAt(foe, { power: 1.4, word: 'BOOM!', big: true });
     applyHit();

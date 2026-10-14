@@ -1,7 +1,8 @@
 // Particles, comic words, shockwave rings and falling blocks.
-import { INK, starPath, comicText, rr, toon } from './draw.js';
+import { INK, starPath, burstPath, comicText, rr, toon, FONT, taper } from './draw.js';
 
-const COLORS = ['#ffd23f', '#ff9f1c', '#ef4b3c', '#7fd3f7', '#5cc95a', '#ff7aa8', '#ffffff'];
+// STYLE_GUIDE v2 effects palette
+const COLORS = ['#FFC914', '#F46036', '#D7263D', '#4EA8DE', '#2E9E44', '#6A3FA0', '#ffffff'];
 
 export class FX {
   constructor() {
@@ -9,10 +10,24 @@ export class FX {
     this.words = [];
     this.rings = [];
     this.bodies = [];
+    this.bursts = [];
+    this.lines = [];
     this.reduced = false;
+    this.seed = 1;
   }
   clear() {
-    this.parts.length = this.words.length = this.rings.length = this.bodies.length = 0;
+    this.parts.length = this.words.length = this.rings.length = this.bodies.length = this.bursts.length = this.lines.length = 0;
+  }
+  // Cel impact starburst: jagged red/gold shape with heavy ink and a white core.
+  impact(x, y, o = {}) {
+    this.bursts.push({ x, y, life: 0, max: o.life ?? 300, size: o.size ?? 80, colors: o.colors ?? ['#D7263D', '#FFC914'], seed: this.seed++, rot: Math.random() * 6 });
+  }
+  // Speed lines streaking out behind a lunging toy.
+  speed(x, y, dir = 1) {
+    const n = Math.round(9 * this.density);
+    for (let i = 0; i < n; i++) {
+      this.lines.push({ x: x - dir * (20 + Math.random() * 60), y: y + (Math.random() - 0.5) * 150, len: 70 + Math.random() * 90, dir, life: -Math.random() * 60, max: 240, w: 3 + Math.random() * 4 });
+    }
   }
   get density() {
     return this.reduced ? 0.45 : 1;
@@ -36,7 +51,7 @@ export class FX {
       });
     }
   }
-  puff(x, y, n = 8, color = 'rgba(255,240,220,.9)') {
+  puff(x, y, n = 8, color = '#CFC6BE') {
     this.burst(x, y, { count: n, kind: 'puff', speed: 120, gravity: -40, drag: 3, life: 600, size: 14, colors: [color], spread: Math.PI, dir: -Math.PI / 2 });
   }
   confetti(W, H) {
@@ -107,9 +122,51 @@ export class FX {
       }
     }
     this.bodies = this.bodies.filter((b) => b.life < b.max);
+    for (const b of this.bursts) b.life += dt;
+    this.bursts = this.bursts.filter((b) => b.life < b.max);
+    for (const l of this.lines) l.life += dt;
+    this.lines = this.lines.filter((l) => l.life < l.max);
+  }
+
+  drawBursts(ctx) {
+    for (const l of this.lines) {
+      if (l.life < 0) continue;
+      const k = l.life / l.max;
+      ctx.globalAlpha = 1 - k;
+      const x0 = l.x - l.dir * k * 60, x1 = x0 - l.dir * l.len * (1 - k * 0.5);
+      taper(ctx, [x0, l.y, (x0 + x1) / 2, l.y, x1, l.y], l.w, '#ffffff');
+    }
+    ctx.globalAlpha = 1;
+    for (const b of this.bursts) {
+      const k = b.life / b.max;
+      const sc = k < 0.25 ? 0.45 + (k / 0.25) * 0.75 : 1.2 - (k - 0.25) * 0.25;
+      ctx.globalAlpha = k > 0.6 ? (1 - k) / 0.4 : 1;
+      const r = b.size * 0.5 * sc;
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.lineJoin = 'miter';
+      ctx.beginPath();
+      burstPath(ctx, 0, 0, r, r * 0.55, 11, b.seed, b.rot);
+      ctx.fillStyle = b.colors[0];
+      ctx.fill();
+      ctx.lineWidth = Math.max(3, b.size * 0.06);
+      ctx.strokeStyle = INK;
+      ctx.stroke();
+      ctx.beginPath();
+      burstPath(ctx, 0, 0, r * 0.66, r * 0.36, 9, b.seed + 7, b.rot + 0.3);
+      ctx.fillStyle = b.colors[1];
+      ctx.fill();
+      ctx.beginPath();
+      burstPath(ctx, 0, 0, r * 0.32, r * 0.18, 7, b.seed + 3, b.rot);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
   }
 
   draw(ctx) {
+    this.drawBursts(ctx);
     for (const r of this.rings) {
       const k = r.life / r.max;
       ctx.globalAlpha = 1 - k;
@@ -130,7 +187,7 @@ export class FX {
       const s = b.size;
       toon(ctx, (c) => rr(c, -s / 2, -s / 2, s, s, s * 0.16), b.color, 'rgba(0,0,0,.18)', { line: 3.5, shadeOffset: 4 });
       if (b.letter) {
-        ctx.font = `900 ${s * 0.55}px "SF Pro Rounded", ui-rounded, system-ui, sans-serif`;
+        ctx.font = `900 ${s * 0.55}px ${FONT}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.lineWidth = 3;
@@ -168,9 +225,16 @@ export class FX {
         ctx.strokeStyle = INK;
         ctx.stroke();
       } else if (p.kind === 'puff') {
-        ctx.globalAlpha *= 0.8;
+        const r = p.size * (0.6 + k);
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * (0.6 + k), 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = INK;
+        ctx.stroke();
+        ctx.fill();
+        ctx.fillStyle = '#9C90A8';
+        ctx.beginPath();
+        ctx.arc(p.x + r * 0.25, p.y + r * 0.25, r * 0.7, 0, Math.PI * 2);
         ctx.fill();
       } else if (p.kind === 'confetti') {
         ctx.save();
@@ -180,7 +244,7 @@ export class FX {
         ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
         ctx.restore();
       } else if (p.kind === 'z') {
-        comicText(ctx, 'Z', p.x + Math.sin(p.life / 300) * 8, p.y, p.size * (0.6 + k * 0.8), '#cfe6ff', -0.2);
+        comicText(ctx, 'Z', p.x + Math.sin(p.life / 300) * 8, p.y, p.size * (0.6 + k * 0.8), '#B9D8FF', -0.2);
       } else if (p.kind === 'spark') {
         ctx.strokeStyle = p.color;
         ctx.lineWidth = 4;

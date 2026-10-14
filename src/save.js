@@ -17,6 +17,7 @@ export function defaultSave() {
       reducedMotion: matchMediaSafe('(prefers-reduced-motion: reduce)'),
       haptics: true,
       showFps: false,
+      tvLook: true,
     },
     progress: { stars: 0, wins: 0, battles: 0, lastHero: null, tutorial: {} },
     skills: defaultSkills(),
