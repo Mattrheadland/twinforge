@@ -135,7 +135,8 @@ export function buildBass(flash) {
   eyes.tex.repeat.set(0.5, 1);
   const far = decal(head, 24, 24, 8, 8, [6, 14, -24.5], Math.PI);
   far.tex.dispose();
-  const farTex = eyes.tex.clone();
+  const farTex = new THREE.CanvasTexture(eyes.c);
+  farTex.magFilter = eyes.tex.magFilter; farTex.minFilter = eyes.tex.minFilter; farTex.generateMipmaps = false;
   farTex.offset.set(0.5, 0);
   far.tex = farTex;
   head.children[head.children.length - 1].material.map = farTex;

@@ -45,11 +45,16 @@ await page.waitForSelector('.title-screen .big-play', { timeout: 20000 });
 await sleep(1500);
 await tap('.big-play');
 await sleep(800);
-await tap('.mode-quick');
+await tap('.mode-arcade');
 await sleep(900);
 await page.screenshot({ path: `${SHOTS}/select.png` });
 await tap(`.pick-card:nth-child(${ROSTER.indexOf(CHAR) + 1})`);
 await tap('.go-btn');
+await sleep(600);
+// opponent: FOE=<id> or a surprise
+await tap(process.env.FOE ? `.pick-card:nth-child(${ROSTER.filter((id) => id !== CHAR).indexOf(process.env.FOE) + 1})` : '.pick-card.surprise');
+await tap('.go-btn');
+await sleep(600);
 await tap(`.arena-card:nth-child(${+(process.env.ARENA || 1)})`);
 const t0 = Date.now();
 while (Date.now() - t0 < 20000 && (await page.evaluate(() => window.__tbb.phase)) !== 'choose') await sleep(100);

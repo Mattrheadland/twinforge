@@ -67,7 +67,9 @@ export function addFace(parent, root, cfg, model = parent) {
   const meshes = [];
   const pos = cfg.pos || [90, 160, 0];
   if (pair) {
-    const far = fc.tex.clone();
+    // its own texture on the same canvas (a clone shares GPU bookkeeping and never frees)
+    const far = new THREE.CanvasTexture(fc.c);
+    far.magFilter = fc.tex.magFilter; far.minFilter = fc.tex.minFilter; far.generateMipmaps = false;
     fc.tex.repeat.set(0.5, 1);
     far.repeat.set(0.5, 1);
     far.offset.set(0.5, 0);

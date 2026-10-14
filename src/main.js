@@ -11,7 +11,10 @@ import { BattleController } from './game/battle-controller.js';
 import { buzz, setHaptics } from './haptics.js';
 import { showReport, showPreview } from './ui/learning-report.js';
 import { newRun, winStop, current, recordRun, BOSS_SCALE } from './game/modes.js';
+import { buildBoard, move, rollDie, winSpace, stopFor, newCampaign } from './game/campaign.js';
 import { showModes, showArenaPick, showLadder, showRunResult, showTrophy, showGallery } from './ui/modes-ui.js';
+import { showBoard } from './ui/board-ui.js';
+import { Board3D } from './render3d/board3d.js';
 import { Director } from './game/director.js';
 import { h } from './ui/dom.js';
 
@@ -180,7 +183,7 @@ class App {
     });
   }
 
-  // ---------------- game modes (game/modes.js) ----------------
+  // ---------------- game modes (game/modes.js, game/campaign.js) ----------------
   get records() {
     return this.save.data.records;
   }
@@ -194,7 +197,7 @@ class App {
     this.stage.cam.drift = 1;
     showModes(this.ui, {
       records: this.records,
-      run: this.save.data.run,
+      campaign: this.save.data.campaign,
       chars: CHARACTERS,
       onPick: (mode) => {
         this.audio.sfx('select');
@@ -207,20 +210,38 @@ class App {
 
   chooseMode(mode) {
     if (mode === 'gallery') return this.goGallery();
+    if (mode === 'campaign') {
+      const c = this.save.data.campaign;
+      if (c && !c.done) return this.goBoard();
+      return this.goSelect((heroId) => {
+        this.save.data.campaign = newCampaign(heroId);
+        this.save.save();
+        this.goBoard();
+      }, () => this.goModes());
+    }
     const run = this.save.data.run;
-    // an unfinished story picks up where it left off
-    if (mode === 'story' && run && run.mode === 'story' && !run.done) return this.showRunMap();
+    if (mode === 'tournament' && run && run.mode === 'tournament' && !run.done) return this.showRunMap();
     this.goSelect((heroId) => {
-      if (mode === 'quick') {
-        showArenaPick(this.ui, {
-          onPick: (arenaId) => {
-            this.audio.sfx('select');
-            this.beginRun(newRun('quick', heroId, { chars: CHARACTERS, roster: ROSTER, arenaId }));
+      if (mode === 'arcade') {
+        // pick the opponent (or SURPRISE!), then the arena (or SURPRISE!)
+        this.ui.showSelect({
+          chars: CHARACTERS,
+          roster: ROSTER.filter((id) => id !== heroId),
+          surprise: true,
+          vs: true,
+          onPick: (foeId) => {
+            showArenaPick(this.ui, {
+              onPick: (arenaId) => {
+                this.audio.sfx('select');
+                this.beginRun(newRun('arcade', heroId, { chars: CHARACTERS, roster: ROSTER, foeId, arenaId }));
+              },
+              onHome: () => this.goModes(),
+            });
           },
           onHome: () => this.goModes(),
         });
       } else {
-        this.beginRun(newRun(mode, heroId, { chars: CHARACTERS, roster: ROSTER }));
+        this.beginRun(newRun('tournament', heroId, { chars: CHARACTERS, roster: ROSTER }));
       }
     }, () => this.goModes());
   }
@@ -228,7 +249,7 @@ class App {
   beginRun(run) {
     this.save.data.run = run;
     this.save.save();
-    if (run.mode === 'story' || run.mode === 'tournament') this.showRunMap();
+    if (run.mode === 'tournament') this.showRunMap();
     else this.playStop();
   }
 
@@ -239,10 +260,7 @@ class App {
     showLadder(this.ui, {
       run,
       chars: CHARACTERS,
-      onGo: () => {
-        this.audio.sfx('powerUp');
-        this.playStop();
-      },
+      onGo: () => this.playStop(),
       onHome: () => this.goModes(),
     });
   }
@@ -252,37 +270,87 @@ class App {
     const stop = current(run);
     this.audio.sfx('powerUp');
     await this.ui.showVS(CHARACTERS[run.heroId], CHARACTERS[stop.foeId], { boss: stop.boss });
-    this.startBattle(run.heroId, stop.foeId, null, stop);
+    this.startBattle(run.heroId, stop.foeId, null, { ...stop, kind: 'run' });
+  }
+
+  // ---------------- campaign board ----------------
+  goBoard() {
+    this.endBattle();
+    this.leaveGallery();
+    const c = this.save.data.campaign;
+    const board = buildBoard(c.heroId);
+    this.stage.setFighters(null, null);
+    this.stage.dim = this.stage.is3D ? 0 : 0.6;
+    this.boardView = showBoard(this.ui, {
+      campaign: c,
+      board,
+      chars: CHARACTERS,
+      make3D: this.stage.is3D ? (opts) => {
+        const b = new Board3D(this.stage, opts);
+        this.stage.setBoard(b, opts.owner);
+        return b;
+      } : null,
+      onRoll: async (api) => {
+        const roll = rollDie();
+        const res = move(this.save.data.campaign, board, roll);
+        this.save.data.campaign = res.campaign;
+        if (res.event === 'star') this.save.data.progress.stars++;
+        this.save.save();
+        const ev = await api.play(roll, res);
+        if (ev === 'fight') {
+          await new Promise((r) => setTimeout(r, 650));
+          this.boardFight();
+        }
+      },
+      onFight: () => this.boardFight(),
+      onHome: () => this.goModes(),
+    });
+  }
+
+  async boardFight() {
+    const c = this.save.data.campaign;
+    const sp = buildBoard(c.heroId)[c.pos];
+    const stop = stopFor(sp);
+    this.audio.sfx('powerUp');
+    await this.ui.showVS(CHARACTERS[c.heroId], CHARACTERS[stop.foeId], { boss: stop.boss });
+    this.startBattle(c.heroId, stop.foeId, null, { ...stop, kind: 'campaign', at: c.pos });
   }
 
   // Called by the battle when it's over.
   onBattleEnd({ win, stars, total, state }) {
+    const home = () => this.goModes();
+    // campaign board fight
+    const c = this.save.data.campaign;
+    if (state.from === 'campaign' && c && !c.done && c.pos === state.at && c.heroId === state.heroId) {
+      const board = buildBoard(c.heroId);
+      if (!win) return showRunResult(this.ui, { win, stars, total, onAgain: () => this.boardFight(), onHome: () => this.goBoard() });
+      const next = winSpace(c, board, stars);
+      this.save.data.campaign = next;
+      if (next.done) this.save.data.records = recordRun(this.records, { mode: 'campaign', done: true, heroId: next.heroId });
+      this.save.save();
+      if (next.done) {
+        this.stage.fx.confetti(this.stage.W, 450);
+        this.audio.sfx('perfect');
+        return showRunResult(this.ui, { win, stars, total, onNext: () => showTrophy(this.ui, { mode: 'campaign', heroDef: CHARACTERS[next.heroId], stars: next.stars, onHome: () => { this.save.data.campaign = null; this.save.save(); home(); } }), onHome: home });
+      }
+      return showRunResult(this.ui, { win, stars, total, onNext: () => this.goBoard(), onHome: home });
+    }
     const run = this.save.data.run;
     const stop = current(run);
-    const inRun = run && stop && state.inRun && stop.foeId === state.foeId && run.heroId === state.heroId;
+    const inRun = state.from === 'run' && run && stop && stop.foeId === state.foeId && run.heroId === state.heroId;
     if (!inRun) {
-      return this.ui.showResult({ win, stars, total, onAgain: () => this.startBattle(state.heroId, state.foeId), onHome: () => this.goModes() });
-    }
-    const home = () => this.goModes();
-    if (run.mode === 'quick') {
-      return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop(), onHome: home });
+      return showRunResult(this.ui, { win, stars, total, onAgain: () => this.startBattle(state.heroId, state.foeId), onHome: home });
     }
     if (run.mode === 'arcade') {
       if (win) {
-        const next = winStop(run, stars, { roster: ROSTER });
-        this.save.data.run = next;
-        this.save.data.records = recordRun(this.records, next);
+        this.save.data.records = recordRun(this.records, winStop(run, stars));
         this.save.save();
-        return showRunResult(this.ui, { win, stars, total, streak: next.wins, onNext: () => this.playStop(), onHome: home });
       }
-      this.save.data.records = recordRun(this.records, run);
-      this.save.data.run = null;
-      this.save.save();
-      return showRunResult(this.ui, { win, stars, total, streak: run.wins, best: this.records.arcadeBest, onAgain: () => this.chooseMode('arcade'), onHome: home });
+      return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop(), onHome: home });
     }
-    // story / tournament
+    // tournament
     if (!win) return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop(), onHome: home });
-    const next = winStop(run, stars, { roster: ROSTER });
+    const next = winStop(run, stars);
     this.save.data.run = next.done ? null : next;
     this.save.data.records = recordRun(this.records, next);
     this.save.save();
@@ -323,7 +391,11 @@ class App {
     this.stage.cam.zoom = 1;
     this.stage.dim = 0;
     this.battle = new BattleController({ app: this, chars: CHARACTERS, heroId, foeId, resume, stop });
-    if (stop && !resume) this.battle.state.inRun = true;
+    if (stop && !resume) {
+      // remember where this fight came from (saved with the battle, so a resume knows too)
+      this.battle.state.from = stop.kind;
+      if (stop.kind === 'campaign') this.battle.state.at = stop.at;
+    }
     this.battle.start();
   }
 

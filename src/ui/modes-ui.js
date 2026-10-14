@@ -16,31 +16,27 @@ function homeBtn(onHome) {
 }
 
 // ---------------- mode pick ----------------
-export function showModes(ui, { records, run, chars, onPick, onHome }) {
+export function showModes(ui, { records, campaign, chars, onPick, onHome }) {
   ui.clear();
   const card = (mode, icon, label, color, badge, i) => {
     const b = h('button', { class: `mode-card mode-${mode}`, style: { '--c': color, '--d': i * 90 + 'ms' }, 'aria-label': label },
       h('span', { class: 'mode-icon', html: ICON[icon] }),
-      h('span', { class: 'mode-name' }, pixelLabel(label, 17, '#FFC914', { maxW: 150 })),
+      h('span', { class: 'mode-name' }, pixelLabel(label, 17, '#FFC914', { maxW: 160 })),
       badge || null);
     onTap(b, () => onPick(mode), 500);
     return b;
   };
-  const storyRun = run && run.mode === 'story' && !run.done ? run : null;
-  const storyBadge = storyRun
-    ? h('span', { class: 'mode-badge' }, portrait(chars[storyRun.heroId], 34, ui.app.px), pixelLabel(`${storyRun.step}/${storyRun.path.length}`, 12, '#ffffff'))
-    : Object.keys(records.storyCleared || {}).length
-      ? h('span', { class: 'mode-badge', html: ICON.checkBadge })
-      : null;
+  const camp = campaign && !campaign.done ? campaign : null;
+  const campBadge = camp
+    ? h('span', { class: 'mode-badge' }, portrait(chars[camp.heroId], 34, ui.app.px), h('i', { html: ICON.star }), pixelLabel(String(camp.stars), 12, '#ffffff'))
+    : Object.keys(records.campaignCleared || {}).length ? h('span', { class: 'mode-badge', html: ICON.checkBadge }) : null;
   const cupBadge = records.trophies ? h('span', { class: 'mode-badge' }, h('i', { html: ICON.trophy }), pixelLabel('x' + records.trophies, 12, '#ffffff')) : null;
-  const arcadeBadge = records.arcadeBest ? h('span', { class: 'mode-badge' }, h('i', { html: ICON.star }), pixelLabel(String(records.arcadeBest), 12, '#ffffff')) : null;
   const scr = h('div', { class: 'screen modes-screen' },
     h('div', { class: 'modes-row' },
-      card('story', 'map', 'STORY', '#D7263D', storyBadge, 0),
+      card('campaign', 'map', 'CAMPAIGN', '#D7263D', campBadge, 0),
       card('tournament', 'trophy', 'TOURNAMENT', '#1B4FD8', cupBadge, 1),
-      card('arcade', 'flame', 'ARCADE', '#F46036', arcadeBadge, 2),
-      card('quick', 'fist', 'QUICK FIGHT', '#2E9E44', null, 3),
-      card('gallery', 'gallery', 'TOY BOX', '#6A3FA0', null, 4)),
+      card('arcade', 'fist', 'ARCADE', '#2E9E44', null, 2),
+      card('gallery', 'gallery', 'TOY BOX', '#6A3FA0', null, 3)),
     homeBtn(onHome));
   ui.layer.appendChild(scr);
 }
@@ -76,7 +72,7 @@ export function showLadder(ui, { run, chars, onGo, onHome }) {
   const hero = h('div', { class: 'ladder-hero', style: { '--c': chars[run.heroId].color } }, portrait(chars[run.heroId], 92, px));
   const go = h('button', { class: 'go-btn', 'aria-label': 'Go', html: ICON.play });
   onTap(go, onGo, 800);
-  const title = run.mode === 'story' ? 'STORY' : 'TOURNAMENT';
+  const title = 'TOURNAMENT';
   ui.layer.appendChild(h('div', { class: `screen ladder-screen mode-${run.mode}` },
     h('div', { class: 'ladder-title' }, pixelLabel(title, 26, '#FFC914', { chunk: 2 })),
     h('div', { class: 'ladder' }, hero, h('div', { class: 'ladder-path' }, ...nodes)),
@@ -125,8 +121,8 @@ export function showRunResult(ui, { win, stars, total, streak = null, best = nul
 // ---------------- trophy ----------------
 export function showTrophy(ui, { mode, heroDef, stars, onHome }) {
   ui.clear();
-  const icon = mode === 'story' ? ICON.crown : ICON.trophy;
-  const title = mode === 'story' ? 'STORY CLEAR!' : 'CHAMPION!';
+  const icon = mode === 'campaign' ? ICON.crown : ICON.trophy;
+  const title = mode === 'campaign' ? 'HERO OF TOWN!' : 'CHAMPION!';
   const home = h('button', { class: 'round-btn again pulse', 'aria-label': 'Home', html: ICON.home });
   onTap(home, onHome, 800);
   ui.layer.appendChild(h('div', { class: 'overlay result trophy' },

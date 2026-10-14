@@ -28,6 +28,7 @@ export class BattleController {
     this.save = app.save;
     this.rng = new Rng((Date.now() ^ 0x5eed) >>> 0);
     this.state = resume || createBattle({ heroId, foeId, chars, arenaId: stop?.arenaId || arenaFor(foeId), boss: !!stop?.boss });
+    if (!resume && stop?.scale) this.state.foeScale = stop.scale;
     this.resumed = !!resume;
     this.phase = PHASE.INTRO;
     this.locked = true;
@@ -50,7 +51,7 @@ export class BattleController {
     const s = this.state;
     const heroDef = this.chars[s.heroId], foeDef = this.chars[s.foeId];
     this.stage.setArena(s.arenaId || arenaFor(s.foeId));
-    this.stage.setFighters(heroDef, foeDef, { foeBig: s.boss ? BOSS_SCALE : 1 });
+    this.stage.setFighters(heroDef, foeDef, { foeBig: s.foeScale || (s.boss ? BOSS_SCALE : 1) });
     this.director = new Director(this.stage, this.audio);
     this.hud = new Hud(this.app.ui.layer, { heroDef, foeDef, px: this.app.px, toVirtual: this.app.ui.toVirtual, learning: this.learning });
     this.challenge = new ChallengeUI(this.app.ui.layer, this.audio, buzz);

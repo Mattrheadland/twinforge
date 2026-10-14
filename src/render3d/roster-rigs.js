@@ -1,6 +1,6 @@
 // Low-poly 3D rigs for the roster (STYLE_GUIDE v5).
 // Battle Rex, Spooky Tree, Ragin' Rockfish and Young Arthur are modeled from
-// Matt's reference sheets; Wanda Wickwhistle and Gloomwing are original designs.
+// Matt's reference sheets; Wanda Wickwhistle and Czernobog are original designs.
 // Conventions: ~190 units tall, feet at y = 0, facing +x, camera side is +z.
 // Every rig reads the same pose values the battle choreography animates
 // (armF/armB, headBob, eyes, mouth, cannon, fly, pose, t).
@@ -510,7 +510,7 @@ function buildWitch(flash) {
   return rig;
 }
 
-// ======================= Gloomwing (original night creature) =======================
+// ======================= Czernobog (original night creature) =======================
 function buildNightwing(flash) {
   const P = maker(flash);
   const root = new THREE.Group();

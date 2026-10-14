@@ -3,6 +3,7 @@ import { defaultSkills } from './logic/difficulty.js';
 import { isValidBattle } from './logic/battle.js';
 import { defaultRecords, isValidRun } from './game/modes.js';
 import { defaultLearning, normalizeLearning } from './logic/learning-log.js';
+import { isValidCampaign } from './game/campaign.js';
 
 export const SAVE_VERSION = 1;
 const KEY = 'tbb.save';
@@ -28,7 +29,8 @@ export function defaultSave() {
     skills: defaultSkills(),
     learning: defaultLearning(), // answer log behind the grown-up learning report
     battle: null, // snapshot of an unfinished battle (taken at the start of each hero turn)
-    run: null, // the game-mode run in progress (game/modes.js)
+    run: null, // the tournament / arcade run in progress (game/modes.js)
+    campaign: null, // the campaign board in progress (game/campaign.js)
     records: defaultRecords(), // story clears, trophies, best arcade streak
   };
 }
@@ -61,7 +63,9 @@ export function migrate(raw, chars) {
   if (!Array.isArray(out.settings.offKinds)) out.settings.offKinds = [];
   if (out.battle && !isValidBattle(out.battle, chars)) out.battle = null;
   if (out.run && !isValidRun(out.run, chars)) out.run = null;
-  out.records = { ...defaultRecords(), ...(raw.records || {}), storyCleared: { ...(raw.records?.storyCleared || {}) } };
+  if (out.campaign && !isValidCampaign(out.campaign, chars)) out.campaign = null;
+  const rec = raw.records || {};
+  out.records = { ...defaultRecords(), trophies: rec.trophies || 0, arcadeWins: rec.arcadeWins || 0, campaignCleared: { ...(rec.campaignCleared || {}) } };
   out.progress.stars = Math.max(0, Math.floor(out.progress.stars || 0));
   return out;
 }

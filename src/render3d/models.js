@@ -171,7 +171,8 @@ export function buildModelRig(def, flash) {
   for (const mesh of meshes) {
     const swap = (m) => {
       const map = m.map || null;
-      if (map) { map.colorSpace = THREE.NoColorSpace; map.needsUpdate = true; }
+      // set once: re-flagging a shared texture every build re-uploads it and leaks GPU memory
+      if (map && map.colorSpace !== THREE.NoColorSpace) { map.colorSpace = THREE.NoColorSpace; map.needsUpdate = true; }
       return modelMat({ color: m.color ? m.color.getHex() : 0xffffff, map, flash, shiny: !!art.shiny });
     };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(swap) : swap(mesh.material);

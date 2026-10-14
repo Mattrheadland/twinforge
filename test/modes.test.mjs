@@ -8,56 +8,44 @@ import { Rng } from '../src/logic/rng.js';
 
 const ctx = (seed = 1) => { const r = new Rng(seed); return { chars: C, roster: ROSTER, rnd: () => r.next() }; };
 
-test('story: every other toy once, on its home turf, toughest last as a giant', () => {
+test('tournament: every other toy once, on its home turf, toughest last as a giant', () => {
   for (const hero of ROSTER) {
-    const run = newRun('story', hero, ctx());
+    const run = newRun('tournament', hero, ctx());
     const foes = run.path.map((s) => s.foeId);
     assert.equal(foes.length, ROSTER.length - 1, hero);
     assert.ok(!foes.includes(hero));
     assert.equal(new Set(foes).size, foes.length);
     assert.ok(run.path.at(-1).boss && run.path.filter((s) => s.boss).length === 1);
+    assert.equal(run.path.at(-1).foeId, hero === 'nightwing' ? 'tree' : 'nightwing');
     for (const s of run.path.slice(0, -1)) assert.equal(s.arenaId, arenaFor(s.foeId));
     assert.notEqual(run.path.at(-1).arenaId, 'bedroom');
     assert.ok(isValidRun(run, C));
+    let r = run;
+    while (!r.done) r = winStop(r, 2);
+    assert.equal(r.wins, ROSTER.length - 1);
   }
 });
 
-test('story and tournament finish; arcade keeps going with a giant every fifth fight', () => {
-  for (const mode of ['story', 'tournament']) {
-    let run = newRun(mode, 'rex', ctx(3));
-    let guard = 0;
-    while (!run.done && guard++ < 20) run = winStop(run, 2, ctx(guard));
-    assert.ok(run.done, mode);
-    assert.equal(run.wins, run.path.length);
-    assert.equal(run.stars, run.path.length * 2);
+test('arcade: the picked opponent and arena, or a surprise; never yourself', () => {
+  const a = newRun('arcade', 'tree', { ...ctx(), foeId: 'bass', arenaId: 'castle' });
+  assert.deepEqual(current(a), { foeId: 'bass', arenaId: 'castle', boss: false });
+  for (let i = 0; i < 30; i++) {
+    const s = current(newRun('arcade', 'rex', ctx(i)));
+    assert.notEqual(s.foeId, 'rex');
+    assert.ok(ROSTER.includes(s.foeId) && ARENAS[s.arenaId]);
   }
-  const t = newRun('tournament', 'roo', ctx(5));
-  assert.equal(t.path.length, 3);
-  assert.ok(t.path[2].boss && !t.path[0].boss);
-  let a = newRun('arcade', 'bass', ctx(7));
-  for (let i = 0; i < 9; i++) {
-    const before = current(a);
-    a = winStop(a, 1, ctx(i + 10));
-    assert.ok(!a.done);
-    const now = current(a);
-    assert.notEqual(now.foeId, before.foeId);
-    assert.notEqual(now.foeId, 'bass');
-    assert.ok(ARENAS[now.arenaId]);
-  }
-  assert.equal(a.wins, 9);
-  assert.equal(a.path.filter((s) => s.boss).length, 2); // fights 5 and 10
+  assert.notEqual(current(newRun('arcade', 'rex', { ...ctx(), foeId: 'rex' })).foeId, 'rex');
+  assert.ok(winStop(a, 1).done);
 });
 
-test('quick uses the picked arena; records count trophies, clears and streaks', () => {
-  assert.equal(current(newRun('quick', 'tree', { ...ctx(), arenaId: 'castle' })).arenaId, 'castle');
-  assert.ok(ARENAS[current(newRun('quick', 'tree', ctx())).arenaId]);
+test('records count trophies, arcade wins and campaign clears', () => {
   let rec = defaultRecords();
-  rec = recordRun(rec, { mode: 'tournament', done: true, heroId: 'rex', wins: 3 });
-  rec = recordRun(rec, { mode: 'story', done: true, heroId: 'arthur', wins: 7 });
-  rec = recordRun(rec, { mode: 'arcade', done: false, heroId: 'rex', wins: 4 });
-  rec = recordRun(rec, { mode: 'arcade', done: false, heroId: 'rex', wins: 2 });
-  assert.deepEqual(rec, { storyCleared: { arthur: true }, trophies: 1, arcadeBest: 4 });
-  assert.ok(!isValidRun({ mode: 'story', heroId: 'nobody', path: [], step: 0 }, C));
+  rec = recordRun(rec, { mode: 'tournament', done: true, heroId: 'rex' });
+  rec = recordRun(rec, { mode: 'arcade', done: true, heroId: 'rex' });
+  rec = recordRun(rec, { mode: 'arcade', done: false, heroId: 'rex' });
+  rec = recordRun(rec, { mode: 'campaign', done: true, heroId: 'arthur' });
+  assert.deepEqual(rec, { campaignCleared: { arthur: true }, trophies: 1, arcadeWins: 1 });
+  assert.ok(!isValidRun({ mode: 'story', heroId: 'rex', path: [{ foeId: 'tree', arenaId: 'castle' }], step: 0 }, C), 'old modes are dropped');
 });
 
 test('a giant foe has more health and can still be beaten by every hero', () => {

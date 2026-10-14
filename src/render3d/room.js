@@ -257,6 +257,13 @@ export class Room3D {
     return d;
   }
 
+  dispose() {
+    this.group.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material && o.material.map) o.material.map.dispose();
+    });
+  }
+
   update(t) {
     const ex = this.excite;
     const fast = ex > 0.05;

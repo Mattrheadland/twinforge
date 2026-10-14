@@ -1,0 +1,24 @@
+import chromium from '@sparticuz/chromium';
+import puppeteer from 'puppeteer-core';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+const OUT = process.argv[2];
+const root = path.resolve('dist');
+const server = http.createServer((req, res) => { let p = decodeURIComponent(req.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html'; const f = path.join(root, p); if (!fs.existsSync(f)) { res.writeHead(404); return res.end(); } res.writeHead(200, { 'content-type': p.endsWith('.html') ? 'text/html' : 'application/octet-stream' }); fs.createReadStream(f).pipe(res); }).listen(0);
+const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args.filter((a) => a !== '--single-process'), headless: true });
+const page = await browser.newPage();
+await page.setViewport({ width: 874, height: 402, deviceScaleFactor: 2 });
+await page.evaluateOnNewDocument(() => { window.__TBB_TEST__ = true; });
+const errors = [];
+page.on('pageerror', (e) => errors.push(e.message));
+await page.goto(`http://localhost:${server.address().port}/`, { waitUntil: 'load' });
+await new Promise((r) => setTimeout(r, 2000));
+const pngs = await page.evaluate(() => {
+  const a = window.__tbb.app;
+  const ids = ['rexlet', 'sprout', 'minnow', 'squire', 'frog', 'imp', 'bones', 'squirrel', 'crab'];
+  return ids.map((id) => a.stage.snapshot(a.save.chars[id], { w: 300, h: 300, framing: 'full' }).toDataURL('image/png'));
+});
+pngs.forEach((d, i) => fs.writeFileSync(`${OUT}/m${i}.png`, Buffer.from(d.split(',')[1], 'base64')));
+console.log(errors.join('\n') || 'no errors');
+await browser.close(); server.close();

@@ -152,8 +152,10 @@ class Fighter3D extends Fighter {
 // (userData.shared) and the outline hulls stay.
 function disposeTree(o) {
   o.traverse((m) => {
-    if (m.geometry && m.name !== 'ink' && !m.userData.shared) m.geometry.dispose();
-    if (m.material && m.material.map && !m.userData.shared) m.material.map.dispose();
+    if (m.isSkinnedMesh && m.skeleton) m.skeleton.dispose(); // each rig has its own bone texture
+    if (m.userData.shared) return;
+    if (m.geometry) m.geometry.dispose(); // includes code-built toys' outline hulls
+    if (m.material && m.material.map) m.material.map.dispose();
   });
 }
 
@@ -270,6 +272,14 @@ export class Stage3D extends Stage {
     if (this.frontHalfW) this.room.placeFront(this.frontHalfW);
   }
 
+  // The campaign diorama (render3d/board3d.js) replaces the arena while set.
+  // It goes away by itself once its screen leaves the page.
+  setBoard(board, owner = null) {
+    if (this.board) this.board.dispose();
+    this.board = board;
+    this.boardOwner = owner;
+  }
+
   // opts.foeBig: scale for a GIANT foe (game/modes.js)
   setFighters(heroDef, foeDef, opts = {}) {
     for (const f of Object.values(this.fighters)) f && f.dispose();
@@ -289,6 +299,7 @@ export class Stage3D extends Stage {
       x: tr * 22 * (Math.random() * 2 - 1) + (cam.drift ? Math.sin(t / 3000) * 10 * cam.drift : 0),
       y: tr * 16 * (Math.random() * 2 - 1),
     };
+    if (this.board && this.boardOwner && !this.boardOwner.isConnected) this.setBoard(null);
     const fs = [this.fighters.foe, this.fighters.hero].filter(Boolean);
     this.room.excite = this.arena.excite || 0;
     this.room.update(t);
@@ -298,7 +309,10 @@ export class Stage3D extends Stage {
     const z = cam.zoom, fx = cam.fx * W, fy = cam.fy * VH;
     this.rcam.copy(this.camera);
     this.rcam.setViewOffset(W, VH, fx - fx / z - view.x, fy - fy / z - view.y, W / z, VH / z);
-    this.renderer.render(this.scene, this.rcam);
+    if (this.board) {
+      this.board.update(t);
+      this.renderer.render(this.board.scene, this.board.camera);
+    } else this.renderer.render(this.scene, this.rcam);
 
     // 2D overlay: effects, words, shields, status
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -355,7 +369,7 @@ export class Stage3D extends Stage {
     this.renderer.setRenderTarget(null);
     this.renderer.setClearColor(prevClear, prevAlpha);
     rt.dispose();
-    scene.traverse((m) => { if (m.material && m.material.map) m.material.map.dispose(); });
+    disposeTree(scene);
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
     const g = c.getContext('2d');

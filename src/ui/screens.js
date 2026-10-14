@@ -53,7 +53,9 @@ export class UI {
   }
 
   // ---------------- character select ----------------
-  showSelect({ chars, roster, lastHero, onPick, onHome }) {
+  // surprise: add a SURPRISE! card (onPick(null) picks at random); vs: label the
+  // cards as the opponent (red 'CPU' tag) instead of the player
+  showSelect({ chars, roster, lastHero, onPick, onHome, surprise = false, vs = false }) {
     this.clear();
     let chosen = null;
     const go = h('button', { class: 'go-btn hidden', 'aria-label': 'Go', html: ICON.play });
@@ -82,7 +84,7 @@ export class UI {
       draw('open');
       const statRow = (icon, n) => h('div', { class: 'stat' }, ...Array.from({ length: n }, () => h('span', { html: icon })));
       const card = h('button', { class: 'pick-card', style: { '--c': def.color, '--d': i * 120 + 'ms' }, 'aria-label': def.name },
-        h('span', { class: 'p1-tag' }, pixelLabel('1P', 20, '#FF4A3A')),
+        h('span', { class: 'p1-tag' }, pixelLabel(vs ? 'VS' : '1P', 20, vs ? '#FFC914' : '#FF4A3A')),
         h('div', { class: 'pick-art' }, cv),
         h('div', { class: 'pick-name' }, pixelLabel(def.name, 15, '#FFC914', { maxW: 156 })),
         h('div', { class: 'pick-moves' }, ...(def.moves || []).map((m) => h('span', { class: `pm pm-${m.slot}`, style: { '--mc': m.color }, html: ICON[m.icon] || ICON.fist }))));
@@ -100,7 +102,21 @@ export class UI {
       }, 300);
       return card;
     });
-    onTap(go, () => chosen && onPick(chosen), 800);
+    if (surprise) {
+      const card = h('button', { class: 'pick-card surprise', style: { '--c': '#6A3FA0', '--d': cards.length * 120 + 'ms' }, 'aria-label': 'Surprise me' },
+        h('span', { class: 'p1-tag' }, pixelLabel(vs ? 'VS' : '1P', 20, '#FFC914')),
+        h('div', { class: 'pick-art surprise-art', html: ICON.shuffle }),
+        h('div', { class: 'pick-name' }, pixelLabel('SURPRISE!', 15, '#FFC914', { maxW: 156 })));
+      card._draw = () => {};
+      onTap(card, () => {
+        chosen = '?';
+        cards.forEach((c) => { c.classList.toggle('chosen', c === card); c._draw('open'); });
+        go.classList.remove('hidden');
+        this.app.audio.sfx('select');
+      }, 300);
+      cards.push(card);
+    }
+    onTap(go, () => chosen && onPick(chosen === '?' ? null : chosen), 800);
     const home = h('button', { class: 'corner-btn home-btn', 'aria-label': 'Home', html: ICON.home });
     onTap(home, onHome, 500);
     const scr = h('div', { class: 'screen select-screen' }, h('div', { class: 'pick-grid' }, ...cards), go, home);
@@ -108,7 +124,7 @@ export class UI {
     // an imported model finished loading: redraw the cards with it
     const off = onModelsChanged(() => {
       if (!scr.isConnected) return off();
-      cards.forEach((c, i) => c._draw(roster[i] === chosen ? 'happy' : 'open'));
+      cards.forEach((c, i) => roster[i] && c._draw(roster[i] === chosen ? 'happy' : 'open'));
     });
     if (lastHero) {
       const i = roster.indexOf(lastHero);

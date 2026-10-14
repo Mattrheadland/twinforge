@@ -36,14 +36,14 @@ Flat, clean, thick dark lines, same three-tone shading as Image 1.
 If you can only make one image per reply, make IMAGE 1 now, then IMAGE 2 when I reply "next", without changing anything about her.
 ```
 
-## 3. Gloomwing character pack (original design, no photos)
-Save as `assets/characters/gloomwing/gloomwing-turnaround.png` and `-faces.png`.
+## 3. Czernobog character pack (original design, no photos)
+Save as `assets/characters/czernobog/czernobog-turnaround.png` and `-faces.png`.
 ```
-ASTRA REQUEST — GLOOMWING COMPLETE CHARACTER PACK (TwinForge v5)
+ASTRA REQUEST — CZERNOBOG COMPLETE CHARACTER PACK (TwinForge v5)
 
 Context: "TwinForge: Toy Box Tactics" is a battle game for my 4-year-old starring his toys. Each character becomes a LOW-POLY 3D model (like a 1996 PlayStation / Sega Saturn fighting game) shaded like a 1980s action cartoon (He-Man, ThunderCats). Your images are the blueprints a 3D modeler builds from, so clarity beats drama.
 
-The character: Gloomwing, an ORIGINAL chubby night creature toy (not based on any movie, show or brand): a round, egg-shaped body in deep midnight blue-purple with a pale lavender belly sprinkled with tiny glowing yellow stars. Two tall pointed ears with pink insides and a little tuft between them. Big friendly yellow eyes with dark-purple lids, a wide grin with two small white fangs. Bat-like wings for arms (purple membrane between three finger bones), short stubby legs with little pale claws, a short pointed tail. Grumpy-cute, a big softie, never scary.
+The character: Czernobog, an ORIGINAL chubby night creature toy (not based on any movie, show or brand): a round, egg-shaped body in deep midnight blue-purple with a pale lavender belly sprinkled with tiny glowing yellow stars. Two tall pointed ears with pink insides and a little tuft between them. Big friendly yellow eyes with dark-purple lids, a wide grin with two small white fangs. Bat-like wings for arms (purple membrane between three finger bones), short stubby legs with little pale claws, a short pointed tail. Grumpy-cute, a big softie, never scary.
 
 LOOK for everything: chunky low-poly 3D action figure, visible flat facets, simple geometric parts. Bold saturated colors, never pastel. Every surface in three hard flat tones (cool blue-purple shadow toward the lower right, base color, flat lighter patch toward the upper left). Small hard white glints. Clean dark outline (#14111A). No letters, numbers, words or labels anywhere.
 

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { toonMat, glowMat, part, inked } from './toon.js';
 import { ROSTER_BUILDERS } from './roster-rigs.js';
 import { buildRoo, buildBass } from './family-rigs.js';
+import { MINION_BUILDERS } from './minion-rigs.js';
 import { buildModelRig, modelId, hasModel } from './models.js';
 
 const C = {
@@ -326,7 +327,7 @@ function buildStompy(flash) {
   };
 }
 
-const BUILDERS = { blocko: buildBlocko, stompy: buildStompy, ...ROSTER_BUILDERS, roo: buildRoo, bass: buildBass };
+const BUILDERS = { blocko: buildBlocko, stompy: buildStompy, ...ROSTER_BUILDERS, roo: buildRoo, bass: buildBass, ...MINION_BUILDERS };
 
 // Returns { root, apply(pose), anchors, headR, flash } for a character def.
 // Uses the imported model when it's loaded (models.js); otherwise the

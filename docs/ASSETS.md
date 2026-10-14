@@ -16,7 +16,7 @@ Each has `<id>-turnaround.png` (1536×1024: front, side, back, 3/4) and `<id>-fa
 | remy-roo | Remy Roo (the family dog) | same order |
 | billy-bass | Billy Bass (the talking wall fish) | same order |
 
-Not in the repo: the Hocus Pocus and Chernabog sheets (Disney characters). Their roster spots use original stand-ins, Wanda Wickwhistle and Gloomwing, which are built in code and have no sheets yet.
+Not in the repo: the Hocus Pocus and Chernabog sheets (Disney characters). Their roster spots use original stand-ins, Wanda Wickwhistle and Czernobog (the Slavic night god's name, spelled as in Polish and in American Gods; the look is our own chubby night creature), which are built in code and have no sheets yet.
 
 ## Arenas — `assets/arenas/<id>/`
 `arena-<id>-backdrop.png` (1536×1024, far scenery; the floor line is ~60% down) · `arena-<id>-floor.png` (seamless, top-down) · `arena-<id>-props.png` (1536×1024, 6 props on #EEEEEE).

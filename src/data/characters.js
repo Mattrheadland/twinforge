@@ -110,7 +110,7 @@ export const CHARACTERS = {
   },
   nightwing: {
     id: 'nightwing',
-    name: 'Gloomwing',
+    name: 'Czernobog',
     pendingDesign: true,
     color: '#2A2470',
     accent: '#A777E0',
@@ -171,3 +171,110 @@ export function opponentFor(heroId, rnd = Math.random) {
   lastFoe = pick;
   return pick;
 }
+
+// ---------------------------------------------------------------------------
+// Wild creatures (campaign minions): one per main character, from its world.
+// Small, quick fights: less health, softer hits, and they never charge a
+// special. Never playable; they aren't in ROSTER. Rigs: render3d/minion-rigs.js.
+const minion = (id, o) => ({
+  id, minion: true, attackBonus: 0, foePower: 0.75, foePattern: ['quick', 'power', 'quick', 'power'],
+  art: { kind: 'procedural', draw: 'minion-' + id }, ...o,
+});
+export const MINIONS = {
+  rexlet: minion('rexlet', {
+    name: 'Rexlet', boss: 'rex', color: '#E0453A', accent: '#8E9AAE', maxHp: 58,
+    lore: 'a baby battle-dino in a hand-me-down helmet',
+    moves: [
+      { slot: 'quick', id: 'nibble', name: 'Nibble', icon: 'jaw', color: '#FFC914', anim: 'lunge', word: 'NOM!' },
+      { slot: 'power', id: 'pebblePop', name: 'Pebble Pop', icon: 'cannon', color: '#FF7A1A', anim: 'shot', word: 'POP!' },
+      { slot: 'guard', id: 'tinyHelmet', name: 'Tiny Helmet', icon: 'armor', color: '#A9B4C8', guard: 'block' },
+      { slot: 'special', id: 'babyRoar', name: 'Baby Roar', icon: 'bark', color: '#FF7A1A', power: 1 },
+    ],
+  }),
+  sprout: minion('sprout', {
+    name: 'Spooky Sprout', boss: 'tree', color: '#3A3346', accent: '#FF8A1F', maxHp: 60,
+    lore: 'a walking stump with a jack-o-lantern grin',
+    moves: [
+      { slot: 'quick', id: 'twigPoke', name: 'Twig Poke', icon: 'branch', color: '#FF8A1F', anim: 'lunge', word: 'POKE!' },
+      { slot: 'power', id: 'rootTrip', name: 'Root Trip', icon: 'root', color: '#8A5A3C', anim: 'ground', word: 'TRIP!' },
+      { slot: 'guard', id: 'barkUp', name: 'Bark Up', icon: 'fire', color: '#FF8A1F', guard: 'block' },
+      { slot: 'special', id: 'leafStorm', name: 'Leaf Storm', icon: 'forest', color: '#FF8A1F', power: 1 },
+    ],
+  }),
+  minnow: minion('minnow', {
+    name: 'Rock Minnow', boss: 'rockfish', color: '#4E7BE0', accent: '#C4CAD8', maxHp: 56,
+    lore: 'a little armored fish that bounces on its tail',
+    moves: [
+      { slot: 'quick', id: 'finSlap', name: 'Fin Slap', icon: 'fin', color: '#4EA8DE', anim: 'lunge', word: 'SLAP!' },
+      { slot: 'power', id: 'bubbleShot', name: 'Bubble Shot', icon: 'wave', color: '#33AFE4', anim: 'shot', word: 'BLUB!' },
+      { slot: 'guard', id: 'pebbleScales', name: 'Pebble Scales', icon: 'scales', color: '#9AA3B8', guard: 'block' },
+      { slot: 'special', id: 'splashdown', name: 'Splashdown', icon: 'wave', color: '#33AFE4', power: 1 },
+    ],
+  }),
+  squire: minion('squire', {
+    name: 'Tin Squire', boss: 'arthur', color: '#8E9AAE', accent: '#D7263D', maxHp: 60,
+    lore: 'a wind-up tin soldier with a wooden sword',
+    moves: [
+      { slot: 'quick', id: 'woodenSword', name: 'Wooden Sword', icon: 'sword', color: '#C9A15A', anim: 'lunge', word: 'TAP!' },
+      { slot: 'power', id: 'windUpCharge', name: 'Wind-Up Charge', icon: 'charge', color: '#FFC914', anim: 'lunge', dash: true, word: 'CLANK!' },
+      { slot: 'guard', id: 'potLid', name: 'Pot-Lid Shield', icon: 'shield', color: '#A9B4C8', guard: 'block' },
+      { slot: 'special', id: 'trumpet', name: 'Toy Trumpet', icon: 'note', color: '#FFC914', power: 1 },
+    ],
+  }),
+  frog: minion('frog', {
+    name: 'Bog Frog', boss: 'witch', color: '#2E9E44', accent: '#E07AB0', maxHp: 56,
+    lore: 'Wanda’s hoppy helper from the pond',
+    moves: [
+      { slot: 'quick', id: 'tongueFlick', name: 'Tongue Flick', icon: 'spark', color: '#E07AB0', anim: 'lunge', word: 'THWIP!' },
+      { slot: 'power', id: 'mudBlob', name: 'Mud Blob', icon: 'cauldron', color: '#8A5A3C', anim: 'shot', lob: true, word: 'SPLAT!' },
+      { slot: 'guard', id: 'lilyHop', name: 'Lily Hop', icon: 'broom', color: '#5CE07A', guard: 'dodge' },
+      { slot: 'special', id: 'ribbit', name: 'Big Ribbit', icon: 'bark', color: '#5CE07A', power: 1 },
+    ],
+  }),
+  // Czernobog's night crew: dancing shadow imps and jiggly skeletons from the
+  // mountaintop (mood from Matt's reference; our own cute, kid-friendly designs)
+  imp: minion('imp', {
+    name: 'Shadow Imp', boss: 'nightwing', color: '#3A2A6A', accent: '#FF5A8A', maxHp: 54,
+    lore: 'a little horned shadow that dances on the mountaintop',
+    moves: [
+      { slot: 'quick', id: 'impScratch', name: 'Scratch', icon: 'claw', color: '#FF5A8A', anim: 'lunge', word: 'SKRITCH!' },
+      { slot: 'power', id: 'shadowBall', name: 'Shadow Ball', icon: 'ghost', color: '#B98CFF', anim: 'shot', word: 'POOF!' },
+      { slot: 'guard', id: 'fadeAway', name: 'Fade Away', icon: 'wings', color: '#6A3FA0', guard: 'dodge' },
+      { slot: 'special', id: 'impJig', name: 'Imp Jig', icon: 'flames', color: '#FF5A8A', power: 1 },
+    ],
+  }),
+  bones: minion('bones', {
+    name: 'Jitterbones', boss: 'nightwing', color: '#E8E4F0', accent: '#B98CFF', maxHp: 56,
+    lore: 'a wobbly skeleton who can\u2019t stop dancing',
+    moves: [
+      { slot: 'quick', id: 'boneBonk', name: 'Bone Bonk', icon: 'fist', color: '#E8E4F0', anim: 'lunge', word: 'BONK!' },
+      { slot: 'power', id: 'rattleRoll', name: 'Rattle Roll', icon: 'roll', color: '#B98CFF', anim: 'lunge', dash: true, word: 'RATTLE!' },
+      { slot: 'guard', id: 'fallApart', name: 'Fall Apart', icon: 'ghost', color: '#E8E4F0', guard: 'dodge' },
+      { slot: 'special', id: 'boneDance', name: 'Bone Dance', icon: 'notes', color: '#B98CFF', power: 1 },
+    ],
+  }),
+  squirrel: minion('squirrel', {
+    name: 'Sneaky Squirrel', boss: 'roo', color: '#A8692E', accent: '#F2EDE4', maxHp: 56,
+    lore: 'the backyard squirrel Remy always chases',
+    moves: [
+      { slot: 'quick', id: 'tailFlick', name: 'Tail Flick', icon: 'tail', color: '#C9822E', anim: 'lunge', word: 'FLICK!' },
+      { slot: 'power', id: 'acornToss', name: 'Acorn Toss', icon: 'ball', color: '#8A5A3C', anim: 'shot', lob: true, word: 'BONK!' },
+      { slot: 'guard', id: 'scurry', name: 'Scurry', icon: 'roll', color: '#4EA8DE', guard: 'dodge' },
+      { slot: 'special', id: 'nutStash', name: 'Nut Stash', icon: 'ball', color: '#C8E63C', power: 1 },
+    ],
+  }),
+  crab: minion('crab', {
+    name: 'Bubble Crab', boss: 'bass', color: '#E8503A', accent: '#FFE7A0', maxHp: 58,
+    lore: 'a sideways-scuttling pier crab who sings along with Billy',
+    moves: [
+      { slot: 'quick', id: 'pinch', name: 'Pinch', icon: 'claw', color: '#FF7A1A', anim: 'lunge', word: 'PINCH!' },
+      { slot: 'power', id: 'bubbleBurst', name: 'Bubble Burst', icon: 'wave', color: '#9FD8FF', anim: 'shot', shots: 2, word: 'BLOOP!' },
+      { slot: 'guard', id: 'shellUp', name: 'Shell Up', icon: 'armor', color: '#E8503A', guard: 'block' },
+      { slot: 'special', id: 'crabDance', name: 'Crab Dance', icon: 'notes', color: '#FFC914', power: 1 },
+    ],
+  }),
+};
+Object.assign(CHARACTERS, MINIONS);
+// each main character's own wild creature (the first one listed for it)
+export const MINION_OF = {};
+for (const m of Object.values(MINIONS)) if (!MINION_OF[m.boss]) MINION_OF[m.boss] = m.id;
