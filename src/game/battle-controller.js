@@ -6,6 +6,7 @@ import { BOSS_SCALE } from './modes.js';
 import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor, moveFor, learningFor } from '../logic/battle.js';
 import { makeMath, makeReading } from '../logic/challenges.js';
 import { recordResult } from '../logic/difficulty.js';
+import { recordAnswer, noteLevel } from '../logic/learning-log.js';
 import { Rng } from '../logic/rng.js';
 import { Hud } from '../ui/hud.js';
 import { ChallengeUI } from '../ui/challenge.js';
@@ -146,7 +147,8 @@ export class BattleController {
       const skillKey = domain === 'math' ? 'math' : 'letters';
       const lvl = this.save.data.skills[skillKey].level;
       const force = window.__TBB_FORCE__ || {};
-      const ch = domain === 'math' ? makeMath(lvl, this.rng, force.math) : makeReading(lvl, this.rng, force.reading);
+      const off = this.save.data.settings.offKinds;
+      const ch = domain === 'math' ? makeMath(lvl, this.rng, force.math, off) : makeReading(lvl, this.rng, force.reading, off);
       this.currentChallenge = ch;
       this.stage.dim = 0.35;
       quality = await this.challenge.run(ch, kind === 'special' ? 'special' : 'attack', moveFor(this.chars[this.state.heroId], kind));
@@ -154,6 +156,9 @@ export class BattleController {
       this.stage.dim = 0;
       if (tok !== this.token) return;
       this.save.data.skills[skillKey] = recordResult(this.save.data.skills[skillKey], quality);
+      const L = this.save.data.learning;
+      recordAnswer(L, ch, quality, this.challenge.lastStats || {});
+      noteLevel(L, skillKey, lvl, this.save.data.skills[skillKey].level, 'auto');
     }
 
     this.setPhase(PHASE.HERO_ANIM);

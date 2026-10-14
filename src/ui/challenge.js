@@ -134,10 +134,15 @@ export class ChallengeUI {
   }
 
   // Resolves with a quality ('indep' | 'hint' | 'support') once answered correctly.
+  // Afterwards this.lastStats = { wrongPicks, firstMs, totalMs } for the learning report.
   run(ch, actionKind, move) {
     return new Promise((resolve) => {
       let wrongs = 0;
       let busy = false;
+      const t0 = performance.now();
+      let firstMs = null;
+      const wrongPicks = [];
+      this.lastStats = null;
       const { body, items, target } = this.buildBody(ch);
       const opts = ch.options.map((o, i) => {
         const c = this.optionContent(ch, o);
@@ -167,6 +172,7 @@ export class ChallengeUI {
       const finish = async (b) => {
         busy = true;
         const q = qualityFor(wrongs);
+        this.lastStats = { wrongPicks, firstMs, totalMs: performance.now() - t0 };
         b.classList.add('right');
         card.classList.add('solved');
         this.audio.sfx(q === 'support' ? 'supportCorrect' : 'correct');
@@ -183,9 +189,11 @@ export class ChallengeUI {
 
       const choose = async (o, b) => {
         if (busy || b.classList.contains('gone')) return;
+        if (firstMs == null) firstMs = performance.now() - t0;
         if (isCorrect(ch, o)) return finish(b);
         busy = true;
         wrongs++;
+        wrongPicks.push(o);
         this.audio.sfx('tryAgain');
         b.classList.add('nope');
         await wait(420);

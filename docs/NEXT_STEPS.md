@@ -12,6 +12,9 @@
   - Math: count, same shape, most/fewest, what comes next (patterns), find the group for a number, add, take away
   - Reading: letter match, upper→lower, tricky letters, starts-with, rhymes, read a word → find the picture
 - **Six characters in 3D**: Battle Rex, Spooky Tree, Ragin' Rockfish, Young Arthur (from Matt's sheets), plus two originals, Wanda Wickwhistle (witch) and Gloomwing (night creature), standing in for Hocus Pocus and The Chernabog, which are Disney characters and aren't modeled as-is.
+- **Learning report** (grown-up settings → Learning report): every question is logged in the save (`src/logic/learning-log.js`) with its type, level, first try / after a hint / needed help, the wrong answers tapped and seconds to first tap. The report shows today / 7-day / all-time first-try rates, where each level is parked and why it last moved, a per-type table (asked, first try, last 10, think time, Solid / Learning / Tough / Slow), recent misses and slow ones, and plain-language notes. Each type can be switched off. "Copy as text" gives a summary to paste to Claude for tuning.
+- **Question preview** (settings or the report): any question type at any level, exactly as Luca sees it. Nothing in preview is recorded.
+- **Question fixes**: starts-with never offers K for cat or C for kite; lowercase levels 3–4 never pair a letter with its mirror twin (b/d/p/q, m/w, n/u); the level descriptions in settings now match what each level actually asks.
 - Signature specials: Rex Cannon, Haunted Forest, Tidal Rage (wave + rockfish school), Sword in the Stone, Potion Storm, Midnight Storm (ghost storm). Gloomwing's power move is Flame Dance.
 
 ## In progress: option A (characters as real 3D models)
@@ -31,4 +34,4 @@
 ## Next
 1. Import the other five sheet characters as their Hunyuan models finish.
 2. Send Astra the three requests in ASTRA_REQUESTS.md; then Wanda and Gloomwing go through Hunyuan too.
-3. Matt plays the new modes with Luca and reports what's too hard, too long or confusing, and any moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Gloomwing.
+3. Matt plays the new modes with Luca, then sends the learning report ("Copy as text") plus what felt too hard, too long or confusing, and any moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Gloomwing.

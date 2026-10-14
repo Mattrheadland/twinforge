@@ -30,6 +30,7 @@ const STARTS = {
   K: 'kite', L: 'lion', M: 'moon', N: 'nose', O: 'octopus', P: 'pig', R: 'rainbow', S: 'sun', T: 'tree',
   U: 'umbrella', V: 'violin', W: 'whale', Y: 'yoyo', Z: 'zebra',
 };
+const SAME_SOUND = { C: ['K'], K: ['C'] };
 // Letters whose sounds a beginner rarely mixes up — used at easier levels.
 const EASY_STARTS = 'BCDFLMPSTZ'.split('');
 
@@ -43,7 +44,7 @@ const CVC = ['cat', 'dog', 'sun', 'hat', 'pig', 'bus', 'cup', 'bed', 'fox', 'bug
 // ---------------- math ----------------
 const COUNT_RANGE = { 1: [1, 5], 2: [3, 8], 3: [5, 10], 4: [8, 15], 5: [10, 20] };
 
-const MATH_KINDS = {
+export const MATH_KINDS = {
   1: ['count', 'count', 'shape', 'compare'],
   2: ['count', 'shape', 'compare', 'pattern', 'numeral'],
   3: ['count', 'numeral', 'add', 'pattern', 'compare'],
@@ -51,9 +52,16 @@ const MATH_KINDS = {
   5: ['count', 'add', 'sub', 'numeral', 'compare'],
 };
 
-export function makeMath(level, rng, force) {
+// off: question types a grown-up switched off in the learning report. If that
+// leaves nothing at this level, the level's normal mix is used instead.
+const allowed = (list, off) => {
+  const keep = off && off.length ? list.filter((k) => !off.includes(k)) : list;
+  return keep.length ? keep : list;
+};
+
+export function makeMath(level, rng, force, off) {
   const lv = clampLevel(level);
-  const kind = force || rng.pick(MATH_KINDS[lv]);
+  const kind = force || rng.pick(allowed(MATH_KINDS[lv], off));
   const fn = { count: makeCounting, shape: makeShape, compare: makeCompare, pattern: makePattern, numeral: makeNumeral, add: makeAdd, sub: makeSub }[kind];
   return fn(lv, rng);
 }
@@ -156,7 +164,7 @@ function makePattern(lv, rng) {
 }
 
 // ---------------- reading ----------------
-const READ_KINDS = {
+export const READ_KINDS = {
   1: ['letter'],
   2: ['letter', 'letter', 'starts'],
   3: ['letter', 'starts', 'rhyme'],
@@ -164,9 +172,9 @@ const READ_KINDS = {
   5: ['letter', 'rhyme', 'word', 'word'],
 };
 
-export function makeReading(level, rng, force) {
+export function makeReading(level, rng, force, off) {
   const lv = clampLevel(level);
-  const kind = force || rng.pick(READ_KINDS[lv]);
+  const kind = force || rng.pick(allowed(READ_KINDS[lv], off));
   const fn = { letter: makeLetter, starts: makeStarts, rhyme: makeRhyme, word: makeWord }[kind];
   return fn(lv, rng);
 }
@@ -178,6 +186,8 @@ const CONFUSABLE = [
   ['b', 'd', 'p'], ['p', 'q', 'b'], ['m', 'n', 'u'], ['n', 'h', 'u'],
   ['a', 'o', 'e'], ['c', 'e', 'o'], ['i', 'l', 't'], ['v', 'w', 'y'],
 ];
+const MIRRORS = [['b', 'd', 'p', 'q'], ['m', 'w'], ['n', 'u']];
+const lookAlike = (a, b) => [...CONFUSABLE, ...MIRRORS].some((set) => set.includes(a.toLowerCase()) && set.includes(b.toLowerCase()));
 const FAVORITES = ['L', 'U', 'C', 'A']; // letters in Luca's name show up a little more often early on
 
 export function makeLetter(level, rng) {
@@ -191,7 +201,8 @@ export function makeLetter(level, rng) {
   } else {
     const pool = lv <= 2 ? [...UPPER, ...FAVORITES] : UPPER;
     const T = rng.pick(pool);
-    const others = UPPER.filter((L) => L !== T && (lv >= 2 || familyOf(L) !== familyOf(T)));
+    // below level 5, never pair a letter with its mirror/flip twin (b·d·p·q, m·w, n·u)
+    const others = UPPER.filter((L) => L !== T && (lv >= 2 || familyOf(L) !== familyOf(T)) && (lv < 3 || !lookAlike(L, T)));
     const distractors = rng.shuffle(others).slice(0, 2);
     if (lv <= 2) {
       target = T;
@@ -219,7 +230,8 @@ function makeStarts(lv, rng) {
   const L = rng.pick(letters);
   const word = STARTS[L];
   // distractors: letters with different sounds (and different shapes at easy levels)
-  const pool = Object.keys(STARTS).filter((x) => x !== L && (lv >= 3 || familyOf(x) !== familyOf(L)));
+  // C and K make the same sound in cat / kite, so never offer one as a wrong answer for the other
+  const pool = Object.keys(STARTS).filter((x) => x !== L && !SAME_SOUND[L]?.includes(x) && (lv >= 3 || familyOf(x) !== familyOf(L)));
   const opts = [L, ...rng.shuffle(pool).slice(0, 2)];
   return checked({
     kind: 'starts', level: lv, prompt: `What does ${wordLabel(word)} start with?`, optType: 'letter',
@@ -298,6 +310,15 @@ export const isCorrect = (ch, choice) => String(choice) === String(ch.answer);
 
 // Wrong-answer count -> quality used by the battle rules.
 export const qualityFor = (wrongs) => (wrongs === 0 ? 'indep' : wrongs === 1 ? 'hint' : 'support');
+
+// Every question type, the domain it belongs to, and the first level it shows up at.
+export const KINDS = (() => {
+  const out = {};
+  for (const [domain, table] of [['math', MATH_KINDS], ['reading', READ_KINDS]])
+    for (let lv = 1; lv <= 5; lv++) for (const k of table[lv]) if (!out[k]) out[k] = { domain, from: lv };
+  return out;
+})();
+export const kindsAt = (domain, level) => [...new Set((domain === 'math' ? MATH_KINDS : READ_KINDS)[clampLevel(level)])];
 
 function clampLevel(l) {
   return Math.max(1, Math.min(5, Math.round(l || 1)));

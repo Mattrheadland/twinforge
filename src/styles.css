@@ -575,3 +575,55 @@ html.reduced #tv::after { animation: none; }
 .gal-move-name { position: absolute; left: 50%; bottom: -16px; transform: translateX(-50%); white-space: nowrap; background: rgba(12, 8, 30, 0.8); padding: 2px 5px; border-radius: 5px; }
 .vs-foe.giant .vs-side { transform: scale(1.18); }
 .vs-crown { position: absolute; z-index: 2; top: -52px; left: 50%; width: 60px; height: 60px; margin-left: -30px; animation: bob 0.8s steps(3) infinite; }
+
+/* ---------- learning report (grown-ups) ---------- */
+.overlay.report .rp-card { width: min(800px, calc(100% - var(--sl) - var(--sr) - 16px)); max-height: calc(100% - 20px); padding: 12px 18px 14px; font-size: 14px; }
+.rp-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rp-top h2 { margin: 0; }
+.rp-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 8px; }
+.rp-chip { display: flex; align-items: baseline; gap: 6px; padding: 6px 12px; border: 2px solid var(--ink); border-radius: 12px; background: #fff7d6; }
+.rp-chip b { font-size: 20px; }
+.rp-chip span { font-size: 12px; font-weight: 700; opacity: 0.75; }
+.rp-domains { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rp-domain { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border: 2px solid var(--ink); border-radius: 12px; background: #f3f0fa; }
+.rp-dhead { display: flex; align-items: baseline; gap: 8px; }
+.rp-dhead b { font-size: 16px; }
+.rp-lv { font-weight: 900; font-size: 16px; padding: 0 8px; border-radius: 8px; background: var(--yellow); border: 2px solid var(--ink); }
+.rp-domain .rp-mix { opacity: 0.55; }
+.rp-tips { margin-top: 8px; padding: 6px 12px; border-radius: 12px; background: #fff1e6; border: 2px solid #f4a259; }
+.rp-tips h3 { margin-top: 4px; }
+.rp-tips ul { margin: 0; padding-left: 18px; }
+.rp-tips li { margin: 3px 0; }
+.rp-table { width: 100%; border-collapse: collapse; margin: 4px 0 10px; font-size: 13px; }
+.rp-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.6; padding: 4px 6px; border-bottom: 2px solid var(--ink); }
+.rp-table th:first-child { font-size: 13px; opacity: 1; text-transform: none; letter-spacing: 0; }
+.rp-table td { padding: 5px 6px; border-bottom: 1px solid #eee; font-weight: 700; white-space: nowrap; }
+.rp-table td:first-child { white-space: normal; }
+.rp-table tr.none td { opacity: 0.45; font-weight: 500; }
+.rp-table tr.off td:not(:last-child) { opacity: 0.35; text-decoration: line-through; }
+.rp-table input[type="checkbox"] { width: 20px; height: 20px; }
+.rp-help { color: #c0392b; }
+.rp-pill { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; border: 1.5px solid var(--ink); }
+.rp-solid { background: #c9f2cf; }
+.rp-ok { background: #eef0f5; }
+.rp-tough { background: #ffd2c9; }
+.rp-slow { background: #ffecb0; }
+.rp-new { background: transparent; border-style: dashed; opacity: 0.7; }
+.rp-misses { list-style: none; margin: 0; padding: 0; }
+.rp-misses li { display: flex; flex-direction: column; padding: 5px 0; border-bottom: 1px solid #eee; }
+.rp-misses li span { font-weight: 700; }
+
+/* ---------- question preview (grown-ups) ---------- */
+.overlay.preview { display: block; background: rgba(10, 5, 25, 0.95); z-index: 32; }
+.pv-stage { position: absolute; inset: 52px 0 0 0; }
+.pv-bar {
+  position: absolute; left: calc(var(--sl) + 8px); right: calc(var(--sr) + 8px); top: 6px; z-index: 12; display: flex; align-items: center; gap: 8px;
+  background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 4px 8px; font-size: 14px;
+}
+.pv-bar select { font: inherit; font-weight: 700; padding: 5px 6px; border-radius: 10px; border: 2px solid var(--ink); background: #f3f0fa; max-width: 230px; }
+.pv-bar .stepper { display: flex; align-items: center; gap: 6px; }
+.pv-bar .stepper b { width: 16px; text-align: center; font-size: 18px; }
+.pv-bar .mini { width: 32px; height: 32px; border-radius: 10px; border: 2px solid var(--ink); font-size: 20px; font-weight: 900; }
+.pv-bar .pbtn { padding: 6px 12px; }
+.pv-bar .pbtn.primary { margin: 0 0 0 auto; width: auto; font-size: 15px; }
+.pv-result { font-weight: 800; color: #2E9E44; min-width: 0; white-space: nowrap; }

@@ -303,6 +303,54 @@ await sleep(300);
 await shot('16-parent');
 check('parent panel opens', await page.$('.overlay.parent'));
 
+// ---------- learning report + preview ----------
+const logLen = await page.evaluate(() => window.__tbb.app.save.data.learning.log.length);
+check('every question was logged for the report', logLen >= 10, `log ${logLen}`);
+await page.evaluate(() => document.querySelector('.rp-open').scrollIntoView());
+await tap('.rp-open', { wait: 500 });
+check('learning report opens with real numbers', await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('.overlay.report .rp-table tbody tr')];
+  const counting = rows.find((r) => r.cells[0].textContent.startsWith('Counting'));
+  return rows.length === 11 && counting && +counting.cells[1].textContent > 0;
+}));
+check('report lists the misses with what he tapped first', await page.evaluate(() => [...document.querySelectorAll('.rp-misses li')].some((li) => /tapped .* before the right one/.test(li.textContent))));
+await shot('23-learning-report');
+await page.evaluate(() => { const c = document.querySelector('.rp-card'); c.scrollTop = c.scrollHeight; });
+await sleep(200);
+await shot('23b-learning-report-bottom');
+await page.evaluate(() => { const r = [...document.querySelectorAll('.rp-table tbody tr')].find((x) => x.cells[0].textContent.startsWith('Rhymes')); r.querySelector('input').click(); });
+await sleep(200);
+check('unticking a type switches it off', await page.evaluate(() => window.__tbb.app.save.data.settings.offKinds.includes('rhyme') && !!document.querySelector('.rp-table tr.off')));
+await page.evaluate(() => { const r = [...document.querySelectorAll('.rp-table tbody tr')].find((x) => x.cells[0].textContent.startsWith('Rhymes')); r.querySelector('input').click(); });
+await page.evaluate(() => document.querySelector('.rp-card').scrollTop = 0);
+await page.evaluate(() => [...document.querySelectorAll('.rp-top .pbtn')].find((b) => b.textContent === 'Copy as text').click());
+await sleep(300);
+check('report copies as text', await page.evaluate(() => /TwinForge learning report/.test(document.querySelector('.overlay.textbox textarea')?.value || '')));
+await page.evaluate(() => document.querySelector('.overlay.textbox .pbtn.primary').click());
+await page.evaluate(() => [...document.querySelectorAll('.rp-top .pbtn')].find((b) => b.textContent === 'Preview questions').click());
+await page.waitForSelector('.overlay.preview .challenge.in .opt', { visible: true, timeout: 5000 }).catch(() => {});
+await sleep(800);
+await shot('24-preview-mix');
+check('preview shows a real question card', (await page.$$('.overlay.preview .opt')).length === 3);
+await page.select('.pv-bar select:nth-of-type(1)', 'math');
+await page.select('.pv-bar select:nth-of-type(2)', 'sub');
+await sleep(900);
+check('preview can force a type', await page.evaluate(() => document.querySelector('.overlay.preview').dataset.kind === 'sub' && !!document.querySelector('.overlay.preview .ch-sub')));
+await shot('25-preview-sub');
+const before = await page.evaluate(() => window.__tbb.app.save.data.learning.log.length);
+const right = await page.evaluate(() => {
+  const opts = [...document.querySelectorAll('.overlay.preview .opt')];
+  const card = document.querySelector('.overlay.preview .ch-sub');
+  const crossed = card.querySelectorAll('.cnt-item.crossed').length;
+  const total = card.querySelectorAll('.cnt-item').length;
+  return String(total - crossed);
+});
+await tap(`.overlay.preview .opt[data-value="${right}"]`, { wait: 1300 });
+check('preview answers are not recorded', (await page.evaluate(() => window.__tbb.app.save.data.learning.log.length)) === before);
+await page.evaluate(() => document.querySelector('.pv-bar .pbtn.primary').click());
+await sleep(200);
+check('closing preview goes back to the report', !(await page.$('.overlay.preview')) && !!(await page.$('.overlay.report')));
+
 // ---------- perf sample (headless Chromium, not iPhone) ----------
 const fps = await page.evaluate(() => window.__tbb.app.stage.fps);
 console.log('headless fps sample', JSON.stringify(fps));

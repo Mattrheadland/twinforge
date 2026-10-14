@@ -5,6 +5,7 @@ import { ICON } from './icons.js';
 import { portrait } from './hud.js';
 import { drawToy } from '../render/toys.js';
 import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
+import { noteLevel } from '../logic/learning-log.js';
 import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
 import { get3D } from '../render3d/stage3d.js';
 import { onModelsChanged } from '../render3d/models.js';
@@ -188,7 +189,7 @@ export class UI {
   }
 
   // ---------------- parent panel ----------------
-  showParent({ save, onChange, onExport, onImport, onReset, onClose, build, storageOk }) {
+  showParent({ save, onChange, onExport, onImport, onReset, onClose, onReport, onPreview, build, storageOk }) {
     const d = save.data;
     const st = d.settings;
     const slider = (label, key) => {
@@ -209,7 +210,9 @@ export class UI {
       auto.checked = sk.auto;
       auto.addEventListener('change', () => { sk.auto = auto.checked; onChange(); });
       const bump = (n) => {
+        const from = sk.level;
         sk.level = Math.max(MIN_LEVEL, Math.min(MAX_LEVEL, sk.level + n));
+        if (d.learning) noteLevel(d.learning, domain, from, sk.level, 'manual');
         sk.streak = 0; sk.recent = [];
         val.textContent = String(sk.level);
         desc_.textContent = desc[sk.level];
@@ -225,8 +228,25 @@ export class UI {
         h('div', { class: 'stepper' }, minus, val, plus),
         h('label', { class: 'auto' }, auto, 'Auto'));
     };
-    const MATH = { 1: 'Count 1–5', 2: 'Count 3–8', 3: 'Count 5–10', 4: 'Count 8–15', 5: 'Count 10–20' };
-    const LET = { 1: 'Match capitals (very different shapes)', 2: 'Match any capitals', 3: 'Match lowercase', 4: 'Capital → lowercase partner', 5: 'Tricky lowercase (b d p q…)' };
+    // what each level actually mixes in (logic/challenges.js MATH_KINDS / READ_KINDS)
+    const MATH = {
+      1: 'Count 1–5 · same shape · which has more',
+      2: 'Count 3–8 · shapes · more · AB patterns · find the group',
+      3: 'Count 5–10 · adding to 5 · ABB patterns · most & fewest',
+      4: 'Count 8–15 · adding to 10 · take away from 5 · ABC patterns',
+      5: 'Count 10–20 · add & take away to 10 · most & fewest',
+    };
+    const LET = {
+      1: 'Match capitals (very different shapes)',
+      2: 'Match any capitals · first sounds (easy letters)',
+      3: 'Match lowercase · first sounds · rhymes',
+      4: 'Capital → lowercase · all first sounds · rhymes · read a word',
+      5: 'Tricky lowercase (b d p q…) · rhymes · read a word',
+    };
+    const reportBtn = h('button', { class: 'pbtn rp-open' }, 'Learning report');
+    const previewBtn = h('button', { class: 'pbtn pv-open' }, 'Preview questions');
+    reportBtn.addEventListener('click', () => onReport && onReport());
+    previewBtn.addEventListener('click', () => onPreview && onPreview());
     const exportBtn = h('button', { class: 'pbtn' }, 'Export backup');
     const importBtn = h('button', { class: 'pbtn' }, 'Import backup');
     const resetBtn = h('button', { class: 'pbtn danger' }, 'Reset progress…');
@@ -258,9 +278,10 @@ export class UI {
         h('section', {}, h('h3', {}, 'Sound'), slider('Music', 'music'), slider('Effects', 'sfx')),
         h('section', {}, h('h3', {}, 'Learning'),
           toggle('Learning questions', 'learning', 'On: power moves ask a math question, specials ask a reading one. Off: just battle.'),
-          level('Counting (Attack)', 'math', MATH),
-          level('Letters (Special)', 'letters', LET),
-          h('p', { class: 'note' }, 'Auto moves up after 3 independent answers in a row, and down if he needs full help twice in his last 4. Answers with a hint never move it up.')),
+          level('Math (power moves)', 'math', MATH),
+          level('Reading (specials)', 'letters', LET),
+          h('p', { class: 'note' }, 'Auto moves up after 3 right-first-try answers in a row, and down if he needs full help twice in his last 4. Answers with a hint never move it up.'),
+          h('div', { class: 'pbtns' }, reportBtn, previewBtn)),
         h('section', {}, h('h3', {}, 'Comfort'),
           toggle('Reduced motion', 'reducedMotion', 'No screen shake or big flashes'),
           toggle('Haptics', 'haptics', 'Light taps on iPhone (iOS 18+), where supported'),
@@ -283,10 +304,10 @@ export class UI {
     setTimeout(() => t.remove(), ms + 400);
   }
 
-  showTextBox(title, text) {
+  showTextBox(title, text, note = 'Copy this text and keep it somewhere safe (Notes works). Import it later with “Import backup”.') {
     const ta = h('textarea', { readonly: true }, text);
     const done = h('button', { class: 'pbtn primary' }, 'Close');
-    const scr = h('div', { class: 'overlay parent' }, h('div', { class: 'parent-card' }, h('h2', {}, title), h('p', { class: 'note' }, 'Copy this text and keep it somewhere safe (Notes works). Import it later with “Import backup”.'), ta, done));
+    const scr = h('div', { class: 'overlay parent textbox' }, h('div', { class: 'parent-card' }, h('h2', {}, title), h('p', { class: 'note' }, note), ta, done));
     done.addEventListener('click', () => scr.remove());
     this.layer.appendChild(scr);
     setTimeout(() => { ta.focus(); ta.select(); }, 100);

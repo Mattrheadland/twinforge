@@ -2,6 +2,7 @@
 import { defaultSkills } from './logic/difficulty.js';
 import { isValidBattle } from './logic/battle.js';
 import { defaultRecords, isValidRun } from './game/modes.js';
+import { defaultLearning, normalizeLearning } from './logic/learning-log.js';
 
 export const SAVE_VERSION = 1;
 const KEY = 'tbb.save';
@@ -21,9 +22,11 @@ export function defaultSave() {
       tvLook: true,
       learning: true,
       pixelArt: true,
+      offKinds: [], // question types switched off in the learning report
     },
     progress: { stars: 0, wins: 0, battles: 0, lastHero: null, tutorial: {} },
     skills: defaultSkills(),
+    learning: defaultLearning(), // answer log behind the grown-up learning report
     battle: null, // snapshot of an unfinished battle (taken at the start of each hero turn)
     run: null, // the game-mode run in progress (game/modes.js)
     records: defaultRecords(), // story clears, trophies, best arcade streak
@@ -54,6 +57,8 @@ export function migrate(raw, chars) {
       letters: { ...base.skills.letters, ...(raw.skills?.letters || {}) },
     },
   };
+  out.learning = normalizeLearning(raw.learning);
+  if (!Array.isArray(out.settings.offKinds)) out.settings.offKinds = [];
   if (out.battle && !isValidBattle(out.battle, chars)) out.battle = null;
   if (out.run && !isValidRun(out.run, chars)) out.run = null;
   out.records = { ...defaultRecords(), ...(raw.records || {}), storyCleared: { ...(raw.records?.storyCleared || {}) } };

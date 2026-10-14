@@ -9,6 +9,7 @@ import { SaveStore } from './save.js';
 import { UI } from './ui/screens.js';
 import { BattleController } from './game/battle-controller.js';
 import { buzz, setHaptics } from './haptics.js';
+import { showReport, showPreview } from './ui/learning-report.js';
 import { newRun, winStop, current, recordRun, BOSS_SCALE } from './game/modes.js';
 import { showModes, showArenaPick, showLadder, showRunResult, showTrophy, showGallery } from './ui/modes-ui.js';
 import { Director } from './game/director.js';
@@ -435,8 +436,23 @@ class App {
         this.ui.toast('Progress reset');
         this.goTitle();
       },
+      onReport: () => this.openReport(),
+      onPreview: () => this.openPreview(),
       onClose: () => this.goTitle(),
     });
+  }
+
+  openReport() {
+    showReport(this.ui.layer, {
+      save: this.save,
+      onChange: () => this.save.save(),
+      onPreview: () => this.openPreview(),
+      showText: (title, text) => this.ui.showTextBox(title, text, 'Select all and copy. Paste it into Notes, a text, or a chat with Claude to tune the questions.'),
+    });
+  }
+
+  openPreview() {
+    showPreview(this.ui.layer, { save: this.save, audio: this.audio, buzz: this.buzz });
   }
 
   async exportSave() {
