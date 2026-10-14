@@ -81,12 +81,18 @@ check('title renders', await page.$('.title-screen .big-play'), errors.join(' | 
 // ---------- select ----------
 await tap('.big-play', { wait: 700 });
 check('audio unlocked by first tap', await page.evaluate(() => window.__tbb.app.audio.ctx && window.__tbb.app.audio.ctx.state), await page.evaluate(() => window.__tbb.app.audio.ctx?.state));
+await shot('02a-modes');
+check('five modes to pick', (await page.$$('.mode-card')).length === 5);
+await tap('.mode-quick', { wait: 600 });
 await shot('02-select');
 const cards = await page.$$('.pick-card');
 check('eight characters to pick', cards.length === 8);
 await tap(`.pick-card:nth-child(${process.env.HERO || 2})`, { wait: 500 });
 await shot('03-selected');
 await tap('.go-btn', { wait: 300 });
+await shot('03b-arenas');
+check('arena pick shows four arenas, the bedroom and surprise', (await page.$$('.arena-card')).length === 6);
+await tap('.arena-card:nth-child(2)', { wait: 300 });
 await sleep(400);
 await shot('04-vs');
 
@@ -235,6 +241,48 @@ await tap('.pause-btn', { wait: 300 });
 await shot('15-pause');
 await tap('.overlay.pause .round-btn.home', { wait: 800 });
 check('home from pause returns to title', await page.$('.title-screen'));
+
+// ---------- story / tournament / gallery ----------
+await page.evaluate(() => { const a = window.__tbb.app; a.save.data.battle = null; a.save.save(); a.goTitle(); });
+await sleep(600);
+await tap('.big-play', { wait: 700 });
+await tap('.mode-story', { wait: 600 });
+await tap('.pick-card:nth-child(1)', { wait: 500 });
+await tap('.go-btn', { wait: 600 });
+await shot('18-story-map');
+check('story map: seven stops, the last a giant', (await page.$$('.ladder-node')).length === 7 && (await page.$$('.ladder-node.boss')).length === 1);
+await tap('.ladder-screen .go-btn');
+check('story battle starts on the first foe\'s home turf', await waitPhase('choose', 20000) && (await page.evaluate(() => { const a = window.__tbb.app; return a.stage.arenaId === a.save.data.run.path[0].arenaId && a.battle.state.inRun; })));
+await shot('19-story-battle');
+await page.evaluate(() => { const a = window.__tbb.app; a.save.data.settings.learning = false; const b = a.battle; b.state.foe.hp = 1; b.hud.setHP('foe', 1, b.state.foe.maxHp, true); });
+await tap('.move-power');
+await page.waitForSelector('.overlay.result', { timeout: 30000 });
+await page.evaluate(() => { window.__tbb.app.save.data.settings.learning = true; });
+await sleep(1500);
+check('story win offers NEXT and saves progress', (await page.$('.round-btn.again.pulse')) && (await page.evaluate(() => window.__tbb.app.save.data.run.step === 1)));
+await tap('.round-btn.again', { wait: 600 });
+check('next goes back to the map with one stop done', (await page.$$('.ladder-node.done')).length === 1);
+// a giant: jump to the last stop
+await page.evaluate(() => { const a = window.__tbb.app; a.save.data.run.step = a.save.data.run.path.length - 1; a.showRunMap(); });
+await tap('.ladder-screen .go-btn');
+await waitPhase('choose', 20000);
+check('the last story foe is a giant', await page.evaluate(() => { const b = window.__tbb.app.battle; return b.state.boss && b.stage.fighters.foe.big > 1 && b.state.foe.maxHp > b.chars[b.state.foeId].maxHp; }));
+await shot('20-giant');
+await tap('.pause-btn', { wait: 300 });
+await tap('.overlay.pause .round-btn.home', { wait: 800 });
+check('play resumes the paused giant fight', await page.$('.big-play.resume'));
+await page.evaluate(() => { const a = window.__tbb.app; a.save.data.battle = null; a.save.save(); a.goTitle(); });
+await sleep(600);
+await tap('.big-play', { wait: 700 });
+await tap('.mode-gallery', { wait: 900 });
+await shot('21-gallery');
+check('gallery shows a toy with its four moves', (await page.$$('.gal-moves .act')).length === 4 && (await page.evaluate(() => !!window.__tbb.app.stage.fighters.hero)));
+await tap('.gal-arrow.right', { wait: 600 });
+await tap('.gal-moves .move-special', { wait: 2600 });
+await shot('22-gallery-special');
+await tap('.home-btn', { wait: 600 });
+check('home from the gallery returns to modes', !!(await page.$('.modes-screen')) && (await page.evaluate(() => !window.__tbb.app.stage.showcase)));
+await tap('.home-btn', { wait: 600 });
 
 // ---------- mute ----------
 const muted = await page.evaluate(() => {

@@ -116,7 +116,7 @@ export class UI {
   }
 
   // ---------------- VS splash ----------------
-  showVS(heroDef, foeDef) {
+  showVS(heroDef, foeDef, { boss = false } = {}) {
     this.clear();
     const px = this.app.px;
     const scr = h('div', { class: 'overlay vs' },
@@ -125,7 +125,7 @@ export class UI {
       h('div', { class: 'vs-slash' }),
       h('div', { class: 'vs-col vs-hero' }, h('div', { class: 'vs-side', style: { '--c': heroDef.color } }, portrait(heroDef, 156, px * 1.2)), pixelLabel(heroDef.name, 22, '#FFC914')),
       h('div', { class: 'vs-mid' }, pixelLabel('VS', 104, '#FFC914', { chunk: 3 })),
-      h('div', { class: 'vs-col vs-foe' }, h('div', { class: 'vs-side', style: { '--c': foeDef.color } }, portrait(foeDef, 156, px * 1.2)), pixelLabel(foeDef.name, 22, '#FFC914')));
+      h('div', { class: `vs-col vs-foe ${boss ? 'giant' : ''}` }, boss ? h('span', { class: 'vs-crown', html: ICON.crown }) : null, h('div', { class: 'vs-side', style: { '--c': foeDef.color } }, portrait(foeDef, 156, px * 1.2)), pixelLabel(boss ? 'GIANT ' + foeDef.name : foeDef.name, 22, boss ? '#FF5A4A' : '#FFC914')));
     this.layer.appendChild(scr);
     return new Promise((r) => setTimeout(() => {
       scr.classList.add('out');

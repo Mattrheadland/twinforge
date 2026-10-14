@@ -2,6 +2,7 @@
 // Director, questions from ChallengeUI. Input is only accepted in CHOOSE, and the
 // first accepted tap locks it until the whole turn has resolved.
 import { arenaFor } from '../data/arenas.js';
+import { BOSS_SCALE } from './modes.js';
 import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor, moveFor, learningFor } from '../logic/battle.js';
 import { makeMath, makeReading } from '../logic/challenges.js';
 import { recordResult } from '../logic/difficulty.js';
@@ -17,14 +18,15 @@ export const PHASE = {
 };
 
 export class BattleController {
-  constructor({ app, chars, heroId, foeId, resume }) {
+  // stop: { arenaId, boss } from a game-mode run (game/modes.js)
+  constructor({ app, chars, heroId, foeId, resume, stop = null }) {
     this.app = app;
     this.chars = chars;
     this.stage = app.stage;
     this.audio = app.audio;
     this.save = app.save;
     this.rng = new Rng((Date.now() ^ 0x5eed) >>> 0);
-    this.state = resume || createBattle({ heroId, foeId, chars });
+    this.state = resume || createBattle({ heroId, foeId, chars, arenaId: stop?.arenaId || arenaFor(foeId), boss: !!stop?.boss });
     this.resumed = !!resume;
     this.phase = PHASE.INTRO;
     this.locked = true;
@@ -46,8 +48,8 @@ export class BattleController {
   async start() {
     const s = this.state;
     const heroDef = this.chars[s.heroId], foeDef = this.chars[s.foeId];
-    this.stage.setArena(arenaFor(s.foeId));
-    this.stage.setFighters(heroDef, foeDef);
+    this.stage.setArena(s.arenaId || arenaFor(s.foeId));
+    this.stage.setFighters(heroDef, foeDef, { foeBig: s.boss ? BOSS_SCALE : 1 });
     this.director = new Director(this.stage, this.audio);
     this.hud = new Hud(this.app.ui.layer, { heroDef, foeDef, px: this.app.px, toVirtual: this.app.ui.toVirtual, learning: this.learning });
     this.challenge = new ChallengeUI(this.app.ui.layer, this.audio, buzz);
@@ -272,13 +274,7 @@ export class BattleController {
     this.save.save();
     this.app.wakeLock(false);
     await this.director.wait(500);
-    this.app.ui.showResult({
-      win: s.result === 'win',
-      stars,
-      total: p.stars,
-      onAgain: () => this.app.startBattle(s.heroId, s.foeId),
-      onHome: () => this.app.goTitle(),
-    });
+    this.app.onBattleEnd({ win: s.result === 'win', stars, total: p.stars, state: s });
   }
 
   pause() {

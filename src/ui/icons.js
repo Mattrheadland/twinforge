@@ -59,6 +59,24 @@ export const ICON = {
   flames: S(`<path d="M26 86 C10 86 8 66 18 56 C20 64 24 66 26 62 C24 50 30 40 36 34 C36 48 46 56 44 70 C44 80 36 86 26 86 Z" fill="#FF7A1A"/><path d="M68 86 C52 86 50 64 62 52 C64 62 68 64 70 60 C68 44 76 32 82 26 C82 42 92 52 90 68 C88 80 80 86 68 86 Z" fill="#FFC914"/>`),
   wings: S(`<path d="M50 40 Q30 10 6 20 Q14 40 10 62 Q24 52 30 66 Q38 54 50 62 Z" fill="#6A3FA0"/><path d="M50 40 Q70 10 94 20 Q86 40 90 62 Q76 52 70 66 Q62 54 50 62 Z" fill="#6A3FA0"/>`),
   ghost: S(`<path d="M22 88 L22 44 Q22 14 50 14 Q78 14 78 44 L78 88 L68 78 L58 88 L50 78 L42 88 L32 78 Z" fill="#E6D8FF"/><circle cx="40" cy="44" r="6" fill="#14111A" stroke-width="0"/><circle cx="60" cy="44" r="6" fill="#14111A" stroke-width="0"/>`),
+  // game modes
+  map: S(`<path d="M10 22 L36 12 L64 22 L90 12 L90 78 L64 88 L36 78 L10 88 Z" fill="#F2DCA8"/><path d="M36 12 L36 78 M64 22 L64 88" fill="none" stroke-width="5"/>
+    <path d="M20 66 Q34 48 48 58 T76 36" fill="none" stroke="#D7263D" stroke-width="5" stroke-dasharray="7 6"/><path d="M70 28 L82 40 M82 28 L70 40" stroke="#D7263D" stroke-width="6"/>`),
+  trophy: S(`<path d="M28 12 L72 12 L70 46 Q66 64 50 66 Q34 64 30 46 Z" fill="#FFC914"/><path d="M28 18 Q8 18 12 34 Q16 46 32 46 M72 18 Q92 18 88 34 Q84 46 68 46" fill="none" stroke-width="7"/>
+    <path d="M44 66 L56 66 L58 78 L42 78 Z" fill="#FFC914"/><rect x="30" y="78" width="40" height="12" rx="3" fill="#8A5A3C"/><path d="M42 22 L46 40" fill="none" stroke="#fff" stroke-width="5"/>`),
+  flame: S(`<path d="M50 8 Q60 30 74 40 Q90 56 80 74 Q70 92 50 92 Q30 92 20 74 Q12 56 26 42 Q30 54 38 56 Q34 30 50 8 Z" fill="#F46036"/>
+    <path d="M50 46 Q58 58 64 66 Q68 80 50 84 Q34 82 36 68 Q38 58 50 46 Z" fill="#FFC914" stroke-width="5"/>`),
+  gallery: S(`<rect x="10" y="16" width="80" height="62" rx="6" fill="#4EA8DE"/><path d="M10 64 L34 42 L52 58 L66 46 L90 66 L90 72 Q90 78 84 78 L16 78 Q10 78 10 72 Z" fill="#2E9E44" stroke-width="5"/>
+    <circle cx="70" cy="32" r="8" fill="#FFC914" stroke-width="5"/><path d="M30 90 L70 90" stroke-width="7"/>`),
+  shuffle: S(`<path d="M10 30 L30 30 Q46 30 54 50 Q62 70 78 70 L84 70" fill="none" stroke-width="13"/><path d="M10 30 L30 30 Q46 30 54 50 Q62 70 78 70 L84 70" fill="none" stroke="#FFC914" stroke-width="6"/>
+    <path d="M10 70 L30 70 Q40 70 46 62 M62 38 Q68 30 78 30 L84 30" fill="none" stroke-width="13"/><path d="M10 70 L30 70 Q40 70 46 62 M62 38 Q68 30 78 30 L84 30" fill="none" stroke="#4EA8DE" stroke-width="6"/>
+    <path d="M80 18 L96 30 L80 42 Z M80 58 L96 70 L80 82 Z" fill="#fff"/>`),
+  crown: S(`<path d="M12 74 L8 28 L32 50 L50 18 L68 50 L92 28 L88 74 Z" fill="#FFC914"/><rect x="12" y="74" width="76" height="12" rx="3" fill="#F46036"/>
+    <circle cx="50" cy="56" r="7" fill="#D7263D" stroke-width="4"/>`),
+  checkBadge: S(`<circle cx="50" cy="50" r="40" fill="#2E9E44"/><path d="M28 52 L44 68 L74 34" fill="none" stroke="#fff" stroke-width="11"/>`),
+  lock: S(`<path d="M30 46 L30 32 Q30 12 50 12 Q70 12 70 32 L70 46" fill="none" stroke-width="10"/><rect x="18" y="44" width="64" height="46" rx="8" fill="#9AA3B8"/><circle cx="50" cy="64" r="7" fill="#14111A" stroke-width="0"/>`),
+  arrowL: S(`<path d="M66 12 L26 50 L66 88 L66 66 L86 66 L86 34 L66 34 Z" fill="#fff"/>`),
+  arrowR: S(`<path d="M34 12 L74 50 L34 88 L34 66 L14 66 L14 34 L34 34 Z" fill="#fff"/>`),
   // Remy Roo
   zoom: S(`<ellipse cx="50" cy="66" rx="22" ry="18" fill="#C9822E"/><ellipse cx="24" cy="40" rx="9" ry="11" fill="#C9822E"/><ellipse cx="40" cy="24" rx="9" ry="11" fill="#C9822E"/><ellipse cx="60" cy="24" rx="9" ry="11" fill="#C9822E"/><ellipse cx="76" cy="40" rx="9" ry="11" fill="#C9822E"/>
     <path d="M6 84 L16 78 M4 64 L14 64" fill="none" stroke="#fff" stroke-width="6"/>`),

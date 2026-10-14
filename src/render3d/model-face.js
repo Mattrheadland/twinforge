@@ -9,6 +9,9 @@
 //   size  [w, h]     decal size
 //   yaw   turn around y (0 = facing +x); use ±0.6 for eyes on the sides of a snout
 //   lift  gap off the surface (default 1.2)
+//   pair  true for eyes on the two sides of the head (a snout between them):
+//         one decal at pos facing yaw, its mirror at -z facing -yaw, one eye each
+//         (for the +z side use a negative yaw, e.g. -1.1)
 //   style paintEyes style: { iris, lid, brow, sclera, glow, size, gap }  (sizes as fractions of the canvas)
 import * as THREE from 'three';
 import { faceCanvas, paintEyes, faceUpdater } from './roster-rigs.js';
@@ -27,24 +30,11 @@ function surfaceAt(root, model, from, dir) {
   return { point: hits[0].point.clone().applyMatrix4(inv), normal: n };
 }
 
-export function addFace(parent, root, cfg, model = parent) {
-  const [w, h] = cfg.size || [34, 16];
-  const CW = 128, CH = Math.max(32, Math.round((128 * h) / w));
-  const fc = faceCanvas(CW, CH);
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(w, h),
-    new THREE.MeshBasicMaterial({
-      map: fc.tex, transparent: true, alphaTest: 0.4, depthWrite: false,
-      polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
-    })
-  );
-  mesh.name = 'face';
-  mesh.renderOrder = 2;
-  // place in rig space, then re-express in the parent's (head bone's) space
+function place(mesh, parent, root, model, cfg, pos, yaw) {
   root.updateMatrixWorld(true);
-  const turn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), cfg.yaw || 0);
+  const turn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
   const dir = new THREE.Vector3(1, 0, 0).applyQuaternion(turn);
-  const at = new THREE.Vector3(...(cfg.pos || [90, 160, 0]));
+  const at = new THREE.Vector3(...pos);
   const hit = surfaceAt(root, model, at, dir);
   if (hit) at.copy(hit.point).addScaledVector(dir, cfg.lift ?? 1.2);
   const want = new THREE.Matrix4().compose(at, new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2).premultiply(turn), new THREE.Vector3(1, 1, 1));
@@ -52,8 +42,47 @@ export function addFace(parent, root, cfg, model = parent) {
   const local = new THREE.Matrix4().copy(parent.matrixWorld).invert().multiply(want);
   local.decompose(mesh.position, mesh.quaternion, mesh.scale);
   parent.add(mesh);
+}
+
+function decalMesh(w, h, map) {
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, h),
+    new THREE.MeshBasicMaterial({
+      map, transparent: true, alphaTest: 0.4, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
+    })
+  );
+  mesh.name = 'face';
+  mesh.renderOrder = 2;
+  return mesh;
+}
+
+export function addFace(parent, root, cfg, model = parent) {
+  const [w, h] = cfg.size || [34, 16];
+  const pair = !!cfg.pair;
+  // a pair draws both eyes on one canvas; each decal shows one half
+  const CW = 128, CH = Math.max(32, Math.round((128 * h * (pair ? 2 : 1)) / w));
+  const fc = faceCanvas(CW, CH);
+  const texs = [fc.tex];
+  const meshes = [];
+  const pos = cfg.pos || [90, 160, 0];
+  if (pair) {
+    const far = fc.tex.clone();
+    fc.tex.repeat.set(0.5, 1);
+    far.repeat.set(0.5, 1);
+    far.offset.set(0.5, 0);
+    texs.push(far);
+    const yaw = -Math.abs(cfg.yaw ?? 1.1);
+    meshes.push(decalMesh(w, h, fc.tex), decalMesh(w, h, far));
+    place(meshes[0], parent, root, model, cfg, [pos[0], pos[1], Math.abs(pos[2])], yaw);
+    place(meshes[1], parent, root, model, cfg, [pos[0], pos[1], -Math.abs(pos[2])], -yaw);
+  } else {
+    meshes.push(decalMesh(w, h, fc.tex));
+    place(meshes[0], parent, root, model, cfg, pos, cfg.yaw || 0);
+  }
   const st = cfg.style || {};
-  const style = { ...st, size: (st.size ?? 0.32) * CH, gap: (st.gap ?? 0.27) * CW };
-  const update = faceUpdater(fc, (g, W, H, eyes, mouth, t) => paintEyes(g, W, H, eyes, style, t));
-  return { mesh, update };
+  const style = { ...st, size: (st.size ?? 0.32) * CH, gap: (st.gap ?? (pair ? 0.25 : 0.27)) * CW };
+  const paint = faceUpdater(fc, (g, W, H, eyes, mouth, t) => paintEyes(g, W, H, eyes, style, t));
+  const update = (p) => { if (paint(p)) for (const t of texs) t.needsUpdate = true; };
+  return { mesh: meshes[0], meshes, update };
 }

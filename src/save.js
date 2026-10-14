@@ -1,6 +1,7 @@
 // Versioned local save with a rolling backup copy and export/import.
 import { defaultSkills } from './logic/difficulty.js';
 import { isValidBattle } from './logic/battle.js';
+import { defaultRecords, isValidRun } from './game/modes.js';
 
 export const SAVE_VERSION = 1;
 const KEY = 'tbb.save';
@@ -24,6 +25,8 @@ export function defaultSave() {
     progress: { stars: 0, wins: 0, battles: 0, lastHero: null, tutorial: {} },
     skills: defaultSkills(),
     battle: null, // snapshot of an unfinished battle (taken at the start of each hero turn)
+    run: null, // the game-mode run in progress (game/modes.js)
+    records: defaultRecords(), // story clears, trophies, best arcade streak
   };
 }
 
@@ -52,6 +55,8 @@ export function migrate(raw, chars) {
     },
   };
   if (out.battle && !isValidBattle(out.battle, chars)) out.battle = null;
+  if (out.run && !isValidRun(out.run, chars)) out.run = null;
+  out.records = { ...defaultRecords(), ...(raw.records || {}), storyCleared: { ...(raw.records?.storyCleared || {}) } };
   out.progress.stars = Math.max(0, Math.floor(out.progress.stars || 0));
   return out;
 }

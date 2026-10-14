@@ -24,6 +24,7 @@ const DIST = 840; // camera to hero distance: 1 world unit ≈ 1 screen unit at 
 const HERO_Z = 30, FOE_Z = -30;
 const CAM_Y = 205, LOOK_Y = 150;
 const TURN = 0.92; // toys turn toward the camera (3/4 view)
+const SHOW_Z = -130; // toy gallery turntable: a step back so the whole toy fits above the buttons
 
 let active = null;
 export const get3D = () => active;
@@ -79,23 +80,32 @@ class Fighter3D extends Fighter {
     const p = this.pose(t);
     this.rig.apply(p);
     const r = this.root;
-    r.position.set(this.home3.x + (this.ox + (this.jitter || 0)) * this.k3, -this.oy * this.k3, this.home3.z);
+    const show = this.stage3.showcase && this.side === 'hero' ? this.stage3.showcase : null;
+    if (show && !this.showSpot) {
+      this.showSpot = this.stage3.spotOf(new THREE.Vector3(0, 0, SHOW_Z));
+      this.x = this.showSpot.x;
+      this.y = this.showSpot.y;
+    }
+    const big = this.big || 1;
+    const z = show ? SHOW_Z : this.home3.z;
+    r.position.set((show ? 0 : this.home3.x) + (this.ox + (this.jitter || 0)) * this.k3, -this.oy * this.k3, z);
     r.rotation.z = -this.rot * this.flip;
-    r.scale.set(this.sx, this.sy, this.sx);
-    this.facing.rotation.y = this.side === 'hero' ? -TURN : TURN;
+    r.scale.set(this.sx * big, this.sy * big, this.sx * big);
+    this.facing.rotation.y = show ? show.yaw : this.side === 'hero' ? -TURN : TURN;
     this.facing.scale.x = this.flip;
     this.rig.flash.value = Math.min(1, this.flash) * 0.85;
     // shadow shrinks as the toy leaves the floor
     const lift = Math.max(0, -this.oy * this.k3);
     const k = Math.max(0.35, 1 - lift / 260);
-    this.shadow.position.set(r.position.x, 5.4, this.home3.z);
-    this.shadow.scale.set(78 * k * this.sx, 30 * k, 1);
+    this.shadow.position.set(r.position.x, 5.4, z);
+    this.shadow.position.x = r.position.x;
+    this.shadow.scale.set(78 * k * this.sx * big, 30 * k * big, 1);
     // aura
     const a = this.aura;
     this.auraMesh.visible = a > 0.01;
     if (this.auraMesh.visible) {
       const c = this.rig.anchors.center;
-      this.auraMesh.position.set(r.position.x + c.x * 0.2 * this.flip, r.position.y + c.y, this.home3.z - 70);
+      this.auraMesh.position.set(r.position.x + c.x * 0.2 * this.flip, r.position.y + c.y, z - 70);
       const s = 135 * (1 + 0.06 * Math.sin(t / 90));
       this.auraMesh.scale.set(s, s, 1);
       this.auraMesh.rotation.z = t / 900;
@@ -260,10 +270,12 @@ export class Stage3D extends Stage {
     if (this.frontHalfW) this.room.placeFront(this.frontHalfW);
   }
 
-  setFighters(heroDef, foeDef) {
+  // opts.foeBig: scale for a GIANT foe (game/modes.js)
+  setFighters(heroDef, foeDef, opts = {}) {
     for (const f of Object.values(this.fighters)) f && f.dispose();
     this.fighters.hero = heroDef ? new Fighter3D(heroDef, 'hero', this.homes.hero, this) : null;
     this.fighters.foe = foeDef ? new Fighter3D(foeDef, 'foe', this.homes.foe, this) : null;
+    if (this.fighters.foe) this.fighters.foe.big = opts.foeBig || 1;
     for (const f of Object.values(this.fighters)) f && f.setPx(this.px);
   }
 

@@ -165,10 +165,11 @@ export function faceUpdater(fc, draw) {
     const t = p.t || 0;
     const anim = p.eyes === 'swirl' || (p.eyes === 'open' && t % 3900 < 120);
     const k = `${p.eyes}|${p.mouth}|${anim ? Math.floor(t / 50) : ''}`;
-    if (k === key) return;
+    if (k === key) return false;
     key = k;
     draw(fc.g, fc.c.width, fc.c.height, p.eyes || 'open', p.mouth || 'smile', t);
     fc.tex.needsUpdate = true;
+    return true;
   };
 }
 

@@ -9,6 +9,9 @@ import { SaveStore } from './save.js';
 import { UI } from './ui/screens.js';
 import { BattleController } from './game/battle-controller.js';
 import { buzz, setHaptics } from './haptics.js';
+import { newRun, winStop, current, recordRun, BOSS_SCALE } from './game/modes.js';
+import { showModes, showArenaPick, showLadder, showRunResult, showTrophy, showGallery } from './ui/modes-ui.js';
+import { Director } from './game/director.js';
 import { h } from './ui/dom.js';
 
 const BUILD = typeof __BUILD__ !== 'undefined' ? __BUILD__ : 'dev';
@@ -170,13 +173,128 @@ class App {
         this.audio.sfx('select');
         buzz('light');
         if (this.save.data.battle) this.resumeBattle();
-        else this.goSelect();
+        else this.goModes();
       },
       onParent: () => this.openParent(),
     });
   }
 
-  goSelect() {
+  // ---------------- game modes (game/modes.js) ----------------
+  get records() {
+    return this.save.data.records;
+  }
+
+  goModes() {
+    this.endBattle();
+    this.leaveGallery();
+    this.stage.setArena('bedroom');
+    this.stage.setFighters(null, null);
+    this.stage.dim = 0.3;
+    this.stage.cam.drift = 1;
+    showModes(this.ui, {
+      records: this.records,
+      run: this.save.data.run,
+      chars: CHARACTERS,
+      onPick: (mode) => {
+        this.audio.sfx('select');
+        buzz('light');
+        this.chooseMode(mode);
+      },
+      onHome: () => this.goTitle(),
+    });
+  }
+
+  chooseMode(mode) {
+    if (mode === 'gallery') return this.goGallery();
+    const run = this.save.data.run;
+    // an unfinished story picks up where it left off
+    if (mode === 'story' && run && run.mode === 'story' && !run.done) return this.showRunMap();
+    this.goSelect((heroId) => {
+      if (mode === 'quick') {
+        showArenaPick(this.ui, {
+          onPick: (arenaId) => {
+            this.audio.sfx('select');
+            this.beginRun(newRun('quick', heroId, { chars: CHARACTERS, roster: ROSTER, arenaId }));
+          },
+          onHome: () => this.goModes(),
+        });
+      } else {
+        this.beginRun(newRun(mode, heroId, { chars: CHARACTERS, roster: ROSTER }));
+      }
+    }, () => this.goModes());
+  }
+
+  beginRun(run) {
+    this.save.data.run = run;
+    this.save.save();
+    if (run.mode === 'story' || run.mode === 'tournament') this.showRunMap();
+    else this.playStop();
+  }
+
+  showRunMap() {
+    const run = this.save.data.run;
+    this.stage.setFighters(null, null);
+    this.stage.dim = 0.35;
+    showLadder(this.ui, {
+      run,
+      chars: CHARACTERS,
+      onGo: () => {
+        this.audio.sfx('powerUp');
+        this.playStop();
+      },
+      onHome: () => this.goModes(),
+    });
+  }
+
+  async playStop() {
+    const run = this.save.data.run;
+    const stop = current(run);
+    this.audio.sfx('powerUp');
+    await this.ui.showVS(CHARACTERS[run.heroId], CHARACTERS[stop.foeId], { boss: stop.boss });
+    this.startBattle(run.heroId, stop.foeId, null, stop);
+  }
+
+  // Called by the battle when it's over.
+  onBattleEnd({ win, stars, total, state }) {
+    const run = this.save.data.run;
+    const stop = current(run);
+    const inRun = run && stop && state.inRun && stop.foeId === state.foeId && run.heroId === state.heroId;
+    if (!inRun) {
+      return this.ui.showResult({ win, stars, total, onAgain: () => this.startBattle(state.heroId, state.foeId), onHome: () => this.goModes() });
+    }
+    const home = () => this.goModes();
+    if (run.mode === 'quick') {
+      return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop(), onHome: home });
+    }
+    if (run.mode === 'arcade') {
+      if (win) {
+        const next = winStop(run, stars, { roster: ROSTER });
+        this.save.data.run = next;
+        this.save.data.records = recordRun(this.records, next);
+        this.save.save();
+        return showRunResult(this.ui, { win, stars, total, streak: next.wins, onNext: () => this.playStop(), onHome: home });
+      }
+      this.save.data.records = recordRun(this.records, run);
+      this.save.data.run = null;
+      this.save.save();
+      return showRunResult(this.ui, { win, stars, total, streak: run.wins, best: this.records.arcadeBest, onAgain: () => this.chooseMode('arcade'), onHome: home });
+    }
+    // story / tournament
+    if (!win) return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop(), onHome: home });
+    const next = winStop(run, stars, { roster: ROSTER });
+    this.save.data.run = next.done ? null : next;
+    this.save.data.records = recordRun(this.records, next);
+    this.save.save();
+    if (next.done) {
+      this.stage.fx.confetti(this.stage.W, 450);
+      this.audio.sfx('perfect');
+      return showRunResult(this.ui, { win, stars, total, onNext: () => showTrophy(this.ui, { mode: next.mode, heroDef: CHARACTERS[next.heroId], stars: next.stars, onHome: home }), onHome: home });
+    }
+    return showRunResult(this.ui, { win, stars, total, onNext: () => this.showRunMap(), onHome: home });
+  }
+
+  // Hero pick (the 8-card select screen).
+  goSelect(onHero = null, onBack = null) {
     this.stage.setFighters(null, null);
     this.stage.dim = 0.25;
     this.ui.showSelect({
@@ -186,29 +304,109 @@ class App {
       onPick: async (heroId) => {
         this.save.data.progress.lastHero = heroId;
         this.save.save();
+        if (onHero) return onHero(heroId);
         this.audio.sfx('powerUp');
         const foeId = opponentFor(heroId);
         await this.ui.showVS(CHARACTERS[heroId], CHARACTERS[foeId]);
         this.startBattle(heroId, foeId);
       },
-      onHome: () => this.goTitle(),
+      onHome: () => (onBack ? onBack() : this.goTitle()),
     });
   }
 
-  startBattle(heroId, foeId, resume = null) {
+  startBattle(heroId, foeId, resume = null, stop = null) {
     this.endBattle();
+    this.leaveGallery();
     this.ui.clear();
     this.stage.cam.drift = 0;
     this.stage.cam.zoom = 1;
     this.stage.dim = 0;
-    this.battle = new BattleController({ app: this, chars: CHARACTERS, heroId, foeId, resume });
+    this.battle = new BattleController({ app: this, chars: CHARACTERS, heroId, foeId, resume, stop });
+    if (stop && !resume) this.battle.state.inRun = true;
     this.battle.start();
   }
 
   resumeBattle() {
     const b = this.save.data.battle;
-    if (!b) return this.goSelect();
+    if (!b) return this.goModes();
     this.startBattle(b.heroId, b.foeId, b);
+  }
+
+  // ---------------- toy gallery ----------------
+  goGallery() {
+    this.endBattle();
+    this.stage.setArena('bedroom');
+    this.stage.dim = 0;
+    this.stage.cam.drift = 0;
+    const cam = this.stage.cam;
+    cam.zoom = 1.3; cam.fx = 0.5; cam.fy = 0.52;
+    this.stage.showcase = { yaw: -0.6 };
+    this.gallery = { director: new Director(this.stage, this.audio), busy: false };
+    const lastHero = this.save.data.progress.lastHero;
+    showGallery(this.ui, {
+      roster: ROSTER,
+      chars: CHARACTERS,
+      index: Math.max(0, ROSTER.indexOf(lastHero)),
+      onShow: (id) => {
+        this.stage.setFighters(CHARACTERS[id], null);
+        this.gallery.busy = false;
+        this.audio.sfx('select');
+      },
+      onSpin: (d) => { if (this.stage.showcase) this.stage.showcase.yaw += d; },
+      onMove: (m) => this.galleryMove(m),
+      onHome: () => this.goModes(),
+    });
+  }
+
+  leaveGallery() {
+    if (!this.gallery) return;
+    this.gallery = null;
+    this.stage.showcase = null;
+    const cam = this.stage.cam;
+    cam.zoom = 1; cam.fx = 0.5; cam.fy = 0.55;
+  }
+
+  async galleryMove(move) {
+    const g = this.gallery;
+    const f = this.stage.fighters.hero;
+    if (!g || g.busy || !f) return;
+    g.busy = true;
+    const d = g.director;
+    const c = f.center();
+    try {
+      if (move.slot === 'guard') {
+        await d.guardUp(f, move);
+        await d.wait(700);
+        d.shieldOff(f);
+      } else if (move.slot === 'special') {
+        await d.chargeUp(f, move.color);
+        f.cheer = true;
+        this.stage.fx.word(move.name.toUpperCase() + '!', c.x, c.y - 170, { size: 40, color: move.color, life: 1000 });
+        this.stage.fx.burst(c.x, c.y, { count: 22, colors: [move.color, '#ffffff', '#FFC914'], kind: 'star', speed: 360 });
+        await d.wait(1100);
+        f.cheer = false;
+        f.aura = 0;
+        const cam = this.stage.cam;
+        cam.fx = 0.5; cam.fy = 0.52;
+        await this.stage.zoomTo(1.3, 250);
+        d.reset(f);
+      } else {
+        f.mouth = 'grit';
+        await d.to(f, { sx: 1.08, sy: 0.92, armF: -1.4, cannon: move.anim === 'shot' ? 1 : 0 }, 160);
+        this.audio.sfx('whoosh');
+        await d.to(f, { ox: 60 }, 120);
+        const p = f.point('muzzle') || f.center();
+        this.stage.fx.sprite(move.anim === 'shot' ? 'muzzle' : move.slot === 'power' ? 'impact' : 'spark', p.x + 60, p.y, { size: move.slot === 'power' ? 170 : 110, life: 360 });
+        this.stage.fx.word(move.word || 'POW!', c.x + 120, c.y - 120, { size: 44, color: move.color });
+        this.audio.sfx(move.slot === 'power' ? 'bigHit' : 'hit');
+        this.stage.shake(0.25);
+        await d.wait(200);
+        f.mouth = 'smile';
+        await d.to(f, { ox: 0, sx: 1, sy: 1, armF: -0.2, cannon: 0 }, 320);
+      }
+    } finally {
+      if (this.gallery === g) g.busy = false;
+    }
   }
 
   openParent() {

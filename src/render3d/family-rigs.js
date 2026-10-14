@@ -140,7 +140,7 @@ export function buildBass(flash) {
   far.tex = farTex;
   head.children[head.children.length - 1].material.map = farTex;
   const paintBoth = faceUpdater(eyes, (g, W, H, e, m, t) => paintEyes(g, W, H, e, { iris: '#2B1A0E', lid: '#3E8E2E', size: H * 0.36, gap: W * 0.25 }, t));
-  const updEyes = (p) => { paintBoth(p); farTex.needsUpdate = eyes.tex.needsUpdate; };
+  const updEyes = (p) => { if (paintBoth(p)) farTex.needsUpdate = true; };
 
   const rig = { root, head, armF, armB, anchors: { head: new THREE.Vector3(66, 110, 0), top: new THREE.Vector3(30, 160, 0), center: new THREE.Vector3(6, 100, 0), muzzle: new THREE.Vector3(92, 104, 0) }, headR: 50 };
   rig.apply = (p) => {

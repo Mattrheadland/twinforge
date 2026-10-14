@@ -32,6 +32,8 @@ export const CHARACTERS = {
       // imported model (Hunyuan 3D, static): toy joints and effect points in rig units
       anchors: { muzzle: [64, 186, 0] },
       armScale: 0.6,
+      // swappable eyes over the painted ones, one on each side of the snout
+      face: { pair: true, pos: [96, 146, 20], yaw: 1.0, size: [16, 16], style: { iris: '#7A4A20', lid: '#C8202E', brow: '#14111A', size: 0.34 } },
       joints: {
         head: { pivot: [74, 128, 0], box: [[72, 120, -60], [150, 200, 60]] },
         jaw: { pivot: [86, 127, 0], box: [[86, 95, -40], [150, 126, 40]] },

@@ -43,10 +43,12 @@ export function learningFor(slot) {
   return slot === 'power' ? 'math' : slot === 'special' ? 'reading' : null;
 }
 
-export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom' }) {
+// boss: a GIANT foe (game/modes.js) with BOSS_HP times the health.
+export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss = false }) {
   const h = chars[heroId];
   const f = chars[foeId];
   if (!h || !f) throw new Error('unknown character');
+  const foeHp = boss ? Math.round(f.maxHp * 1.35) : f.maxHp;
   return {
     v: BATTLE_VERSION,
     heroId,
@@ -56,7 +58,8 @@ export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom' }) {
     turn: 'hero',
     result: null,
     hero: { hp: h.maxHp, maxHp: h.maxHp, energy: 0, guard: null, shield: false },
-    foe: { hp: f.maxHp, maxHp: f.maxHp, charged: false, dizzy: false, step: 0 },
+    boss,
+    foe: { hp: foeHp, maxHp: foeHp, charged: false, dizzy: false, step: 0 },
     stats: { indep: 0, hint: 0, support: 0, turns: 0 },
   };
 }
