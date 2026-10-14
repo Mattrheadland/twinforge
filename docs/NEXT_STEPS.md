@@ -19,8 +19,8 @@
 - **Toy joints**: static models (what free image-to-3D tools export) get head / jaw / arm / tail bones cut by region (`art.joints`), so no rigging tool is needed.
 - **Battle Rex**: Matt is generating him free in Hunyuan 3D (steps in ASSET_PIPELINE §4). Then: import, set joints, muzzle, face and height, check in game, then the other five sheet characters.
 - **Remy Roo** (the family dog) and **Billy Bass** (the talking wall fish) are in the roster with code-built 3D stand-ins:
-  - Remy Roo: Zoomies (dash) · Big Bark (two bark blasts, math) · Roll Over (dodge) · Fetch Frenzy (tennis-ball volley, then heals him: "GOOD BOY!"). 108 HP, +2 attack.
-  - Billy Bass: Tail Flop · Song Blast (math) · Wall Mount (block) · Encore! (music notes spin the foe dizzy). 104 HP, +2 attack.
+  - Remy Roo: Zoomies (dash) · Big Bark (two bark blasts, math) · Roll Over (dodge) · Power Paws (glowing paw-print flurry and a pounce, then heals him: "GOOD BOY!"). 108 HP, +2 attack.
+  - Billy Bass: Tail Flop · Take Me to the River (a river surge, math) · Wall Mount (block) · Encore! (music notes spin the foe dizzy). 104 HP, +2 attack.
   - The select screen is now 4 × 2.
 
 ## Next

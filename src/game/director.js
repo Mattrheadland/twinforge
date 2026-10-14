@@ -223,6 +223,7 @@ export class Director {
       case 'shot': return this.shot(att, def, move, onHit);
       case 'ground': return this.ground(att, def, move, onHit);
       case 'dancers': return this.dancers(att, def, move, onHit);
+      case 'river': return this.river(att, def, move, onHit);
       default: return this.lunge(att, def, { power, onImpact: onHit, dash: move.dash });
     }
   }
@@ -282,6 +283,25 @@ export class Director {
     this.fx.burst(def.x, def.y - 40, { count: 16, colors: ['#FF7A1A', '#FFC914', '#ffffff'], kind: 'spark', speed: 300, gravity: -200 });
     await last;
     await onHit();
+    att.eyes = 'open';
+    att.mouth = 'smile';
+  }
+
+  // Billy Bass sings, and a river rolls in under the foe (Take Me to the River)
+  async river(att, def, move, onHit) {
+    att.mouth = 'open';
+    att.eyes = 'happy';
+    this.audio.sfx('powerUp');
+    const a = att.center();
+    for (let i = 0; i < 3; i++) this.fx.add(FXM.note({ cx: a.x, cy: a.y - 60, r0: 90, phase: i * 2.1, color: i % 2 ? '#C8E63C' : '#FFC914', life: 900, size: 13 }));
+    await this.wait(450);
+    const dir = att.flip;
+    this.audio.sfx('whoosh');
+    const w = this.fx.add(FXM.wave({ x0: att.x - dir * 40, x1: def.x + dir * 90, y: Math.max(att.y, def.y) + 20, height: 150, dir, color: move.color, life: 1000 }));
+    await this.wait(600);
+    this.fx.burst(def.x, def.y - 40, { count: 14, colors: ['#ffffff', move.color], kind: 'puff', speed: 240, gravity: 300 });
+    await onHit();
+    await w;
     att.eyes = 'open';
     att.mouth = 'smile';
   }
@@ -405,7 +425,7 @@ export class Director {
     const fn = {
       rexCannon: this.spRexCannon, hauntedForest: this.spHauntedForest, tidalRage: this.spTidalRage,
       swordInStone: this.spSwordInStone, potionStorm: this.spPotionStorm, midnightStorm: this.spMidnightStorm,
-      fetchFrenzy: this.spFetchFrenzy, encore: this.spEncore,
+      powerPaws: this.spPowerPaws, encore: this.spEncore,
     }[move.id] || this.spGeneric;
     await fn.call(this, att, def, move, quality, ev, applyHit);
   }
@@ -540,27 +560,26 @@ export class Director {
     this.stage.dim = 0;
   }
 
-  // Remy Roo: a volley of tennis balls, then a happy zoomie lap
-  async spFetchFrenzy(att, def, move, q, ev, applyHit) {
+  // Remy Roo: his paws light up, a flurry of glowing paw prints, then a big pounce
+  async spPowerPaws(att, def, move, q, ev, applyHit) {
     await this.chargeUp(att, move.color);
-    att.eyes = 'happy';
+    att.eyes = 'angry';
     att.mouth = 'open';
-    this.audio.sfx('jump');
-    const m = this.pt(att, 'muzzle');
     const c = def.center();
-    this.fx.word('FETCH FRENZY!', this.stage.W / 2, 120, { size: 48, color: move.color, life: 1200 });
-    const n = q === 'indep' ? 6 : 4;
+    this.fx.word('POWER PAWS!', this.stage.W / 2, 120, { size: 50, color: move.color, life: 1200 });
+    const n = q === 'indep' ? 7 : 5;
     let last;
     for (let i = 0; i < n; i++) {
-      this.to(att, { sy: 0.9, sx: 1.08 }, 70).then(() => this.to(att, { sy: 1, sx: 1 }, 120));
-      last = this.fx.add(FXM.tennisBall({
-        x0: m.x, y0: m.y, x1: c.x + (Math.random() - 0.5) * 50, y1: c.y + (Math.random() - 0.5) * 60,
-        arc: 120 + (i % 3) * 50, life: 520, delay: i * 150,
-        onHit: () => { this.tap(def, move.color); this.fx.burst(c.x, c.y, { count: 6, kind: 'puff', colors: ['#C8E63C'], speed: 160 }); },
+      // little hops in place while he swipes
+      this.to(att, { sy: 0.88, sx: 1.1, armF: -1.2 }, 70).then(() => this.to(att, { sy: 1, sx: 1, armF: -0.2 }, 110));
+      last = this.fx.add(FXM.pawStamp({
+        x: c.x + (Math.random() - 0.5) * 120, y: c.y + (Math.random() - 0.5) * 110, rot: (Math.random() - 0.5) * 1.2,
+        size: 26 + (i % 3) * 6, color: move.color, life: 460, delay: i * 140,
+        onHit: () => this.tap(def, move.color),
       }));
     }
     await last;
-    await this.lunge(att, def, { power: 1.3, dash: true, onImpact: () => this.finishSpecial(att, def, ev, move.color, 'BOING!', applyHit) });
+    await this.lunge(att, def, { power: 1.4, dash: true, onImpact: () => this.finishSpecial(att, def, ev, move.color, 'POUNCE!', applyHit) });
   }
 
   // Billy Bass: sings an encore; the notes spin the foe around
@@ -592,7 +611,7 @@ export class Director {
     this.stage.dim = 0;
   }
 
-  // A special that patches the hero up (Fetch Frenzy).
+  // A special that patches the hero up (Power Paws).
   healGlow(f, amount, word = 'HEAL!') {
     const c = f.center();
     this.audio.sfx('perfect');

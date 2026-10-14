@@ -60,8 +60,10 @@ export const ICON = {
   wings: S(`<path d="M50 40 Q30 10 6 20 Q14 40 10 62 Q24 52 30 66 Q38 54 50 62 Z" fill="#6A3FA0"/><path d="M50 40 Q70 10 94 20 Q86 40 90 62 Q76 52 70 66 Q62 54 50 62 Z" fill="#6A3FA0"/>`),
   ghost: S(`<path d="M22 88 L22 44 Q22 14 50 14 Q78 14 78 44 L78 88 L68 78 L58 88 L50 78 L42 88 L32 78 Z" fill="#E6D8FF"/><circle cx="40" cy="44" r="6" fill="#14111A" stroke-width="0"/><circle cx="60" cy="44" r="6" fill="#14111A" stroke-width="0"/>`),
   // Remy Roo
-  paw: S(`<ellipse cx="50" cy="66" rx="22" ry="18" fill="#C9822E"/><ellipse cx="24" cy="40" rx="9" ry="11" fill="#C9822E"/><ellipse cx="40" cy="24" rx="9" ry="11" fill="#C9822E"/><ellipse cx="60" cy="24" rx="9" ry="11" fill="#C9822E"/><ellipse cx="76" cy="40" rx="9" ry="11" fill="#C9822E"/>
+  zoom: S(`<ellipse cx="50" cy="66" rx="22" ry="18" fill="#C9822E"/><ellipse cx="24" cy="40" rx="9" ry="11" fill="#C9822E"/><ellipse cx="40" cy="24" rx="9" ry="11" fill="#C9822E"/><ellipse cx="60" cy="24" rx="9" ry="11" fill="#C9822E"/><ellipse cx="76" cy="40" rx="9" ry="11" fill="#C9822E"/>
     <path d="M6 84 L16 78 M4 64 L14 64" fill="none" stroke="#fff" stroke-width="6"/>`),
+  paw: S(`<ellipse cx="50" cy="64" rx="24" ry="20" fill="#FFC914"/><ellipse cx="22" cy="38" rx="10" ry="12" fill="#FFC914"/><ellipse cx="39" cy="20" rx="10" ry="12" fill="#FFC914"/><ellipse cx="61" cy="20" rx="10" ry="12" fill="#FFC914"/><ellipse cx="78" cy="38" rx="10" ry="12" fill="#FFC914"/>
+    <path d="M44 58 Q50 52 56 58" fill="none" stroke="#fff" stroke-width="5"/>`),
   bark: S(`<path d="M10 40 Q10 26 24 26 L40 26 L58 12 L58 88 L40 74 L24 74 Q10 74 10 60 Z" fill="#F2EDE4"/>
     <path d="M70 34 Q78 50 70 66 M82 24 Q96 50 82 76" fill="none" stroke-width="7"/><path d="M70 34 Q78 50 70 66 M82 24 Q96 50 82 76" fill="none" stroke="#FFC914" stroke-width="3"/>`),
   roll: S(`<path d="M50 14 A36 36 0 1 1 18 66" fill="none" stroke-width="13"/><path d="M50 14 A36 36 0 1 1 18 66" fill="none" stroke="#4EA8DE" stroke-width="6"/>

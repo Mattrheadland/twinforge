@@ -360,7 +360,7 @@ export function potion({ x, y0, y1, color = '#5CE07A', life = 520, delay = 0, on
   };
 }
 
-// Tennis ball that bounces in on an arc and pops off the target (Fetch Frenzy).
+// Tennis ball that bounces in on an arc and pops off the target.
 export function tennisBall({ x0, y0, x1, y1, size = 15, life = 560, delay = 0, arc = 150, onHit }) {
   const pos = (k) => ({ x: lerp(x0, x1, k), y: lerp(y0, y1, k) - Math.sin(k * Math.PI) * arc });
   return {
@@ -412,6 +412,37 @@ export function note({ cx, cy, r0 = 220, phase = 0, color = '#FFC914', size = 16
       ctx.translate(x, y);
       ctx.rotate(Math.sin(t / 120 + phase) * 0.35);
       noteShape(ctx, size, color, two);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
+// Glowing paw print that stamps onto the target (Power Paws): pops in big,
+// settles, then fades. onHit fires as it lands.
+export function pawStamp({ x, y, size = 28, rot = 0, color = '#FFC914', life = 460, delay = 0, onHit }) {
+  let hit = false;
+  return {
+    max: life, delay,
+    draw(ctx, k) {
+      if (!hit && k > 0.2) { hit = true; onHit && onHit(); }
+      const s = size * (k < 0.2 ? 1.8 - 0.8 * ease(k / 0.2) : 1);
+      ctx.save();
+      ctx.globalAlpha = k > 0.6 ? (1 - k) / 0.4 : 1;
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      const pad = (px, py, rx, ry) => {
+        for (const [c, g] of [[INK, 3], [color, 0]]) {
+          ctx.beginPath(); ctx.ellipse(px, py, rx + g, ry + g, 0, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
+        }
+      };
+      pad(0, s * 0.25, s * 0.55, s * 0.45);
+      pad(-s * 0.62, -s * 0.28, s * 0.2, s * 0.26);
+      pad(-s * 0.22, -s * 0.62, s * 0.2, s * 0.26);
+      pad(s * 0.22, -s * 0.62, s * 0.2, s * 0.26);
+      pad(s * 0.62, -s * 0.28, s * 0.2, s * 0.26);
+      ctx.fillStyle = 'rgba(255,255,255,.7)';
+      ctx.beginPath(); ctx.ellipse(-s * 0.15, s * 0.12, s * 0.16, s * 0.1, -0.4, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
       ctx.globalAlpha = 1;
     },

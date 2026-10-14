@@ -115,7 +115,7 @@ export const CHARACTERS = {
     foePattern: ['power', 'charge', 'slam', 'quick'],
     art: { kind: 'procedural', draw: 'nightwing' },
   },
-  // the family dog: quick and loyal, and his special patches him up ("Good boy!")
+  // the family dog: quick and loyal; Power Paws also patches him up ("Good boy!")
   roo: {
     id: 'roo',
     name: 'Remy Roo',
@@ -124,10 +124,10 @@ export const CHARACTERS = {
     maxHp: 108,
     attackBonus: 2,
     moves: [
-      { slot: 'quick', id: 'zoomies', name: 'Zoomies', icon: 'paw', color: '#F2EDE4', anim: 'lunge', dash: true, word: 'ZOOM!' },
+      { slot: 'quick', id: 'zoomies', name: 'Zoomies', icon: 'zoom', color: '#F2EDE4', anim: 'lunge', dash: true, word: 'ZOOM!' },
       { slot: 'power', id: 'bigBark', name: 'Big Bark', icon: 'bark', color: '#FFC914', anim: 'shot', shots: 2, word: 'WOOF!' },
       { slot: 'guard', id: 'rollOver', name: 'Roll Over', icon: 'roll', color: '#4EA8DE', guard: 'dodge' },
-      { slot: 'special', id: 'fetchFrenzy', name: 'Fetch Frenzy', icon: 'ball', color: '#C8E63C', power: 1, effect: 'heal', healWord: 'GOOD BOY!', hits: 4 },
+      { slot: 'special', id: 'powerPaws', name: 'Power Paws', icon: 'paw', color: '#FFC914', power: 1.05, effect: 'heal', healWord: 'GOOD BOY!', hits: 5 },
     ],
     foePattern: ['quick', 'power', 'charge', 'slam'],
     art: { kind: 'procedural', draw: 'roo', model: 'remy-roo', anchors: { muzzle: [96, 132, 0] } },
@@ -142,7 +142,7 @@ export const CHARACTERS = {
     attackBonus: 2,
     moves: [
       { slot: 'quick', id: 'tailFlop', name: 'Tail Flop', icon: 'fin', color: '#C8E63C', anim: 'lunge', word: 'FLOP!' },
-      { slot: 'power', id: 'songBlast', name: 'Song Blast', icon: 'notes', color: '#FFC914', anim: 'shot', word: 'LA-LA!' },
+      { slot: 'power', id: 'takeMeToTheRiver', name: 'Take Me to the River', icon: 'notes', color: '#33AFE4', anim: 'river', word: 'SPLOOSH!' },
       { slot: 'guard', id: 'wallMount', name: 'Wall Mount', icon: 'plaque', color: '#B57A4A', guard: 'block' },
       { slot: 'special', id: 'encore', name: 'Encore!', icon: 'note', color: '#FFC914', power: 1, effect: 'dizzy', hits: 3 },
     ],
