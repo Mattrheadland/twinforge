@@ -26,4 +26,4 @@ npm run deploy     # build and push to the gh-pages branch that GitHub Pages ser
 ```
 Code map: `src/logic` (pure rules, no DOM) · `src/game` (battle state machine, choreography) · `src/render` (canvas stage, toys, arena, effects) · `src/ui` (HUD, challenges, menus) · `src/audio` · `src/save.js` · `src/data` (characters as editable data).
 
-Art: see `docs/STYLE_GUIDE.md` and `docs/ASSET_PIPELINE.md`. The only bundled third-party code is three.js (MIT license) for 3D rendering; esbuild bundles it at build time. No third-party art or sounds.
+Art: `assets/` (index in `docs/ASSETS.md`); look in `docs/STYLE_GUIDE.md`; how art is made in `docs/ASSET_PIPELINE.md`; status in `docs/NEXT_STEPS.md`. The only bundled third-party code is three.js (MIT license) for 3D rendering; esbuild bundles it at build time. No third-party art or sounds.

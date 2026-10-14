@@ -1,73 +1,59 @@
-# Asset pipeline: toy photos → reference art → 3D toy
+# Asset pipeline
 
-Style: **STYLE_GUIDE v5** (low-poly early-3D toys with '80s cartoon shading). Earlier pipelines are superseded.
+Style: STYLE_GUIDE v5 (low-poly early-3D, '80s cartoon shading). File locations and names: ASSETS.md.
 
-## What changed in v5
-The game now renders toys as **3D models**. Image generators like Astra can't produce game-ready 3D models, so the work splits like this:
+## Rules
+- Toy **photos stay private**: they go to Astra only, never into the repo (public) or the game.
+- Finished Astra art goes into `assets/` in the repo, named per ASSETS.md. Claude Project docs can't store images.
+- No known characters from films, shows or brands; those spots get original stand-ins.
+- Every Astra prompt below is one self-contained message (style included) that asks for all its images at once. If Astra makes one image per reply, reply "next".
 
-| Who | Makes | Used for |
-|---|---|---|
-| Matt | Photos of the real toy | Likeness (private, never in the repo) |
-| Astra | A **turnaround sheet** (front, side, back, 3/4) in the v5 look | The blueprint Claude models from |
-| Astra | A **face sheet** (the toy's eyes and mouth in each expression, flat on white) | Painted onto the model's face |
-| Claude | The low-poly model, rig, face textures and stats, built in code | The toy in the game |
-
-Captain Blocko and Stompy were built this way (without Astra) and show the target level of detail.
-
-Toy **photos stay private**. They go to Astra only as references and never into the game repo, which is public.
-
-Loop per toy: photos → Astra turnaround → Matt approves → Astra face sheet → Matt sends both to Claude → Claude builds the model and sends screenshots → Matt approves or asks for changes.
-
-## 0. One-time Astra setup (fresh chat)
-Start a **fresh Astra chat** so the older looks don't leak in, and send:
+## 1. Character pack (one per toy; attach the toy's photos)
 ```
-We're making reference art for "TwinForge: Toy Box Tactics," a battle game for my 4-year-old starring his real toys. The game shows each toy as a LOW-POLY 3D model (like a 1996 PlayStation or Sega Saturn fighting game) shaded like a 1980s action cartoon such as He-Man or ThunderCats. Your images are blueprints a 3D modeler builds from, so clarity beats drama.
+ASTRA REQUEST — <TOY NAME> COMPLETE CHARACTER PACK (TwinForge v5)
 
-LOOK: the toy as a chunky low-poly 3D action figure: visible flat facets, simple geometric parts (boxes, faceted spheres, cones, cylinders). Bold saturated colors, never pastel. Every surface in three hard flat tones (cool blue-purple shadow toward the lower right, base color, a flat lighter patch toward the upper left). Small hard white glints on shiny plastic. A clean dark outline (#14111A) around the silhouette. Attitude: confident and heroic, kid-friendly, never scary.
+Context: "TwinForge: Toy Box Tactics" is a battle game for my 4-year-old starring his real toys. Each toy becomes a LOW-POLY 3D model (like a 1996 PlayStation / Sega Saturn fighting game) shaded like a 1980s action cartoon (He-Man, ThunderCats). Your images are the blueprints a 3D modeler builds from, so clarity beats drama.
 
-Keep the toy recognizable: same silhouette, proportions, colors, markings and accessories as the real toy. Never add letters, numbers or words. Plain flat light-gray background. I'll send requests one at a time; each one asks for an image, so generate the image right away. For now, just reply "Ready."
-```
+The toy: <TOY NAME> — <one line: what it is>. Use the attached photos for likeness: same silhouette, proportions, colors, markings and accessories. Don't invent new details; if the photos don't show something, keep it simple.
 
-## 0b. Style test (once, before any real toy)
-```
-ASTRA REQUEST — STYLE-TEST v5
-Purpose: lock the look before we draw any real toys. Generate the image now.
-Draw ONE landscape image (1536 × 1024 if available): an original, made-up chunky toy robot (boxy body, box head with a dark face screen, one antenna with a ball on top, red body, blue arms and legs, yellow fists) shown twice at the same size as a low-poly 3D action figure in the locked look, standing on a faceted wooden floor.
-  Left: front 3/4 view, idle fighting stance, fists up.
-  Right: side view facing right, punching forward.
-Visible flat facets, three hard flat tones per surface, small hard white glints, clean dark outline. Plain light-gray background behind the floor.
-Do not: add text, letters, numbers, logos, UI, or other characters.
-```
-What to look for: it should read as a simple polygon model (flat facets, hard tone steps, dark outline), not a smooth painting or a detailed render. If it comes back too detailed or soft, reply: "simpler and blockier: fewer polygons, three flat tones per surface, no gradients, thicker outline." Send the approved image to Claude before moving on.
+LOOK for everything: chunky low-poly 3D action figure, visible flat facets, simple geometric parts. Bold saturated colors, never pastel. Every surface in three hard flat tones (cool blue-purple shadow toward the lower right, base color, flat lighter patch toward the upper left). Small hard white glints on shiny plastic. Clean dark outline (#14111A). Confident and heroic, kid-friendly, never scary. No letters, numbers, words or labels anywhere.
 
-## 1. Photos per toy
-Front, back, left side, right side, 3/4 view, top, and close-ups of the face and any accessory. Plain background, daylight, no flash, the whole toy in frame. A ruler or hand in one shot helps with scale.
+Make TWO separate images in this one reply:
 
-## 2. Turnaround sheet (one per toy)
-```
-ASTRA REQUEST — <TOY NAME> TURNAROUND v5
-Generate an image now (no written plan first).
-Reference: the attached photos of the real toy.
-Create ONE landscape image (1536 × 1024): this toy as a low-poly 3D action figure in our locked look, shown 4 times side by side at the same size on one floor line: front view, right side view (facing right), back view, 3/4 view. Neutral standing pose, arms slightly away from the body so their shape is clear. Plain flat light-gray background (#EEEEEE).
-Keep it true to the photos: same shape, face, colors, markings and accessories. If the photos don't show something, keep it simple rather than inventing details.
-Do not: add text, labels, numbers, color swatches, scenery, shadows on the ground or other characters. Don't crop any part (check ears, tails, horns, wheels, capes, weapons).
-```
-What to look for: the same toy in all four views, clear simple shapes, colors that match the real toy.
+IMAGE 1 — TURNAROUND (landscape, 1536×1024): the full toy shown 4 times side by side, same size, on one floor line: front view, right side view (facing right), back view, 3/4 view. Neutral standing pose, arms slightly away from the body. Face in its normal confident expression. Plain flat light-gray background (#EEEEEE). No ground shadows, scenery or other characters. Nothing cropped.
 
-## 3. Face sheet (after the turnaround is approved)
-```
-ASTRA REQUEST — <TOY NAME> FACE SHEET v5
-Generate an image now.
-Reference: the approved <TOY NAME> TURNAROUND v5.
-Draw ONLY the toy's eyes and mouth, flat and front-on, as a 3×3 grid on plain white, each cell the same size and framing. Flat cartoon style, thick dark #14111A lines, no shading, no rest of the head.
-  Row 1: eyes open (confident) · eyes angry (determined, brows down at the inner ends) · eyes happy (upside-down U arcs)
-  Row 2: eyes squeezed shut in surprise · eyes closed (sleepy) · eyes dizzy (spirals)
-  Row 3: mouth smirk · mouth open shout · mouth gritted teeth
-Do not: add text, numbers or labels.
+IMAGE 2 — FACE SHEET (square, 1024×1024): a 3×3 grid on plain white. Each cell shows the toy's WHOLE HEAD front-on (same head shape, colors and outline as Image 1), same size and framing in every cell, only the expression changes:
+  Row 1: confident · angry/determined · happy (eyes as upside-down U arcs, relaxed brows)
+  Row 2: eyes squeezed shut in surprise (being hit) · sleepy, eyes closed, relaxed brows · dizzy, spiral eyes
+  Row 3: smirk · open-mouth shout · gritted teeth
+Flat, clean, thick dark lines, same three-tone shading as Image 1.
+
+If you can only make one image per reply, make IMAGE 1 now, then make IMAGE 2 when I reply "next" — without changing anything about the toy.
 ```
 
-## 4. Building the toy (Claude)
-Claude models the toy from the turnaround in `src/render3d/rigs.js` (low-poly parts, shoulder and head pivots, face texture from the face sheet), registers it in `src/data/characters.js` with `art: { kind: 'procedural', draw: '<toy-id>' }`, sets name, hearts, punch, special move and shield look, then sends screenshots of idle, attack, hurt, victory and tired poses for approval.
+## 2. Arena pack (one per arena)
+```
+ASTRA REQUEST — ARENA PACK: <ARENA NAME>
 
-## Not needed any more
-Stage paintings and pose sprites: the stage and all poses are 3D now. The old FX sprite request is optional (the game draws its own effects).
+Context: "TwinForge: Toy Box Tactics" is a battle game for my 4-year-old starring his real toys. The game is a 2.5D arena fighter: two toys fight side by side on a flat stage, seen from the front at toy eye level, like a 1996 PlayStation / Sega Saturn fighting game. The stage art is shaded like a 1980s action cartoon (He-Man, ThunderCats).
+
+The arena: <one or two lines describing it>.
+
+LOOK for every image: chunky low-poly 3D world with visible flat facets. Bold saturated colors, never pastel. Three hard flat tones per surface (cool blue-purple shadow toward the lower right, base color, a lighter patch toward the upper left). Dramatic but kid-friendly lighting: one or two clear light sources. Big simple shapes; no fine clutter or texture noise. Not scary. No characters, no people, no toys standing in the arena, no text, letters, numbers, logos or UI anywhere. No fake pixel art.
+
+Make THREE separate images in this one reply:
+
+IMAGE 1 — BACKDROP (landscape, 1536×1024): the back of the arena seen straight on from toy eye level: the far wall or sky and scenery. The far edge of the floor meets the backdrop at about 60% of the way down the image; below that, just a little plain floor. Keep the middle third calm and evenly lit (the fighters stand in front of it). Put the most interesting shapes toward the left and right edges. Nothing important in the top 10% or bottom 15%.
+
+IMAGE 2 — FLOOR TEXTURE (square, 1024×1024): the arena floor seen from directly above, flat and evenly lit, SEAMLESS and tileable on all four edges. Same colors and three-tone style as Image 1. No objects, shadows or perspective.
+
+IMAGE 3 — PROP SHEET (landscape, 1536×1024): 4 to 6 standalone props from this arena, each shown once in a clean 3/4 view, spread out with space between them on a plain flat light-gray background (#EEEEEE). Same low-poly three-tone look with a clean dark outline (#14111A). No floor, no shadows on the ground.
+
+If you can only make one image per reply, make IMAGE 1 now, then IMAGE 2 and IMAGE 3 each time I reply "next", without changing the arena.
+```
+
+## 3. Effects & menu pack
+Done (see ASSETS.md → UI and effects). To redo or extend it, ask Astra for sheets on flat #FF00FF magenta, one item per equal grid cell, no text, same style block as above.
+
+## 4. Characters in 3D (option A — next)
+The turnaround sheets become real 3D models with an image-to-3D tool (e.g. Meshy or Tripo), exported as `.glb`, saved to `assets/models/<id>/<id>.glb`, then loaded into the game with the toon shader and ink outlines (`src/render3d/toon.js`). The step-by-step instructions are written in the option A session and added here.

@@ -15,7 +15,8 @@
 - Signature specials: Rex Cannon, Haunted Forest, Tidal Rage (wave + rockfish school), Sword in the Stone, Potion Storm, Midnight Storm (ghost storm). Gloomwing's power move is Flame Dance.
 
 ## Next
-1. Matt plays it with Luca; note moves that feel too long/short, questions that are too hard/easy.
-2. Confirm or rename Wanda Wickwhistle and Gloomwing.
-3. Polish pass on the models against the sheets (proportions, faces) once Matt has seen them on the phone.
-4. Then: game modes (campaign / tournament / arcade) and features.
+1. **Option A: characters as real 3D models.** Turn each turnaround in `assets/characters/` into a `.glb` with an image-to-3D tool, load it with the toon shader and outlines, and rig or animate it for idle, attack, hit, guard, special, win and tired. Start with Battle Rex as the test case, then the rest. Remy Roo and Billy Bass are new and need moves and stats.
+2. **Arenas:** build Castle, Fishing Pier, Haunted Forest and Bog Shack from `assets/arenas/` (backdrop plane + tiled floor + props) and add an arena pick or rotation. Bog Shack still needs a floor texture.
+3. **UI and effects art:** swap the code-drawn effects and menu frames for `assets/ui/` sheets where they look better.
+4. Matt plays it with Luca and reports moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Gloomwing.
+5. Then game modes (campaign / tournament / arcade).

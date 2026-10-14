@@ -38,6 +38,9 @@ Toys keep their own colors. Shared palette:
 | Ink | #14111A | all outlines |
 | Cool shadow tint | #3A2F5B | shadow multiply |
 
+## Arenas
+Each arena is a painted backdrop plane behind a 3D floor (seamless floor texture) with a few 3D props at the sides, so the fight still has depth. Art: `assets/arenas/` (see ASSETS.md).
+
 ## Stage (Bedroom Block Fortress)
 Low-poly bedroom at dusk: faceted wooden floorboards, blue-violet striped wallpaper over a purple wainscot with a gold trim, a window with a moon and city silhouette, pleated red curtains, shelves with books, a ball, a toy rocket and a rubber duck, a toy chest with a teddy bear on it, a nightstand with a glowing lamp, a block fortress with flags, and a big teal rug that marks the arena. Big foreground blocks frame the bottom corners. The teddy and the duck bob along and jump when a big hit shakes the room.
 
