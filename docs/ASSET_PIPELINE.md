@@ -55,5 +55,26 @@ If you can only make one image per reply, make IMAGE 1 now, then IMAGE 2 and IMA
 ## 3. Effects & menu pack
 Done (see ASSETS.md → UI and effects). To redo or extend it, ask Astra for sheets on flat #FF00FF magenta, one item per equal grid cell, no text, same style block as above.
 
-## 4. Characters in 3D (option A — next)
-The turnaround sheets become real 3D models with an image-to-3D tool (e.g. Meshy or Tripo), exported as `.glb`, saved to `assets/models/<id>/<id>.glb`, then loaded into the game with the toon shader and ink outlines (`src/render3d/toon.js`). The step-by-step instructions are written in the option A session and added here.
+## 4. Characters in 3D (option A)
+Turnaround sheet → image-to-3D → `assets/models/<id>/<id>.glb` → loaded by `src/render3d/models.js`, which swaps in the toon shader and ink outlines, scales the toy to ~190 units, turns it to face the foe, plays its clips and falls back to the code-built toy if the file is missing or broken.
+
+**Tool: Meshy** (meshy.ai, checked Oct 2026). Free plan: 100 credits a month, about 25 per generation; remesh, auto-rig and animation clips cost 0. Exports GLB. Auto-rig knows humanoid and four-legged bodies only. Backup: **Tripo** (rigs for creatures, fish and birds too; free plan is non-commercial and multi-view is paid).
+
+1. Split the sheet into four clean views: `python3 scripts/split-turnaround.py <id>` → `assets/characters/<id>/views/`.
+2. Meshy → Workspace → **Image to 3D** → **Multi-image**; upload front, side, back, three-quarter (or only the three-quarter view if multi-image is locked).
+3. Newest model, **Remesh on**, target **≈3,000** polycount, **Quad**, texture on, PBR off. Generate; regenerate once if the silhouette is off.
+4. **Animate / Rig** → auto-detect (humanoid first, then quadruped). Add one clip per action: idle, attack, hit reaction, block, roar or power-up, victory, tired. Names don't have to match; the game matches by keyword (`src/render3d/clipmap.js`), and `art.clips` in `src/data/characters.js` can pin a clip to an action.
+5. Download **GLB** (all files, if it gives one per clip). Rigging failed? Download the unrigged GLB; the game still moves it with lean, squash, bob and hit flash.
+6. In the repo: `npm run model:import -- <id> rex.glb [more.glb ...]` merges clips, shrinks textures to 1024 px and writes the asset. `npm run model:check -- <character>` screenshots the toy in every action into `scratch/model/` and prints the clip → action mapping and found bones.
+7. Set `art.model: '<id>'` on the character. Tune `art.anchors.muzzle` (where shots start), `art.face` (eye decal) and `art.height` if needed.
+
+**Faces.** The 3×3 faces sheets show whole heads with lighting baked in, so they can't be pasted onto a 3D head. Imported toys keep the eyes painted in their texture, or get a swappable eye decal (`art.face`) painted by the same code as the code-built toys: open, angry, happy, squint, closed, dizzy. The mouth is the jaw bone when the rig has one. For hand-painted eyes, ask Astra:
+```
+ASTRA REQUEST — <TOY NAME> EYE DECALS (TwinForge v5)
+
+Same toy as the attached faces sheet. Make ONE square image (1024×1024) on flat magenta (#FF00FF): a 3×3 grid of equal cells. Each cell shows ONLY the pair of eyes (and brows/lids if the toy has them), front-on, flat colors, thick #14111A outlines, no skin, snout, helmet, shading or highlights beyond one small white glint. Same eye shapes and colors as the faces sheet, same size and spacing in every cell.
+  Row 1: confident · angry/determined · happy (upside-down U arcs)
+  Row 2: squeezed shut (being hit, > <) · sleepy closed · dizzy spirals
+  Row 3: half-lidded smirk · wide open (shouting) · narrowed (gritting teeth)
+No text, letters or numbers.
+```

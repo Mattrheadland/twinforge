@@ -14,8 +14,13 @@
 - **Six characters in 3D**: Battle Rex, Spooky Tree, Ragin' Rockfish, Young Arthur (from Matt's sheets), plus two originals, Wanda Wickwhistle (witch) and Gloomwing (night creature), standing in for Hocus Pocus and The Chernabog, which are Disney characters and aren't modeled as-is.
 - Signature specials: Rex Cannon, Haunted Forest, Tidal Rage (wave + rockfish school), Sword in the Stone, Potion Storm, Midnight Storm (ghost storm). Gloomwing's power move is Flame Dance.
 
+## In progress: option A (characters as real 3D models)
+- **Loader shipped** (`src/render3d/models.js`): GLBs in `assets/models/<id>/` get the toon shader and ink outlines, are scaled and turned to face the foe, play clips matched to idle / attack / hit / guard / special / win / tired, pose the bones from the old pose values when a clip is missing, keep the head / center / muzzle anchors, and fall back to the code-built toy if the file is missing or broken. Tested with a stand-in rigged model.
+- **Battle Rex**: Matt is generating him in Meshy (steps in ASSET_PIPELINE §4). Then: import, tune muzzle/face/height, check in game.
+- **Remy Roo and Billy Bass**: waiting on their lore from Matt before writing moves and stats.
+
 ## Next
-1. **Option A: characters as real 3D models.** Turn each turnaround in `assets/characters/` into a `.glb` with an image-to-3D tool, load it with the toon shader and outlines, and rig or animate it for idle, attack, hit, guard, special, win and tired. Start with Battle Rex as the test case, then the rest. Remy Roo and Billy Bass are new and need moves and stats.
+1. Battle Rex in game and looking right, then the other four sheet characters the same way.
 2. **Arenas:** build Castle, Fishing Pier, Haunted Forest and Bog Shack from `assets/arenas/` (backdrop plane + tiled floor + props) and add an arena pick or rotation. Bog Shack still needs a floor texture.
 3. **UI and effects art:** swap the code-drawn effects and menu frames for `assets/ui/` sheets where they look better.
 4. Matt plays it with Luca and reports moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Gloomwing.

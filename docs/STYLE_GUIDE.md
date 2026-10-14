@@ -9,7 +9,7 @@ v5 replaces v1–v4. Target: **chunky 1980s action figures brought to life insid
 - **Fallback:** if a device can't run WebGL, the game falls back to the v4 2D renderer automatically.
 
 ## Geometry
-- **Low-poly on purpose:** boxes, low-segment spheres (8–10 sides), icosahedrons, 4–8-sided cones and cylinders. Facets should be visible. A toy is roughly 300–800 triangles.
+- **Low-poly on purpose:** boxes, low-segment spheres (8–10 sides), icosahedrons, 4–8-sided cones and cylinders. Facets should be visible. A code-built toy is roughly 300–800 triangles; an imported model (image-to-3D) up to about 6,000.
 - **Faceted shading:** every polygon is lit flat (normals come from the face, not smoothed), so curved parts read as clean facets.
 - **Toy scale:** about 190 units tall, feet at y = 0, facing +x. In battle, toys turn about 50° toward the camera (3/4 view). The opponent is a mirror image.
 - **Faces** are textures painted onto the model (a screen for robots, a decal on the head and snout for creatures). They switch expression live: open, angry, happy, squint, closed, dizzy swirl; mouths smile, open, grit, o, flat.
@@ -20,6 +20,7 @@ v5 replaces v1–v4. Target: **chunky 1980s action figures brought to life insid
 - **Hard glints:** shiny plastic and metal get small hard white glints (a facet that catches the light turns pure white). Matte parts get none.
 - **Ink outlines:** dark **#14111A** outlines around every toy and prop silhouette (an inverted-hull outline). Toys about 3 units thick, props about 1.6, big foreground props about 2.4. Floor and walls have none.
 - **Hit flash:** a struck toy flashes toward white for a moment.
+- **Imported models** use the same shader with their texture as the base color, slightly posterized and saturated so baked gradients read as flat paint, plus the same ink outline (`modelMat` / `inkModelMesh` in toon.js).
 - Unlit (always full-bright) only for things that glow: the lamp shade, the moon and sky, robot screens.
 
 ## Color
@@ -52,4 +53,4 @@ Low-poly bedroom at dusk: faceted wooden floorboards, blue-violet striped wallpa
 - Numbers and letters in the learning challenges stay in the upright rounded font, so a 4-year-old reads the shapes cleanly.
 
 ## Code map
-`src/render3d/toon.js` (shader and outlines) · `src/render3d/rigs.js` (toy models and faces) · `src/render3d/room.js` (stage) · `src/render3d/stage3d.js` (camera, layers, projection, portraits) · `src/render/` (2D effects, lettering and the 2D fallback).
+`src/render3d/toon.js` (shader and outlines) · `src/render3d/rigs.js` (code-built toys and faces) · `src/render3d/models.js` (imported GLB toys) · `src/render3d/clipmap.js` (clip → action) · `src/render3d/room.js` (stage) · `src/render3d/stage3d.js` (camera, layers, projection, portraits) · `src/render/` (2D effects, lettering and the 2D fallback).

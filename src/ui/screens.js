@@ -7,6 +7,7 @@ import { drawToy } from '../render/toys.js';
 import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
 import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
 import { get3D } from '../render3d/stage3d.js';
+import { onModelsChanged } from '../render3d/models.js';
 
 
 export class UI {
@@ -103,6 +104,11 @@ export class UI {
     onTap(home, onHome, 500);
     const scr = h('div', { class: 'screen select-screen' }, h('div', { class: 'pick-grid' }, ...cards), go, home);
     this.layer.appendChild(scr);
+    // an imported model finished loading: redraw the cards with it
+    const off = onModelsChanged(() => {
+      if (!scr.isConnected) return off();
+      cards.forEach((c, i) => c._draw(roster[i] === chosen ? 'happy' : 'open'));
+    });
     if (lastHero) {
       const i = roster.indexOf(lastHero);
       if (i >= 0) cards[i].classList.add('last');

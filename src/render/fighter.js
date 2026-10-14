@@ -2,6 +2,7 @@
 import { drawToy, HEAD } from './toys.js';
 import { INK, toon, rr, ellipse, starPath, comicText } from './draw.js';
 import { pixelize } from './pixel.js';
+import { actionOf } from '../render3d/clipmap.js';
 
 const BOX = { x: -130, y: -250, w: 280, h: 280 }; // local bounds of a toy
 
@@ -99,7 +100,7 @@ export class Fighter {
       armF = -2.6 + w * 0.3; armB = 2.6 - w * 0.3;
       eyes = 'happy'; mouth = 'open';
     }
-    return {
+    const p = {
       t, eyes, mouth,
       armF: armF + breathe * 0.06,
       armB: armB - breathe * 0.05,
@@ -110,7 +111,15 @@ export class Fighter {
       fly: this.oy < -40,
       glow: this.aura > 0.3,
       pose: this.tired ? 'tired' : this.cheer ? 'victory' : 'idle',
+      // state for model animations (render3d/clipmap.js)
+      dizzy: this.dizzy,
+      hurt: eyes === 'squint' ? this.flash : 0,
+      shield: this.shield,
+      charge: this.aura,
+      lunge: this.ox * this.flip,
     };
+    p.action = actionOf(p);
+    return p;
   }
 
   renderBuffer(t) {

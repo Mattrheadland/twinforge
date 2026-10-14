@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { toonMat, glowMat, part, inked } from './toon.js';
 import { ROSTER_BUILDERS } from './roster-rigs.js';
+import { buildModelRig, modelId, hasModel } from './models.js';
 
 const C = {
   red: 0xd7263d, blue: 0x2456e0, yellow: 0xffc914, boot: 0x2a2f55, head: 0x4ea8de, steel: 0xc4cad8,
@@ -327,9 +328,22 @@ function buildStompy(flash) {
 const BUILDERS = { blocko: buildBlocko, stompy: buildStompy, ...ROSTER_BUILDERS };
 
 // Returns { root, apply(pose), anchors, headR, flash } for a character def.
+// Uses the imported model when it's loaded (models.js); otherwise the
+// code-built toy. A code rig that's waiting on a model says so in
+// `wantsModel`, and the stage swaps it in once the model arrives.
 export function buildRig(def) {
   const flash = { value: 0 };
-  const rig = (BUILDERS[def.art?.draw] || buildBlocko)(flash);
+  let rig = null;
+  try {
+    rig = buildModelRig(def, flash);
+  } catch (e) {
+    console.warn('model rig failed, using the built-in toy', e);
+  }
+  if (!rig) {
+    rig = (BUILDERS[def.art?.draw] || buildBlocko)(flash);
+    const id = modelId(def);
+    if (hasModel(id)) rig.wantsModel = id;
+  }
   rig.flash = flash;
   return rig;
 }

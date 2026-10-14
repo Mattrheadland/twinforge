@@ -8,7 +8,9 @@
 //   effect (special) 'dizzy' (foe loses a turn) | 'shield' (blocks the next hit) | 'heal'
 //   power  special damage multiplier; hits = how many impacts the animation shows
 // foePattern: what the character does when the game plays it as the opponent.
-// art.draw: which 3D rig to build (render3d/rigs.js).
+// art.draw: which code-built 3D rig to use (render3d/rigs.js).
+// art.model: imported GLB at assets/models/<model>/<model>.glb; used instead of
+//   the code-built rig when present (render3d/models.js lists the other art options).
 
 export const CHARACTERS = {
   rex: {
@@ -25,7 +27,11 @@ export const CHARACTERS = {
       { slot: 'special', id: 'rexCannon', name: 'Rex Cannon', icon: 'cannon', color: '#FF7A1A', power: 1.15 },
     ],
     foePattern: ['quick', 'power', 'charge', 'slam'],
-    art: { kind: 'procedural', draw: 'rex' },
+    art: {
+      kind: 'procedural', draw: 'rex', model: 'battle-rex',
+      // effect points in rig units (190 tall, facing +x); tune once the model is in
+      anchors: { muzzle: [70, 196, 0] },
+    },
   },
   tree: {
     id: 'tree',

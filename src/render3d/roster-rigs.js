@@ -25,7 +25,7 @@ function group(parent, x = 0, y = 0, z = 0) {
 }
 
 // ---------------- painted faces ----------------
-function faceCanvas(w, h) {
+export function faceCanvas(w, h) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   const tex = new THREE.CanvasTexture(c);
@@ -49,7 +49,7 @@ function decal(parent, w, h, cw, ch, pos, rotY = Math.PI / 2) {
 }
 
 // Two eyes in one canvas. style: { iris, glow, lid, brow, size, gap, pupil }
-function paintEyes(g, W, H, eyes, st, t) {
+export function paintEyes(g, W, H, eyes, st, t) {
   g.clearRect(0, 0, W, H);
   const r = st.size || H * 0.3;
   const cy = H * 0.55;
@@ -159,7 +159,7 @@ function fangs(g, W, y, H) {
 }
 
 // Redraws a face canvas only when the expression changes (or it's animating).
-function faceUpdater(fc, draw) {
+export function faceUpdater(fc, draw) {
   let key = '';
   return (p) => {
     const t = p.t || 0;

@@ -2,6 +2,7 @@
 import { CHARACTERS, ROSTER, opponentFor } from './data/characters.js';
 import { VH } from './render/stage.js';
 import { createStage } from './render3d/stage3d.js';
+import { preloadModels } from './render3d/models.js';
 import { Audio } from './audio/audio.js';
 import { SaveStore } from './save.js';
 import { UI } from './ui/screens.js';
@@ -17,6 +18,7 @@ class App {
     this.canvas = document.getElementById('stage');
     this.layerEl = document.getElementById('ui');
     this.stage = createStage(this.canvas);
+    if (this.stage.is3D) preloadModels(Object.values(CHARACTERS));
     this.audio = new Audio();
     this.save = new SaveStore(CHARACTERS);
     this.ui = new UI(this.layerEl, this);

@@ -13,6 +13,7 @@ import { Stage, VH } from '../render/stage.js';
 import { Fighter } from '../render/fighter.js';
 import { setArtScale } from '../render/pixel.js';
 import { buildRig } from './rigs.js';
+import { modelReady, modelInfo } from './models.js';
 import { Room3D } from './room.js';
 
 export const RETRO_H = 400; // 3D render height in retro mode (chunky, early-3D)
@@ -58,8 +59,21 @@ class Fighter3D extends Fighter {
     this.k3 = 1 / s.scale;
   }
 
+  // the imported model finished loading after this toy was built: swap it in
+  upgradeRig() {
+    const old = this.rig;
+    if (!old.wantsModel || !modelReady(old.wantsModel)) return;
+    const rig = buildRig(this.def);
+    if (rig.wantsModel) { old.wantsModel = null; return; }
+    this.facing.remove(old.root);
+    disposeTree(old.root);
+    this.facing.add(rig.root);
+    this.rig = rig;
+  }
+
   sync(t) {
     this.lastT = t;
+    if (this.rig.wantsModel) this.upgradeRig();
     const p = this.pose(t);
     this.rig.apply(p);
     const r = this.root;
@@ -117,13 +131,21 @@ class Fighter3D extends Fighter {
   dispose() {
     for (const o of [this.root, this.shadow, this.auraMesh]) {
       this.stage3.scene.remove(o);
-      o.traverse((m) => {
-        if (m.geometry && m.name !== 'ink') m.geometry.dispose();
-        if (m.material && m.material.map) m.material.map.dispose();
-      });
+      disposeTree(o);
     }
   }
 }
+
+// Frees a toy's GPU data. Geometry and textures shared with the model cache
+// (userData.shared) and the outline hulls stay.
+function disposeTree(o) {
+  o.traverse((m) => {
+    if (m.geometry && m.name !== 'ink' && !m.userData.shared) m.geometry.dispose();
+    if (m.material && m.material.map && !m.userData.shared) m.material.map.dispose();
+  });
+}
+
+export { modelInfo };
 
 function makeAura() {
   const rays = 12, pos = [], core = [];
@@ -280,7 +302,7 @@ export class Stage3D extends Stage {
   // framing: 'head' or 'full'. Returns a canvas `w`×`h` art pixels.
   snapshot(def, { w, h, framing = 'full', pose = {} }) {
     const rig = buildRig(def);
-    rig.apply({ t: 1000, eyes: 'open', mouth: 'smile', ...pose });
+    rig.apply({ t: 1000, eyes: 'open', mouth: 'smile', action: pose.eyes === 'happy' ? 'win' : 'idle', ...pose });
     const scene = new THREE.Scene();
     const holder = new THREE.Group();
     holder.rotation.y = -0.95;
