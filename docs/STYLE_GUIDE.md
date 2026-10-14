@@ -53,4 +53,4 @@ Low-poly bedroom at dusk: faceted wooden floorboards, blue-violet striped wallpa
 - Numbers and letters in the learning challenges stay in the upright rounded font, so a 4-year-old reads the shapes cleanly.
 
 ## Code map
-`src/render3d/toon.js` (shader and outlines) · `src/render3d/rigs.js` (code-built toys and faces) · `src/render3d/models.js` (imported GLB toys) · `src/render3d/clipmap.js` (clip → action) · `src/render3d/room.js` (stage) · `src/render3d/stage3d.js` (camera, layers, projection, portraits) · `src/render/` (2D effects, lettering and the 2D fallback).
+`src/render3d/toon.js` (shader and outlines) · `src/render3d/rigs.js` (code-built toys and faces) · `src/render3d/models.js` (imported GLB toys) · `src/render3d/clipmap.js` (clip → action) · `src/render3d/family-rigs.js` (Remy Roo, Billy Bass) · `src/render3d/room.js` (stage) · `src/render3d/stage3d.js` (camera, layers, projection, portraits) · `src/render/` (2D effects, lettering and the 2D fallback).

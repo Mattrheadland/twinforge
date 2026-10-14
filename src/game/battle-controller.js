@@ -186,7 +186,10 @@ export class BattleController {
       const sh = events.find((e) => e.type === 'shield' && e.on);
       if (sh) await d.guardUp(hero, { name: 'Shielded', guard: 'block', color: move.color });
       const heal = events.find((e) => e.type === 'heal');
-      if (heal) this.hud.setHP('hero', heal.hp, heal.maxHp);
+      if (heal) {
+        this.hud.setHP('hero', heal.hp, heal.maxHp);
+        if (heal.amount > 0) d.healGlow(hero, heal.amount, move.healWord);
+      }
     }
     for (const e of events) {
       if (e.type === 'ko') return d.wait(200);

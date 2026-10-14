@@ -115,9 +115,43 @@ export const CHARACTERS = {
     foePattern: ['power', 'charge', 'slam', 'quick'],
     art: { kind: 'procedural', draw: 'nightwing' },
   },
+  // the family dog: quick and loyal, and his special patches him up ("Good boy!")
+  roo: {
+    id: 'roo',
+    name: 'Remy Roo',
+    color: '#C9822E',
+    accent: '#F2EDE4',
+    maxHp: 108,
+    attackBonus: 2,
+    moves: [
+      { slot: 'quick', id: 'zoomies', name: 'Zoomies', icon: 'paw', color: '#F2EDE4', anim: 'lunge', dash: true, word: 'ZOOM!' },
+      { slot: 'power', id: 'bigBark', name: 'Big Bark', icon: 'bark', color: '#FFC914', anim: 'shot', shots: 2, word: 'WOOF!' },
+      { slot: 'guard', id: 'rollOver', name: 'Roll Over', icon: 'roll', color: '#4EA8DE', guard: 'dodge' },
+      { slot: 'special', id: 'fetchFrenzy', name: 'Fetch Frenzy', icon: 'ball', color: '#C8E63C', power: 1, effect: 'heal', healWord: 'GOOD BOY!', hits: 4 },
+    ],
+    foePattern: ['quick', 'power', 'charge', 'slam'],
+    art: { kind: 'procedural', draw: 'roo', model: 'remy-roo', anchors: { muzzle: [96, 132, 0] } },
+  },
+  // the talking wall fish: sings, flops, and hides on his plaque
+  bass: {
+    id: 'bass',
+    name: 'Billy Bass',
+    color: '#3E8E2E',
+    accent: '#E8B33A',
+    maxHp: 104,
+    attackBonus: 2,
+    moves: [
+      { slot: 'quick', id: 'tailFlop', name: 'Tail Flop', icon: 'fin', color: '#C8E63C', anim: 'lunge', word: 'FLOP!' },
+      { slot: 'power', id: 'songBlast', name: 'Song Blast', icon: 'notes', color: '#FFC914', anim: 'shot', word: 'LA-LA!' },
+      { slot: 'guard', id: 'wallMount', name: 'Wall Mount', icon: 'plaque', color: '#B57A4A', guard: 'block' },
+      { slot: 'special', id: 'encore', name: 'Encore!', icon: 'note', color: '#FFC914', power: 1, effect: 'dizzy', hits: 3 },
+    ],
+    foePattern: ['power', 'quick', 'charge', 'slam'],
+    art: { kind: 'procedural', draw: 'bass', model: 'billy-bass', anchors: { muzzle: [92, 104, 0] } },
+  },
 };
 
-export const ROSTER = ['rex', 'tree', 'rockfish', 'arthur', 'witch', 'nightwing'];
+export const ROSTER = ['rex', 'tree', 'rockfish', 'arthur', 'witch', 'nightwing', 'roo', 'bass'];
 
 // A different opponent each time (never the hero, avoids repeating the last foe).
 let lastFoe = null;

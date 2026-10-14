@@ -359,3 +359,61 @@ export function potion({ x, y0, y1, color = '#5CE07A', life = 520, delay = 0, on
     },
   };
 }
+
+// Tennis ball that bounces in on an arc and pops off the target (Fetch Frenzy).
+export function tennisBall({ x0, y0, x1, y1, size = 15, life = 560, delay = 0, arc = 150, onHit }) {
+  const pos = (k) => ({ x: lerp(x0, x1, k), y: lerp(y0, y1, k) - Math.sin(k * Math.PI) * arc });
+  return {
+    max: life, delay, onDone: onHit,
+    draw(ctx, k) {
+      const p = pos(k);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(k * 9);
+      inkCircle(ctx, 0, 0, size, '#C8E63C');
+      ctx.beginPath();
+      ctx.arc(-size * 1.05, 0, size * 0.75, -0.9, 0.9);
+      ctx.arc(size * 1.05, 0, size * 0.75, Math.PI - 0.9, Math.PI + 0.9);
+      ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+      ctx.restore();
+    },
+  };
+}
+
+function noteShape(ctx, s, color, two) {
+  const head = (x, y) => {
+    ctx.beginPath(); ctx.ellipse(x, y, s * 0.55, s * 0.4, -0.4, 0, Math.PI * 2);
+    ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke(); ctx.fillStyle = color; ctx.fill();
+  };
+  ctx.lineCap = 'round';
+  for (const [lw, c] of [[8, INK], [4, color]]) {
+    ctx.lineWidth = lw; ctx.strokeStyle = c;
+    ctx.beginPath();
+    ctx.moveTo(s * 0.45, 0); ctx.lineTo(s * 0.45, -s * 1.7);
+    if (two) { ctx.lineTo(s * 1.65, -s * 1.95); ctx.lineTo(s * 1.65, -s * 0.25); }
+    else ctx.quadraticCurveTo(s * 1.2, -s * 1.3, s * 1.1, -s * 0.8);
+    ctx.stroke();
+  }
+  head(0, 0);
+  if (two) head(s * 1.2, -s * 0.25);
+}
+
+// Musical note that spirals in on the target (Encore!).
+export function note({ cx, cy, r0 = 220, phase = 0, color = '#FFC914', size = 16, life = 1300, delay = 0, onHit }) {
+  const two = Math.round(phase * 10) % 2 === 0;
+  return {
+    max: life, delay, onDone: onHit,
+    draw(ctx, k, t) {
+      const a = phase + k * Math.PI * 3;
+      const r = r0 * (1 - 0.8 * ease(k));
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * 0.6 + Math.sin(t / 90 + phase) * 8;
+      ctx.save();
+      ctx.globalAlpha = k < 0.1 ? k / 0.1 : 1;
+      ctx.translate(x, y);
+      ctx.rotate(Math.sin(t / 120 + phase) * 0.35);
+      noteShape(ctx, size, color, two);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    },
+  };
+}

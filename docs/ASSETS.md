@@ -13,8 +13,8 @@ Each has `<id>-turnaround.png` (1536×1024: front, side, back, 3/4) and `<id>-fa
 | spooky-tree | Spooky Tree | same order |
 | ragin-rockfish | Ragin' Rockfish | same order |
 | young-arthur | Young Arthur | same order |
-| remy-roo | Remy Roo (new) | same order |
-| billy-bass | Billy Bass (new) | same order |
+| remy-roo | Remy Roo (the family dog) | same order |
+| billy-bass | Billy Bass (the talking wall fish) | same order |
 
 Not in the repo: the Hocus Pocus and Chernabog sheets (Disney characters). Their roster spots use original stand-ins, Wanda Wickwhistle and Gloomwing, which are built in code and have no sheets yet.
 
@@ -46,4 +46,6 @@ Each character folder also has `views/` (made by `scripts/split-turnaround.py`):
 
 | id | Character | Status |
 |---|---|---|
-| battle-rex | rex | waiting on the Meshy export; the code-built Rex is used until then |
+| battle-rex | rex | waiting on the Hunyuan export (first) |
+| spooky-tree, ragin-rockfish, young-arthur | tree, rockfish, arthur | after Rex |
+| remy-roo, billy-bass | roo, bass | after Rex; code-built stand-ins in game now |

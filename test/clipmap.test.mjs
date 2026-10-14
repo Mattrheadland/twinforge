@@ -52,3 +52,11 @@ test('characters with an imported model name a valid asset id', () => {
     if (id) assert.match(id, /^[a-z0-9]+(-[a-z0-9]+)*$/, def.id);
   }
 });
+
+test('every move has an icon, and the roster includes the family toys', async () => {
+  const { ICON } = await import('../src/ui/icons.js');
+  const { ROSTER } = await import('../src/data/characters.js');
+  for (const id of ROSTER) for (const m of C[id].moves) assert.ok(ICON[m.icon], `${id} ${m.id} icon ${m.icon}`);
+  assert.ok(ROSTER.includes('roo') && ROSTER.includes('bass'));
+  assert.equal(C.roo.moves.find((m) => m.slot === 'special').effect, 'heal');
+});

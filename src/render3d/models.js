@@ -131,6 +131,9 @@ const X = new THREE.Vector3(1, 0, 0), Y = new THREE.Vector3(0, 1, 0), Z = new TH
 //   anchors  { muzzle: [x, y, z], ... } extra effect points in rig units
 //   face     painted-eye decal on the head bone (model-face.js); omit to keep the texture's face
 //   shiny    glints on the whole model (default false)
+//   joints   toy joints for a model with no skeleton (see autoJoints below)
+//   armScale how far bones follow the arm swings (default 0.8; ~0.35 for legs)
+//   jaw      how far the jaw opens (default 1)
 export function buildModelRig(def, flash) {
   const entry = cache.get(modelId(def));
   if (!entry || entry.status !== 'ready') return null;
@@ -156,6 +159,10 @@ export function buildModelRig(def, flash) {
   norm.scale.setScalar(s);
   norm.position.set(-c.x * s, -box.min.y * s, -c.z * s);
   root.updateMatrixWorld(true);
+
+  // a static model (image-to-3D tools don't rig): give it toy joints
+  const hasSkin = (() => { let k = false; model.traverse((o) => { if (o.isSkinnedMesh) k = true; }); return k; })();
+  if (!hasSkin && art.joints) autoJoints(model, root, art.joints, entry);
 
   // materials + ink
   const ws = new THREE.Vector3();
@@ -186,7 +193,7 @@ export function buildModelRig(def, flash) {
   }
 
   // bones for procedural motion
-  const B = findBones(model);
+  const B = findBones(root);
   const rest = new Map(B.all.map((b) => [b, b.quaternion.clone()]));
   const rigInv = new THREE.Quaternion();
 
@@ -248,8 +255,9 @@ export function buildModelRig(def, flash) {
       const clip = !!actions[act];
       if (!clip) {
         // no clip for this action: same arm swings and head bob as the code rigs
-        if (near) turnBone(near, near.quaternion.clone(), Z, -(p.armF ?? -0.2) * 0.8, rigInv);
-        if (far) turnBone(far, far.quaternion.clone(), Z, -(p.armB ?? 0.25) * 0.8, rigInv);
+        const k = art.armScale ?? 0.8; // animals: ~0.35 (legs, not arms)
+        if (near) turnBone(near, near.quaternion.clone(), Z, -(p.armF ?? -0.2) * k, rigInv);
+        if (far) turnBone(far, far.quaternion.clone(), Z, -(p.armB ?? 0.25) * k, rigInv);
         if (B.head) turnBone(B.head, B.head.quaternion.clone(), Z, (p.headBob || 0) * 0.01 + (p.pose === 'tired' ? -0.25 : 0), rigInv);
         for (let i = 0; i < B.tail.length; i++) turnBone(B.tail[i], B.tail[i].quaternion.clone(), Y, Math.sin(t / 420 - i * 0.6) * 0.08, rigInv);
         root.rotation.z = p.pose === 'tired' ? 0.12 : 0;
@@ -271,6 +279,82 @@ export function buildModelRig(def, flash) {
   };
   rig.apply({ t: 0, action: 'idle', eyes: 'open', mouth: 'smile' });
   return rig;
+}
+
+// ---------- toy joints for static models ----------
+// Image-to-3D tools (Hunyuan, TRELLIS…) export one solid mesh with no bones.
+// Plastic toys bend only at their joints anyway, so we cut the mesh into
+// parts by region and hang each part on a bone, like an action figure:
+//   art.joints = {
+//     head: { pivot: [x, y, z], box: [[x0, y0, z0], [x1, y1, z1]] },
+//     jaw:  { pivot, box },              // hangs off the head
+//     armF: { pivot, box }, armB: { pivot, box },   // camera-side arm is armF (+z)
+//     tail: { pivot, box },
+//   }
+// All in rig units (toy ~190 tall, feet at y = 0, facing +x, camera side +z).
+// A vertex belongs to the first joint whose box holds it (jaw, head, arms,
+// tail), else to the body. Boxes can be tuned with `npm run model:check`.
+const JOINT_ORDER = ['jaw', 'head', 'armF', 'armB', 'tail'];
+const JOINT_BONE = { head: 'head', jaw: 'jaw', armF: 'upperarm_l', armB: 'upperarm_r', tail: 'tail' };
+
+function autoJoints(model, root, joints, entry) {
+  root.updateMatrixWorld(true);
+  const rootInv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+  // bones live in rig space under root (identity while building)
+  const body = new THREE.Bone();
+  body.name = 'body';
+  root.add(body);
+  const bones = [body];
+  const boneOf = {};
+  for (const k of JOINT_ORDER) {
+    const j = joints[k];
+    if (!j) continue;
+    const b = new THREE.Bone();
+    b.name = JOINT_BONE[k];
+    const parent = k === 'jaw' && boneOf.head ? boneOf.head : body;
+    const pv = new THREE.Vector3(...j.pivot);
+    if (parent !== body) pv.sub(new THREE.Vector3(...joints.head.pivot));
+    b.position.copy(pv);
+    parent.add(b);
+    boneOf[k] = b;
+    bones.push(b);
+  }
+  const boxes = JOINT_ORDER.filter((k) => joints[k] && boneOf[k]).map((k) => ({
+    index: bones.indexOf(boneOf[k]),
+    box: new THREE.Box3(new THREE.Vector3(...joints[k].box[0]), new THREE.Vector3(...joints[k].box[1])),
+  }));
+  root.updateMatrixWorld(true);
+  const skeleton = new THREE.Skeleton(bones);
+  const meshes = [];
+  model.traverse((o) => { if (o.isMesh && !o.isSkinnedMesh) meshes.push(o); });
+  entry.skinCache = entry.skinCache || new WeakMap();
+  for (const mesh of meshes) {
+    let geo = entry.skinCache.get(mesh.geometry);
+    if (!geo) {
+      geo = mesh.geometry.clone();
+      const pos = geo.getAttribute('position');
+      const toRig = new THREE.Matrix4().multiplyMatrices(rootInv, mesh.matrixWorld);
+      const v = new THREE.Vector3();
+      const idx = new Uint16Array(pos.count * 4), wt = new Float32Array(pos.count * 4);
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(toRig);
+        const hit = boxes.find((b) => b.box.containsPoint(v));
+        idx[i * 4] = hit ? hit.index : 0;
+        wt[i * 4] = 1;
+      }
+      geo.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(idx, 4));
+      geo.setAttribute('skinWeight', new THREE.Float32BufferAttribute(wt, 4));
+      entry.skinCache.set(mesh.geometry, geo);
+    }
+    const sk = new THREE.SkinnedMesh(geo, mesh.material);
+    sk.name = mesh.name;
+    sk.position.copy(mesh.position); sk.quaternion.copy(mesh.quaternion); sk.scale.copy(mesh.scale);
+    mesh.parent.add(sk);
+    mesh.parent.remove(mesh);
+    for (const c of [...mesh.children]) sk.add(c);
+    sk.updateMatrixWorld(true);
+    sk.bind(skeleton);
+  }
 }
 
 // For tests and the debug console: what the loader saw in a model.

@@ -83,7 +83,7 @@ await tap('.big-play', { wait: 700 });
 check('audio unlocked by first tap', await page.evaluate(() => window.__tbb.app.audio.ctx && window.__tbb.app.audio.ctx.state), await page.evaluate(() => window.__tbb.app.audio.ctx?.state));
 await shot('02-select');
 const cards = await page.$$('.pick-card');
-check('six characters to pick', cards.length === 6);
+check('eight characters to pick', cards.length === 8);
 await tap(`.pick-card:nth-child(${process.env.HERO || 2})`, { wait: 500 });
 await shot('03-selected');
 await tap('.go-btn', { wait: 300 });
@@ -126,7 +126,7 @@ await sleep(350);
 await shot('09-hit');
 await waitPhase('foe');
 const st1 = await page.evaluate(() => window.__tbb.app.battle.state);
-const bonus = await page.evaluate(() => ({ rex: 2, tree: 0, rockfish: 1, arthur: 2, witch: 3, nightwing: 0 })[window.__tbb.app.battle.state.heroId]);
+const bonus = await page.evaluate(() => ({ rex: 2, tree: 0, rockfish: 1, arthur: 2, witch: 3, nightwing: 0, roo: 2, bass: 2 })[window.__tbb.app.battle.state.heroId]);
 check('supported answer still lands a modest hit (never a miss)', st1.foe.hp < foeHp0 && foeHp0 - st1.foe.hp === 14 + bonus, `${foeHp0}->${st1.foe.hp}`);
 check('stats record a supported answer', st1.stats.support === 1);
 

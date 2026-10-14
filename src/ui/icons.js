@@ -59,6 +59,20 @@ export const ICON = {
   flames: S(`<path d="M26 86 C10 86 8 66 18 56 C20 64 24 66 26 62 C24 50 30 40 36 34 C36 48 46 56 44 70 C44 80 36 86 26 86 Z" fill="#FF7A1A"/><path d="M68 86 C52 86 50 64 62 52 C64 62 68 64 70 60 C68 44 76 32 82 26 C82 42 92 52 90 68 C88 80 80 86 68 86 Z" fill="#FFC914"/>`),
   wings: S(`<path d="M50 40 Q30 10 6 20 Q14 40 10 62 Q24 52 30 66 Q38 54 50 62 Z" fill="#6A3FA0"/><path d="M50 40 Q70 10 94 20 Q86 40 90 62 Q76 52 70 66 Q62 54 50 62 Z" fill="#6A3FA0"/>`),
   ghost: S(`<path d="M22 88 L22 44 Q22 14 50 14 Q78 14 78 44 L78 88 L68 78 L58 88 L50 78 L42 88 L32 78 Z" fill="#E6D8FF"/><circle cx="40" cy="44" r="6" fill="#14111A" stroke-width="0"/><circle cx="60" cy="44" r="6" fill="#14111A" stroke-width="0"/>`),
+  // Remy Roo
+  paw: S(`<ellipse cx="50" cy="66" rx="22" ry="18" fill="#C9822E"/><ellipse cx="24" cy="40" rx="9" ry="11" fill="#C9822E"/><ellipse cx="40" cy="24" rx="9" ry="11" fill="#C9822E"/><ellipse cx="60" cy="24" rx="9" ry="11" fill="#C9822E"/><ellipse cx="76" cy="40" rx="9" ry="11" fill="#C9822E"/>
+    <path d="M6 84 L16 78 M4 64 L14 64" fill="none" stroke="#fff" stroke-width="6"/>`),
+  bark: S(`<path d="M10 40 Q10 26 24 26 L40 26 L58 12 L58 88 L40 74 L24 74 Q10 74 10 60 Z" fill="#F2EDE4"/>
+    <path d="M70 34 Q78 50 70 66 M82 24 Q96 50 82 76" fill="none" stroke-width="7"/><path d="M70 34 Q78 50 70 66 M82 24 Q96 50 82 76" fill="none" stroke="#FFC914" stroke-width="3"/>`),
+  roll: S(`<path d="M50 14 A36 36 0 1 1 18 66" fill="none" stroke-width="13"/><path d="M50 14 A36 36 0 1 1 18 66" fill="none" stroke="#4EA8DE" stroke-width="6"/>
+    <path d="M6 54 L20 76 L36 58 Z" fill="#4EA8DE"/><ellipse cx="52" cy="54" rx="14" ry="11" fill="#C9822E"/>`),
+  ball: S(`<circle cx="50" cy="50" r="34" fill="#C8E63C"/><path d="M22 30 Q46 50 22 72 M78 30 Q54 50 78 72" fill="none" stroke="#fff" stroke-width="6"/><circle cx="50" cy="50" r="34" fill="none"/>`),
+  // Billy Bass
+  fin: S(`<path d="M14 50 Q40 20 70 34 L90 14 L86 50 L90 86 L70 66 Q40 80 14 50 Z" fill="#3E8E2E"/><path d="M30 50 L62 50" fill="none" stroke="#C8E63C" stroke-width="5"/><circle cx="26" cy="44" r="4" fill="#14111A" stroke-width="0"/>`),
+  plaque: S(`<path d="M20 12 L80 12 Q90 50 80 88 L20 88 Q10 50 20 12 Z" fill="#8A5A3C"/><path d="M28 24 L72 24 Q78 50 72 76 L28 76 Q22 50 28 24 Z" fill="#B57A4A" stroke-width="4"/>
+    <ellipse cx="50" cy="50" rx="18" ry="10" fill="#3E8E2E" stroke-width="4"/>`),
+  notes: S(`<path d="M24 76 L24 30 L54 22 L54 66" fill="none" stroke-width="7"/><ellipse cx="17" cy="78" rx="10" ry="7" fill="#FFC914"/><ellipse cx="47" cy="68" rx="10" ry="7" fill="#FFC914"/>
+    <path d="M74 54 L74 16 L90 24" fill="none" stroke-width="6"/><ellipse cx="68" cy="56" rx="9" ry="7" fill="#3E8E2E"/>`),
 };
 
 export function block(ch, color, size = 1) {

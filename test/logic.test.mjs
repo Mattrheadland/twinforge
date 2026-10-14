@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CHARACTERS as C } from '../src/data/characters.js';
+import { CHARACTERS as C, ROSTER } from '../src/data/characters.js';
 import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor, isValidBattle, moveFor, learningFor } from '../src/logic/battle.js';
 import { makeCounting, makeLetter, makeMath, makeReading, validate, qualityFor } from '../src/logic/challenges.js';
 import { defaultSkills, recordResult } from '../src/logic/difficulty.js';
 import { Rng } from '../src/logic/rng.js';
 
-const ROSTER_IDS = ['rex', 'tree', 'rockfish', 'arthur', 'witch', 'nightwing'];
+const ROSTER_IDS = ROSTER;
 
 test('every character has exactly one move per slot, with names and colors', () => {
   for (const id of ROSTER_IDS) {

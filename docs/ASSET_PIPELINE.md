@@ -56,17 +56,18 @@ If you can only make one image per reply, make IMAGE 1 now, then IMAGE 2 and IMA
 Done (see ASSETS.md → UI and effects). To redo or extend it, ask Astra for sheets on flat #FF00FF magenta, one item per equal grid cell, no text, same style block as above.
 
 ## 4. Characters in 3D (option A)
-Turnaround sheet → image-to-3D → `assets/models/<id>/<id>.glb` → loaded by `src/render3d/models.js`, which swaps in the toon shader and ink outlines, scales the toy to ~190 units, turns it to face the foe, plays its clips and falls back to the code-built toy if the file is missing or broken.
+Turnaround sheet → image-to-3D → `assets/models/<id>/<id>.glb` → loaded by `src/render3d/models.js`, which swaps in the toon shader and ink outlines, scales the toy to ~190 units, turns it to face the foe, adds toy joints or plays its clips, and falls back to the code-built toy if the file is missing or broken.
 
-**Tool: Meshy** (meshy.ai, checked Oct 2026). Free plan: 100 credits a month, about 25 per generation; remesh, auto-rig and animation clips cost 0. Exports GLB. Auto-rig knows humanoid and four-legged bodies only. Backup: **Tripo** (rigs for creatures, fish and birds too; free plan is non-commercial and multi-view is paid).
+**Tool: Hunyuan 3D** (Tencent, 3d.hunyuanglobal.com; checked Oct 2026). Free: 20 generations a day, up to 8 views of the same toy, GLB export. It doesn't rig, and doesn't need to: the game gives static models **toy joints** (below). Paid tools (Meshy, Tripo) aren't needed; their free tiers lock downloads or rigged exports.
 
-1. Split the sheet into four clean views: `python3 scripts/split-turnaround.py <id>` → `assets/characters/<id>/views/`.
-2. Meshy → Workspace → **Image to 3D** → **Multi-image**; upload front, side, back, three-quarter (or only the three-quarter view if multi-image is locked).
-3. Newest model, **Remesh on**, target **≈3,000** polycount, **Quad**, texture on, PBR off. Generate; regenerate once if the silhouette is off.
-4. **Animate / Rig** → auto-detect (humanoid first, then quadruped). Add one clip per action: idle, attack, hit reaction, block, roar or power-up, victory, tired. Names don't have to match; the game matches by keyword (`src/render3d/clipmap.js`), and `art.clips` in `src/data/characters.js` can pin a clip to an action.
-5. Download **GLB** (all files, if it gives one per clip). Rigging failed? Download the unrigged GLB; the game still moves it with lean, squash, bob and hit flash.
-6. In the repo: `npm run model:import -- <id> rex.glb [more.glb ...]` merges clips, shrinks textures to 1024 px and writes the asset. `npm run model:check -- <character>` screenshots the toy in every action into `scratch/model/` and prints the clip → action mapping and found bones.
-7. Set `art.model: '<id>'` on the character. Tune `art.anchors.muzzle` (where shots start), `art.face` (eye decal) and `art.height` if needed.
+1. Split the sheet into clean views: `python3 scripts/split-turnaround.py <id>` → `assets/characters/<id>/views/` (front, side, side-mirrored, back, three-quarter; background removed).
+2. Hunyuan 3D → **Image to 3D → multi-view**. Slots: front → front, back → back, side → left, side-mirrored → right; add three-quarter if there's room.
+3. Low / smart topology and the lowest face count if offered; texture on. Regenerate until the silhouette matches the sheet (cannon, arms, tail all there).
+4. Download **GLB** and send it to Claude.
+5. In the repo: `npm run model:import -- <id> <file.glb>` (shrinks textures to 1024 px, strips compression, merges extra clip files if a tool ever gives them) → `assets/models/<id>/<id>.glb`.
+6. Set `art.model: '<id>'` and `art.joints` on the character (`src/data/characters.js`): pivot and box for head, jaw, armF (camera side), armB and tail, in rig units. `npm run model:check -- <character>` screenshots the toy in every action into `scratch/model/` and prints the clips, bones and anchors it found. Tune the boxes until the parts bend cleanly, plus `art.anchors.muzzle`, `art.face`, `art.height`, and `art.armScale` (~0.35 for animals, whose "arms" are legs).
+
+A rigged GLB (Mixamo, Tripo, Meshy) also works as-is: its clips are matched to idle / attack / hit / guard / special / win / tired by name (`src/render3d/clipmap.js`; pin one with `art.clips`), and any action without a clip is posed from the bones.
 
 **Faces.** The 3×3 faces sheets show whole heads with lighting baked in, so they can't be pasted onto a 3D head. Imported toys keep the eyes painted in their texture, or get a swappable eye decal (`art.face`) painted by the same code as the code-built toys: open, angry, happy, squint, closed, dizzy. The mouth is the jaw bone when the rig has one. For hand-painted eyes, ask Astra:
 ```

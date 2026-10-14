@@ -13,11 +13,11 @@ const ico = (d = 1) => new THREE.IcosahedronGeometry(1, d);
 const cyl = (rt, rb, h, s = 7) => new THREE.CylinderGeometry(rt, rb, h, s);
 const cone = (r, h, s = 5) => new THREE.ConeGeometry(r, h, s);
 
-function maker(flash) {
+export function maker(flash) {
   return (geo, color, o = {}) => part(geo, color, { ink: 3, flash, ...o, color });
 }
 
-function group(parent, x = 0, y = 0, z = 0) {
+export function group(parent, x = 0, y = 0, z = 0) {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   parent.add(g);
@@ -35,7 +35,7 @@ export function faceCanvas(w, h) {
   return { c, g: c.getContext('2d'), tex };
 }
 
-function decal(parent, w, h, cw, ch, pos, rotY = Math.PI / 2) {
+export function decal(parent, w, h, cw, ch, pos, rotY = Math.PI / 2) {
   const fc = faceCanvas(cw, ch);
   const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({
     map: fc.tex, transparent: true, alphaTest: 0.4, depthWrite: false,
@@ -126,7 +126,7 @@ export function paintEyes(g, W, H, eyes, st, t) {
   }
 }
 
-function paintMouth(g, W, H, mouth, st) {
+export function paintMouth(g, W, H, mouth, st) {
   const x0 = W * 0.3, x1 = W * 0.7, y = H * 0.5;
   g.lineCap = 'round'; g.lineJoin = 'round';
   g.strokeStyle = st.line || INK;

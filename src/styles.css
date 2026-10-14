@@ -457,9 +457,9 @@ html.reduced #tv::after { animation: none; }
 /* ---------- v6: character select grid ---------- */
 .pick-grid {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -48%);
-  display: grid; grid-template-columns: repeat(3, 196px); gap: 14px 16px;
+  display: grid; grid-template-columns: repeat(4, 170px); gap: 14px 12px;
 }
-.pick-grid .pick-card { width: 196px; height: 186px; }
+.pick-grid .pick-card { width: 170px; height: 194px; }
 .pick-grid .pick-card::before { height: 132px; }
 .pick-grid .pick-art { margin-top: 2px; }
 .pick-grid .pick-name { margin-top: 4px; }

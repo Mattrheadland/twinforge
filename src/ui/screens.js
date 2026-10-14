@@ -83,7 +83,7 @@ export class UI {
       const card = h('button', { class: 'pick-card', style: { '--c': def.color, '--d': i * 120 + 'ms' }, 'aria-label': def.name },
         h('span', { class: 'p1-tag' }, pixelLabel('1P', 20, '#FF4A3A')),
         h('div', { class: 'pick-art' }, cv),
-        h('div', { class: 'pick-name' }, pixelLabel(def.name, 15, '#FFC914', { maxW: 178 })),
+        h('div', { class: 'pick-name' }, pixelLabel(def.name, 15, '#FFC914', { maxW: 156 })),
         h('div', { class: 'pick-moves' }, ...(def.moves || []).map((m) => h('span', { class: `pm pm-${m.slot}`, style: { '--mc': m.color }, html: ICON[m.icon] || ICON.fist }))));
       void statRow;
       card._draw = draw;

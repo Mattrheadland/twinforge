@@ -405,6 +405,7 @@ export class Director {
     const fn = {
       rexCannon: this.spRexCannon, hauntedForest: this.spHauntedForest, tidalRage: this.spTidalRage,
       swordInStone: this.spSwordInStone, potionStorm: this.spPotionStorm, midnightStorm: this.spMidnightStorm,
+      fetchFrenzy: this.spFetchFrenzy, encore: this.spEncore,
     }[move.id] || this.spGeneric;
     await fn.call(this, att, def, move, quality, ev, applyHit);
   }
@@ -537,6 +538,67 @@ export class Director {
     this.squash(att, 1.2, 0.8, 300);
     await sw;
     this.stage.dim = 0;
+  }
+
+  // Remy Roo: a volley of tennis balls, then a happy zoomie lap
+  async spFetchFrenzy(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    att.eyes = 'happy';
+    att.mouth = 'open';
+    this.audio.sfx('jump');
+    const m = this.pt(att, 'muzzle');
+    const c = def.center();
+    this.fx.word('FETCH FRENZY!', this.stage.W / 2, 120, { size: 48, color: move.color, life: 1200 });
+    const n = q === 'indep' ? 6 : 4;
+    let last;
+    for (let i = 0; i < n; i++) {
+      this.to(att, { sy: 0.9, sx: 1.08 }, 70).then(() => this.to(att, { sy: 1, sx: 1 }, 120));
+      last = this.fx.add(FXM.tennisBall({
+        x0: m.x, y0: m.y, x1: c.x + (Math.random() - 0.5) * 50, y1: c.y + (Math.random() - 0.5) * 60,
+        arc: 120 + (i % 3) * 50, life: 520, delay: i * 150,
+        onHit: () => { this.tap(def, move.color); this.fx.burst(c.x, c.y, { count: 6, kind: 'puff', colors: ['#C8E63C'], speed: 160 }); },
+      }));
+    }
+    await last;
+    await this.lunge(att, def, { power: 1.3, dash: true, onImpact: () => this.finishSpecial(att, def, ev, move.color, 'BOING!', applyHit) });
+  }
+
+  // Billy Bass: sings an encore; the notes spin the foe around
+  async spEncore(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    att.mouth = 'open';
+    this.stage.dim = 0.25;
+    this.audio.sfx('powerUp');
+    const c = def.center();
+    this.fx.word('ENCORE!', this.stage.W / 2, 120, { size: 56, color: move.color, life: 1300 });
+    const sw = this.fx.add(FXM.swirl({ cx: c.x, cy: c.y, r: 150, color: '#C8E63C', life: 1500, arms: 3 }));
+    // he bobs and flaps along to his own song
+    const bob = (async () => {
+      for (let i = 0; i < 4; i++) {
+        await this.to(att, { rot: 0.12, sy: 1.06 }, 150, Ease.inOutQuad);
+        await this.to(att, { rot: -0.1, sy: 0.96 }, 150, Ease.inOutQuad);
+      }
+      await this.to(att, { rot: 0, sy: 1 }, 120);
+    })();
+    const n = q === 'indep' ? 8 : 6;
+    let last;
+    for (let i = 0; i < n; i++) {
+      last = this.fx.add(FXM.note({ cx: c.x, cy: c.y, r0: 230, phase: (i / n) * Math.PI * 2, color: i % 2 ? '#FFC914' : '#C8E63C', life: 1200, delay: i * 90, size: 15 + (i % 3) * 3, onHit: i % 2 ? () => this.tap(def, move.color) : null }));
+    }
+    await last;
+    await bob;
+    await this.finishSpecial(att, def, ev, move.color, 'TA-DAAA!', applyHit);
+    await sw;
+    this.stage.dim = 0;
+  }
+
+  // A special that patches the hero up (Fetch Frenzy).
+  healGlow(f, amount, word = 'HEAL!') {
+    const c = f.center();
+    this.audio.sfx('perfect');
+    this.fx.burst(c.x, c.y - 20, { count: 16, colors: ['#5CE07A', '#ffffff', '#FFC914'], kind: 'star', speed: 220, gravity: -160 });
+    this.fx.word(`${word} +${amount}`, c.x, c.y - 160, { size: 38, color: '#5CE07A', life: 1000 });
+    f.eyes = 'happy';
   }
 
   setDizzy(f, on) {
