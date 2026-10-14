@@ -28,6 +28,18 @@ LOOK: the toy as a chunky low-poly 3D action figure: visible flat facets, simple
 Keep the toy recognizable: same silhouette, proportions, colors, markings and accessories as the real toy. Never add letters, numbers or words. Plain flat light-gray background. I'll send requests one at a time. Don't draw anything yet; just reply "Ready."
 ```
 
+## 0b. Style test (once, before any real toy)
+```
+ASTRA REQUEST — STYLE-TEST v5
+Purpose: lock the look before we draw any real toys. Judge only the style.
+Draw ONE landscape image (1536 × 1024 if available): an original, made-up chunky toy robot (boxy body, box head with a dark face screen, one antenna with a ball on top, red body, blue arms and legs, yellow fists) shown twice at the same size as a low-poly 3D action figure in the locked look, standing on a faceted wooden floor.
+  Left: front 3/4 view, idle fighting stance, fists up.
+  Right: side view facing right, punching forward.
+Visible flat facets, three hard flat tones per surface, small hard white glints, clean dark outline. Plain light-gray background behind the floor.
+Do not: add text, letters, numbers, logos, UI, or other characters.
+```
+What to look for: it should read as a simple polygon model (flat facets, hard tone steps, dark outline), not a smooth painting or a detailed render. If it comes back too detailed or soft, reply: "simpler and blockier: fewer polygons, three flat tones per surface, no gradients, thicker outline." Send the approved image to Claude before moving on.
+
 ## 1. Photos per toy
 Front, back, left side, right side, 3/4 view, top, and close-ups of the face and any accessory. Plain background, daylight, no flash, the whole toy in frame. A ruler or hand in one shot helps with scale.
 
