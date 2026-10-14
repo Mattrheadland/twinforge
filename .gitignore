@@ -3,3 +3,4 @@ dist/
 preview/
 scratch/
 *.log
+.claude/
