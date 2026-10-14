@@ -171,7 +171,19 @@ export const CHARACTERS = {
       { slot: 'special', id: 'powerPaws', name: 'Power Paws', icon: 'paw', color: '#FFC914', power: 1.05, effect: 'heal', healWord: 'GOOD BOY!', hits: 5 },
     ],
     foePattern: ['quick', 'power', 'charge', 'slam'],
-    art: { kind: 'procedural', draw: 'roo', model: 'remy-roo', anchors: { muzzle: [96, 132, 0] } },
+    art: {
+      kind: 'procedural', draw: 'roo', model: 'remy-roo',
+      // imported model (Hunyuan 3D, static): head from the collar up, front legs as arms, a narrow tail cut
+      anchors: { muzzle: [104, 150, 0] },
+      armScale: 0.35,
+      face: { pos: [84, 171, 0], size: [30, 11], style: { iris: '#5A3A1A', lid: '#C9822E', brow: '#7A4A20', size: 0.36 } },
+      joints: {
+        head: { pivot: [36, 140, 0], box: [[38, 128, -42], [116, 194, 42]] },
+        armF: { pivot: [38, 70, 18], box: [[12, 0, 4], [66, 70, 40]] },
+        armB: { pivot: [38, 70, -18], box: [[12, 0, -40], [66, 70, -4]] },
+        tail: { pivot: [-62, 112, 0], box: [[-118, 40, -9], [-62, 130, 9]] },
+      },
+    },
   },
   // the talking wall fish: sings, flops, and hides on his plaque
   bass: {
@@ -188,7 +200,21 @@ export const CHARACTERS = {
       { slot: 'special', id: 'encore', name: 'Encore!', icon: 'note', color: '#FFC914', power: 1, effect: 'dizzy', hits: 3 },
     ],
     foePattern: ['power', 'quick', 'charge', 'slam'],
-    art: { kind: 'procedural', draw: 'bass', model: 'billy-bass', anchors: { muzzle: [92, 104, 0] } },
+    art: {
+      kind: 'procedural', draw: 'bass', model: 'billy-bass', height: 150, yaw: 0.45, // turned toward his foe: a long fish reads best side-on
+      // imported model (Hunyuan 3D, static), scaled to 150 tall so he's about Rex's length:
+      // open lower jaw, head, pectoral fins as arms, tail fin; he stands on his pelvic fins
+      anchors: { muzzle: [111, 63, 0] },
+      armScale: 0.5,
+      face: { pair: true, pos: [88, 84, 28], yaw: 1.0, size: [13, 13], style: { iris: '#E8B33A', lid: '#3E8E2E', brow: '#14111A', size: 0.34 } },
+      joints: {
+        jaw: { pivot: [73, 58, 0], box: [[73, 20, -36], [118, 57, 36]] },
+        head: { pivot: [47, 79, 0], box: [[47, 57, -47], [118, 158, 47]] },
+        armF: { pivot: [4, 63, 38], box: [[-4, 32, 32], [55, 71, 55]] },
+        armB: { pivot: [4, 63, -38], box: [[-4, 32, -55], [55, 71, -32]] },
+        tail: { pivot: [-87, 79, 0], box: [[-158, 16, -24], [-87, 142, 24]] },
+      },
+    },
   },
 };
 
