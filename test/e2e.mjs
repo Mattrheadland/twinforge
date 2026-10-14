@@ -34,7 +34,14 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 
 async function tap(sel, { wait = 0 } = {}) {
   const el = await page.waitForSelector(sel, { visible: true, timeout: 15000 });
-  const b = await el.boundingBox();
+  // wait for slide-in animations to settle so the tap lands where the button ends up
+  let b = await el.boundingBox();
+  for (let i = 0; i < 20; i++) {
+    await sleep(50);
+    const nb = await el.boundingBox();
+    if (nb && b && Math.abs(nb.x - b.x) < 0.5 && Math.abs(nb.y - b.y) < 0.5) { b = nb; break; }
+    b = nb;
+  }
   await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
   if (wait) await sleep(wait);
 }

@@ -89,6 +89,11 @@ class App {
     this.fpsEl && this.fpsEl.classList.toggle('hidden', !st.showFps);
     document.documentElement.classList.toggle('reduced', !!st.reducedMotion);
     document.documentElement.classList.toggle('tv', st.tvLook !== false);
+    const pix = st.pixelArt !== false;
+    if (this.stage.pixel !== pix) {
+      this.stage.pixel = pix;
+      if (this.W) this.layout();
+    }
   }
 
   updateFps() {

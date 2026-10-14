@@ -3,10 +3,14 @@ import { h, onTap } from './dom.js';
 import { ICON } from './icons.js';
 import { drawToy, HEAD } from '../render/toys.js';
 import { mix } from '../render/draw.js';
+import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
 import { RULES } from '../logic/battle.js';
 
 export function portrait(def, size, px, bg) {
+  // In arcade mode the portrait is drawn on the game's pixel grid and scaled up.
+  if (isPixel()) px = getArtScale();
   const c = document.createElement('canvas');
+  if (isPixel()) c.classList.add('pxl');
   c.width = c.height = Math.round(size * px);
   c.style.width = c.style.height = size + 'px';
   const ctx = c.getContext('2d');
@@ -31,6 +35,7 @@ export function portrait(def, size, px, bg) {
   ctx.translate(size / 2 - hd.x * k, size / 2 - hd.y * k + size * 0.08);
   ctx.scale(k, k);
   drawToy(ctx, def, { t: 1000, eyes: 'open', mouth: 'smile' });
+  if (isPixel()) pixelize(ctx, c.width, c.height);
   return c;
 }
 
@@ -46,6 +51,7 @@ export class Hud {
       hero: this.panel('hero', heroDef, px),
       foe: this.panel('foe', foeDef, px),
     };
+    this.ko = h('div', { class: 'ko-badge' }, pixelLabel('K.O.', 20, '#FF4A3A', { cls: 'ko-txt' }));
     this.pauseBtn = h('button', { class: 'pause-btn', 'aria-label': 'Pause', html: ICON.pause });
     onTap(this.pauseBtn, () => this.handlers.pause && this.handlers.pause());
 
@@ -63,7 +69,7 @@ export class Hud {
     this.btn.special.appendChild(this.ring);
     this.actions = h('div', { class: 'actions hidden' }, this.btn.defend, this.btn.attack, this.btn.special);
     this.hand = h('div', { class: 'tut-hand hidden', html: ICON.hand });
-    this.el.append(this.panels.hero.root, this.panels.foe.root, this.pauseBtn, this.actions, this.hand);
+    this.el.append(this.panels.hero.root, this.panels.foe.root, this.ko, this.pauseBtn, this.actions, this.hand);
     layer.appendChild(this.el);
   }
 
@@ -74,14 +80,14 @@ export class Hud {
   panel(side, def, px) {
     const fill = h('div', { class: 'hp-fill' });
     const chip = h('div', { class: 'hp-chip' });
-    const hp = h('div', { class: 'hp' }, h('span', { class: 'hp-heart', html: ICON.heart }), h('div', { class: 'hp-track' }, chip, fill));
+    const hp = h('div', { class: 'hp' }, h('div', { class: 'hp-track' }, chip, fill));
     const pips = side === 'hero'
       ? h('div', { class: 'energy' }, ...Array.from({ length: RULES.maxEnergy }, () => h('span', { class: 'pip', html: ICON.bolt })))
       : null;
     const status = h('div', { class: 'status' });
     const root = h('div', { class: `panel panel-${side}` },
       h('div', { class: 'portrait' }, portrait(def, 62, px * 1.2)),
-      h('div', { class: 'panel-body' }, h('div', { class: 'pname' }, def.name), hp, pips, status));
+      h('div', { class: 'panel-body' }, hp, h('div', { class: 'pname' }, pixelLabel(def.name, 19, '#FFC914')), pips, status));
     return { root, fill, chip, pips, status };
   }
 
@@ -91,6 +97,7 @@ export class Hud {
     p.fill.style.width = pct + '%';
     p.root.classList.toggle('low', pct <= 30);
     p.root.classList.toggle('mid', pct > 30 && pct <= 60);
+    this.ko.classList.toggle('hot', Object.values(this.panels).some((q) => q.root.classList.contains('low')));
     if (instant) {
       p.chip.style.transition = 'none';
       p.fill.style.transition = 'none';

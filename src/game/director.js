@@ -44,7 +44,7 @@ export class Director {
     for (const f of [this.hero, this.foe]) {
       if (!f) continue;
       const on = (side === 'hero' && f === this.hero) || (side === 'foe' && f === this.foe);
-      f.arrowColor = f === this.hero ? '#ffd23f' : '#ff6b5b';
+      f.arrowColor = f === this.hero ? '#FFC914' : '#FF5A4A';
       this.to(f, { arrow: on ? 1 : 0 }, 200);
     }
   }
@@ -77,6 +77,16 @@ export class Director {
     hero.eyes = 'open';
     foe.eyes = 'open';
     await this.to(hero, { armF: -0.2 }, 220);
+    // arcade announcer cards
+    const cx = this.stage.W / 2;
+    this.fx.word('ROUND 1', cx, 190, { size: 60, life: 950, color: '#FFC914', rot: 0 });
+    this.audio.sfx('select');
+    await this.wait(900);
+    this.fx.word('FIGHT!', cx, 200, { size: 92, life: 800, color: '#F46036', rot: 0 });
+    this.audio.sfx('whoosh');
+    this.stage.shake(0.25);
+    buzz('light');
+    await this.wait(550);
   }
 
   squash(f, sx, sy, dur) {

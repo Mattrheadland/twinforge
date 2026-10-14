@@ -308,6 +308,8 @@ export function drawToy(ctx, def, p) {
       const w = (im.naturalWidth / im.naturalHeight) * h;
       const ax = art.anchor ? art.anchor[0] : 0.5;
       const ay = art.anchor ? art.anchor[1] : 1;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(im, -w * ax, -h * ay, w, h);
       return;
     }

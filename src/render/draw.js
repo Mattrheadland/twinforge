@@ -1,3 +1,6 @@
+import { pixelWord, isPixel } from './pixel.js';
+
+// (v4: three tones per part for the '80s 8-bit look.)
 // Drawing helpers that enforce STYLE_GUIDE v2 (early-'90s Saturday-morning
 // action cartoon): near-black brush ink that is heavier on the shadow side,
 // flat color, a big hard-edged shadow shape shifted cool toward blue-violet,
@@ -5,7 +8,7 @@
 // Light comes from the upper left.
 
 export const INK = '#14111A';
-export const OUTLINE = 5;
+export const OUTLINE = 3.4;
 
 // ---------- color helpers ----------
 const SHADE_TINT = [158, 146, 206]; // multiply → cool, blue-violet shadows
@@ -137,21 +140,21 @@ export function toon(ctx, build, fill, shade, opts = {}) {
     const toLocal = localDir(ctx);
     const rd = toLocal(-1, 0.35), up = toLocal(0, -1), ld = toLocal(-1, -1);
     const rx = rim ? rd[0] * rimW : 0, ry = rim ? rd[1] * rimW : 0;
-    if (creaseOn) {
-      // third, darker tone: a band along the bottom of the shadow side
-      const c = Math.max(2, size * 0.09);
-      fillShifted(rx, ry, crease(fill));
-      fillShifted(rx + up[0] * c, ry + up[1] * c, sc);
-    } else if (rim) {
-      fillShifted(rx, ry, sc);
+    // Arcade-sprite stepped shading: hard bands from deep shadow on the lower
+    // right up to a light core on the upper left. Each band is the part
+    // shifted a little further toward the light, so they nest like contours.
+    const k = shadow / 0.2; // keeps the old `shadow` option meaningful
+    const deep = creaseOn ? crease(fill) : mix(sc, crease(fill), 0.5);
+    // 8-bit sprites: three tones (shadow, base, light), plus a deep crease tone
+    // only where asked for
+    const tones = creaseOn
+      ? [[0, deep], [0.08 * k, sc], [0.2 * k, fill], [0.42 * k, mix(fill, '#ffffff', 0.32)]]
+      : [[0, sc], [0.2 * k, fill], [0.42 * k, mix(fill, '#ffffff', 0.32)]];
+    for (const [f, color] of tones) {
+      const dx = ld[0] * Math.SQRT2 * b.w * f, dy = ld[1] * Math.SQRT2 * b.h * f;
+      fillShifted(rx * (f ? 0.5 : 1) + dx, ry * (f ? 0.5 : 1) + dy, color);
     }
-    // lit area: the part shifted toward the light; what's left is a hard
-    // shadow shape on the lower right
-    ctx.translate(ld[0] * Math.SQRT2 * b.w * shadow, ld[1] * Math.SQRT2 * b.h * shadow);
-    ctx.beginPath();
-    build(ctx);
-    ctx.fillStyle = fill;
-    ctx.fill();
+    void up;
     ctx.restore();
   }
   if (highlight) glint(ctx, build, highlight);
@@ -255,9 +258,23 @@ export function taper(ctx, pts, width = OUTLINE, color = INK) {
   ctx.fill();
 }
 
-// Chunky italic hero lettering with a hard drop and a two-tone fill.
+// Arcade lettering on the pixel grid (or the smooth version when pixels are off).
 export function comicText(ctx, text, x, y, size, fill = '#FFC914', rot = 0) {
   if (!text) return;
+  if (isPixel()) {
+    const m = ctx.getTransform();
+    const k = Math.hypot(m.a, m.b) || 1; // canvas px per world unit (incl. zoom)
+    const px = Math.max(7, Math.round(size * 0.7 * k));
+    const cv = pixelWord(String(text).toUpperCase(), px, parse(fill) ? fill : '#FFC914');
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1 / k, 1 / k);
+    ctx.imageSmoothingEnabled = false;
+    const dx = Math.round(-cv.width / 2), dy = Math.round(-cv.mid);
+    ctx.drawImage(cv, dx, dy);
+    ctx.restore();
+    return;
+  }
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(rot);

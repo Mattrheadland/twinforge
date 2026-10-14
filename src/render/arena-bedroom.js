@@ -7,6 +7,7 @@
 // When Astra's plates arrive, `back` / `front` become images.
 import { toon, rr, ellipse, starPath } from './draw.js';
 import { Rng } from '../logic/rng.js';
+import { dither, pixelize } from './pixel.js';
 
 const MARGIN = 60; // extra painted area so shake/zoom never shows an edge
 const FLOOR_Y = 232;
@@ -113,6 +114,10 @@ export class BedroomArena {
     this.px = px;
     this.back = this.paint(W, H, px, (ctx) => this.paintBack(ctx, W, H));
     this.front = this.paint(W, H, px, (ctx) => this.paintFront(ctx, W, H));
+    if (this.pixel) {
+      dither(this.back.getContext('2d'), this.back.width, this.back.height, 18);
+      pixelize(this.front.getContext('2d'), this.front.width, this.front.height);
+    }
     const r = new Rng(7);
     // dust motes drifting through the moonbeam
     const wx = W * 0.5;
@@ -283,7 +288,35 @@ export class BedroomArena {
     fg.addColorStop(1, P.floorNear);
     ctx.fillStyle = fg;
     ctx.fillRect(L, floorY, R - L, B - floorY);
-    // planks in perspective, soft seams
+    // planks in perspective: alternating boards, then seams
+    {
+      const vx0 = W / 2, vy0 = -260, t0 = (floorY - vy0) / (B - vy0);
+      for (let i = -14; i < 14; i++) {
+        if (i % 2) continue;
+        const b0 = W / 2 + i * 80, b1 = b0 + 80;
+        ctx.beginPath();
+        ctx.moveTo(vx0 + (b0 - vx0) * t0, floorY);
+        ctx.lineTo(vx0 + (b1 - vx0) * t0, floorY);
+        ctx.lineTo(b1, B);
+        ctx.lineTo(b0, B);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,200,160,.045)';
+        ctx.fill();
+      }
+      // board ends
+      ctx.strokeStyle = 'rgba(20,10,20,.25)';
+      ctx.lineWidth = 1.5;
+      const rr0 = new Rng(5);
+      for (let row = 0; row < 7; row++) {
+        const y = floorY + 8 + row * row * 5 + row * 6;
+        for (let i = -14; i < 14; i++) {
+          if (rr0.next() < 0.6) continue;
+          const tt = (y - vy0) / (B - vy0);
+          const xa = vx0 + (W / 2 + i * 80 - vx0) * tt, xb = vx0 + (W / 2 + (i + 1) * 80 - vx0) * tt;
+          ctx.beginPath(); ctx.moveTo(xa, y); ctx.lineTo(xb, y); ctx.stroke();
+        }
+      }
+    }
     ctx.strokeStyle = 'rgba(20,10,20,.32)';
     ctx.lineWidth = 2;
     const vx = W / 2, vy = -260;
@@ -397,7 +430,7 @@ export class BedroomArena {
     glow(ctx, sp.foe.x, sp.foe.y, 115, P.moonGlow, 0.42, 0.24);
     ctx.restore();
 
-    brushTexture(ctx, L, T, R - L, B - T, 11, Math.round((R - L) * (B - T) / 260));
+    if (!this.pixel) brushTexture(ctx, L, T, R - L, B - T, 11, Math.round((R - L) * (B - T) / 260));
   }
 
   paintFortress(ctx, x, baseY) {
@@ -460,8 +493,18 @@ export class BedroomArena {
   }
 
   drawBack(ctx, cam, t) {
+    this.drawBackImage(ctx, cam);
+    this.drawDecor(ctx, cam, t);
+  }
+
+  drawBackImage(ctx, cam) {
     const px = this.px;
     ctx.drawImage(this.back, -MARGIN + cam.x * 0.35, -MARGIN + cam.y * 0.35, this.back.width / px, this.back.height / px);
+  }
+
+  // Animated bits of the stage (crowd, twinkles, moonbeam).
+  drawDecor(ctx, cam, t) {
+    this.drawCrowd(ctx, cam, t);
     // twinkling window stars
     for (const s of this.twinkles) {
       const a = 0.35 + 0.65 * Math.sin(t / 500 + s.ph);
@@ -485,6 +528,52 @@ export class BedroomArena {
     ctx.lineTo(wx - 300, 440);
     ctx.closePath();
     ctx.fill();
+  }
+
+  // Arcade-stage crowd: a couple of background toys that bob along and jump
+  // when a big hit shakes the room (`excite` comes from the camera shake).
+  drawCrowd(ctx, cam, t) {
+    const W = this.W;
+    const ex = this.excite || 0;
+    const ox = cam.x * 0.35, oy = cam.y * 0.35;
+    // teddy bear on the toy chest, waving
+    {
+      const x = W * 0.14 - 30 + ox, y = FLOOR_Y - 46 + oy;
+      const hop = -Math.abs(Math.sin(t / (ex > 0.05 ? 90 : 420))) * (3 + ex * 16);
+      const wave = Math.sin(t / (ex > 0.05 ? 80 : 260)) * 0.6;
+      ctx.save();
+      ctx.translate(x, y + hop);
+      const fur = '#8A5A3C', muzzle = '#D9B48A';
+      ctx.save(); ctx.translate(-12, -30); ctx.rotate(-1.9 + wave);
+      toon(ctx, (c) => rr(c, -4, -2, 8, 18, 4), fur, true, { line: 2.4 });
+      ctx.restore();
+      toon(ctx, (c) => ellipse(c, 0, -16, 13, 16), fur, true, { line: 2.4 });
+      toon(ctx, (c) => ellipse(c, 2, -12, 7, 8), muzzle, true, { line: 1.8, rim: false });
+      for (const ex2 of [-9, 9]) toon(ctx, (c) => c.arc(ex2, -48, 6, 0, Math.PI * 2), fur, true, { line: 2.2 });
+      toon(ctx, (c) => c.arc(0, -40, 13, 0, Math.PI * 2), fur, true, { line: 2.4 });
+      toon(ctx, (c) => ellipse(c, 3, -36, 6, 4.5), muzzle, true, { line: 1.6, rim: false });
+      ctx.fillStyle = '#14111A';
+      for (const e of [-4, 7]) { ctx.beginPath(); ctx.arc(e, -43, 1.6, 0, Math.PI * 2); ctx.fill(); }
+      ctx.beginPath(); ctx.arc(4, -37.5, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.save(); ctx.translate(11, -28); ctx.rotate(0.5);
+      toon(ctx, (c) => rr(c, -4, -2, 8, 16, 4), fur, true, { line: 2.4 });
+      ctx.restore();
+      ctx.restore();
+    }
+    // rubber duck on the right shelf, bouncing
+    {
+      const x = W * 0.9 - 26 + ox, y = 96 + oy;
+      const hop = -Math.abs(Math.sin(t / (ex > 0.05 ? 85 : 360) + 1)) * (2 + ex * 14);
+      ctx.save();
+      ctx.translate(x, y + hop);
+      const yel = '#E8B416';
+      toon(ctx, (c) => ellipse(c, 0, -8, 12, 8), yel, true, { line: 2.2 });
+      toon(ctx, (c) => c.arc(4, -21, 7, 0, Math.PI * 2), yel, true, { line: 2.2 });
+      toon(ctx, (c) => { c.moveTo(10, -22); c.lineTo(17, -20); c.lineTo(10, -17); c.closePath(); }, '#E0602E', true, { line: 1.6, rim: false });
+      ctx.fillStyle = '#14111A';
+      ctx.beginPath(); ctx.arc(6, -23, 1.4, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
   }
 
   drawMotes(ctx, cam, t, dt) {

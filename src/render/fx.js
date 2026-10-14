@@ -264,7 +264,7 @@ export class FX {
       const k = w.life / w.max;
       const pop = k < 0.18 ? 0.4 + (k / 0.18) * 0.85 : k < 0.3 ? 1.25 - ((k - 0.18) / 0.12) * 0.25 : 1;
       ctx.globalAlpha = k > 0.75 ? (1 - k) / 0.25 : 1;
-      comicText(ctx, w.text, w.x, w.y - k * 30, w.size * pop, w.color, w.rot);
+      comicText(ctx, w.text, w.x, w.y - k * 30, Math.round(w.size * pop / 4) * 4, w.color, w.rot);
     }
     ctx.globalAlpha = 1;
   }

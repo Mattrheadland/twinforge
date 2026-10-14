@@ -1,6 +1,7 @@
 // A toy on stage: transform, pose state, idle life, shield/aura/status visuals.
 import { drawToy, HEAD } from './toys.js';
 import { INK, toon, rr, ellipse, starPath, comicText } from './draw.js';
+import { pixelize } from './pixel.js';
 
 const BOX = { x: -130, y: -250, w: 280, h: 280 }; // local bounds of a toy
 
@@ -35,7 +36,8 @@ export class Fighter {
     this.idle = 1;
     this.lastOx = 0;
     this.buf = document.createElement('canvas');
-    this.bctx = this.buf.getContext('2d');
+    this.bctx = this.buf.getContext('2d', { willReadFrequently: true });
+    this.pixel = false;
     this.px = 1;
     this.headInfo = HEAD[def.art?.draw] || HEAD.blocko;
   }
@@ -113,6 +115,7 @@ export class Fighter {
     c.clearRect(0, 0, this.buf.width, this.buf.height);
     c.setTransform(s, 0, 0, s, -BOX.x * s, -BOX.y * s);
     drawToy(c, this.def, this.pose(t));
+    if (this.pixel) pixelize(c, this.buf.width, this.buf.height);
     if (this.flash > 0) {
       c.setTransform(1, 0, 0, 1, 0, 0);
       c.globalCompositeOperation = 'source-atop';
@@ -173,6 +176,7 @@ export class Fighter {
   draw(ctx, t) {
     this.renderBuffer(t);
     const bw = this.buf.width / this.px, bh = this.buf.height / this.px;
+    // no snapping: art pixels stay chunky, but the toy glides smoothly
     const blit = (x, y, alpha) => {
       ctx.save();
       ctx.globalAlpha = alpha;

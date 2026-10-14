@@ -5,6 +5,7 @@ import { ICON } from './icons.js';
 import { portrait } from './hud.js';
 import { drawToy } from '../render/toys.js';
 import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
+import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
 
 
 export class UI {
@@ -26,15 +27,15 @@ export class UI {
   // ---------------- title ----------------
   showTitle({ stars, hasBattle, onPlay, onParent, showInstallTip }) {
     this.clear();
-    const logoTop = h('div', { class: 'logo-row' }, ...'TWINFORGE'.split('').map((ch, i) =>
-      h('span', { class: 'logo-ch', style: { '--d': i * 55 + 'ms' } }, ch)));
-    const banner = h('div', { class: 'logo-banner' }, 'TOY BOX TACTICS');
+    const logoTop = h('div', { class: 'logo-row' }, pixelLabel('TWINFORGE', 66, '#FFC914', { chunk: 3, cls: 'logo-word' }));
+    const banner = h('div', { class: 'logo-banner' }, pixelLabel('TOY BOX TACTICS', 25, '#ffffff', { chunk: 1, ramp: ['#ffffff', '#ffffff', '#FFE7A0', '#FFC914'] }));
+    const push = h('div', { class: 'push-start' }, pixelLabel('PUSH START', 18, '#FFC914'));
     const play = h('button', { class: `big-play ${hasBattle ? 'resume' : ''}`, 'aria-label': 'Play', html: ICON.play });
     onTap(play, onPlay, 600);
     const gear = h('button', { class: 'gear', 'aria-label': 'Grown-ups: press and hold', html: ICON.gear + '<i class="hold-ring"></i>' });
     onHold(gear, 1500, onParent);
-    const starBox = h('div', { class: 'star-count' }, h('span', { html: ICON.star }), h('b', {}, String(stars)));
-    const kids = [h('div', { class: 'logo' }, logoTop, banner), play, starBox, gear];
+    const starBox = h('div', { class: 'star-count' }, h('span', { html: ICON.star }), pixelLabel(String(stars).padStart(2, '0'), 20, '#FFC914'));
+    const kids = [h('div', { class: 'logo' }, logoTop, banner), play, push, starBox, gear];
     if (showInstallTip) {
       const tip = h('div', { class: 'install-tip' },
         h('b', {}, 'Grown-ups: '), 'tap Share, then “Add to Home Screen” so TwinForge opens full-screen and keeps its save.');
@@ -56,8 +57,9 @@ export class UI {
     const cards = roster.map((id, i) => {
       const def = chars[id];
       const cv = document.createElement('canvas');
-      const W = 170, H = 190, px = this.app.px * 1.1;
+      const W = 170, H = 190, px = isPixel() ? getArtScale() : this.app.px * 1.1;
       cv.width = W * px; cv.height = H * px;
+      if (isPixel()) cv.classList.add('pxl');
       cv.style.width = W + 'px'; cv.style.height = H + 'px';
       const draw = (eyes) => {
         const c = cv.getContext('2d');
@@ -65,13 +67,15 @@ export class UI {
         c.clearRect(0, 0, cv.width, cv.height);
         c.setTransform(px * 0.78, 0, 0, px * 0.78, (W / 2 + (id === 'stompy' ? 14 : 0)) * px, (H - 6) * px);
         drawToy(c, def, { t: 1000, eyes, mouth: eyes === 'happy' ? 'open' : 'smile', armF: eyes === 'happy' ? -2.5 : -0.2, armB: eyes === 'happy' ? 2.5 : 0.25 });
+        if (isPixel()) pixelize(c, cv.width, cv.height);
       };
       draw('open');
       const statRow = (icon, n) => h('div', { class: 'stat' }, ...Array.from({ length: n }, () => h('span', { html: icon })));
       const card = h('button', { class: 'pick-card', style: { '--c': def.color, '--d': i * 120 + 'ms' }, 'aria-label': def.name },
         def.placeholder ? h('span', { class: 'temp-tag' }, 'TEMP ART') : null,
+        h('span', { class: 'p1-tag' }, pixelLabel('1P', 20, '#FF4A3A')),
         h('div', { class: 'pick-art' }, cv),
-        h('div', { class: 'pick-name' }, def.name),
+        h('div', { class: 'pick-name' }, pixelLabel(def.name, 19, '#FFC914')),
         h('div', { class: 'pick-stats' },
           statRow(ICON.heart, def.stats.hearts),
           statRow(ICON.fist, def.stats.punch),
@@ -108,9 +112,9 @@ export class UI {
       h('div', { class: 'vs-bg vs-bg-hero', style: { '--c': heroDef.color } }),
       h('div', { class: 'vs-bg vs-bg-foe', style: { '--c': foeDef.color } }),
       h('div', { class: 'vs-slash' }),
-      h('div', { class: 'vs-side vs-hero', style: { '--c': heroDef.color } }, portrait(heroDef, 156, px * 1.2)),
-      h('div', { class: 'vs-mid' }, 'VS'),
-      h('div', { class: 'vs-side vs-foe', style: { '--c': foeDef.color } }, portrait(foeDef, 156, px * 1.2)));
+      h('div', { class: 'vs-col vs-hero' }, h('div', { class: 'vs-side', style: { '--c': heroDef.color } }, portrait(heroDef, 156, px * 1.2)), pixelLabel(heroDef.name, 22, '#FFC914')),
+      h('div', { class: 'vs-mid' }, pixelLabel('VS', 104, '#FFC914', { chunk: 3 })),
+      h('div', { class: 'vs-col vs-foe' }, h('div', { class: 'vs-side', style: { '--c': foeDef.color } }, portrait(foeDef, 156, px * 1.2)), pixelLabel(foeDef.name, 22, '#FFC914')));
     this.layer.appendChild(scr);
     return new Promise((r) => setTimeout(() => {
       scr.classList.add('out');
@@ -133,15 +137,15 @@ export class UI {
     if (win) {
       const slots = [0, 1, 2].map((i) => h('span', { class: 'star-slot', html: ICON.starEmpty }));
       body = h('div', { class: 'result-card win' },
-        h('div', { class: 'result-title' }, ...'YOU WIN!'.split('').map((c, i) => h('span', { style: { '--d': i * 60 + 'ms' } }, c))),
+        h('div', { class: 'result-title' }, pixelLabel('YOU WIN!', 72, '#FFC914', { chunk: 2 })),
         h('div', { class: 'star-slots' }, ...slots),
         h('div', { class: 'star-total' }, h('span', { html: ICON.star }), h('b', { class: 'total-num' }, String(total - stars))));
       setTimeout(() => this.fillStars(slots, stars, body.querySelector('.total-num'), total - stars), 700);
     } else {
       body = h('div', { class: 'result-card nap' },
         h('div', { class: 'nap-moon', html: ICON.moon }),
-        h('div', { class: 'result-title small' }, 'Nap time!'),
-        h('div', { class: 'nap-sub' }, 'Try again?'));
+        h('div', { class: 'result-title small' }, pixelLabel('NAP TIME!', 52, '#9FD0FF', { chunk: 2 })),
+        h('div', { class: 'nap-sub' }, pixelLabel('TRY AGAIN?', 18, '#ffffff')));
       again.classList.add('pulse');
     }
     const scr = h('div', { class: 'overlay result' }, body, h('div', { class: 'result-btns' }, home, again));
@@ -248,7 +252,8 @@ export class UI {
         h('section', {}, h('h3', {}, 'Comfort'),
           toggle('Reduced motion', 'reducedMotion', 'No screen shake or big flashes'),
           toggle('Haptics', 'haptics', 'Light taps on iPhone (iOS 18+), where supported'),
-          toggle('TV look', 'tvLook', 'Faint scanlines and film grain, like an old cartoon'),
+          toggle('8-bit pixels', 'pixelArt', 'Chunky \'80s pixel art and palette (off = smooth drawing)'),
+          toggle('TV look', 'tvLook', 'Scanlines, like an old arcade screen'),
           toggle('Show FPS', 'showFps', 'Frame-rate readout for testing')),
         h('section', {}, h('h3', {}, 'Progress'),
           h('p', { class: 'note' }, `${p.stars} stars · ${p.wins} wins · ${p.battles} battles`),

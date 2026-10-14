@@ -13,7 +13,7 @@ Grown-up settings: on the title screen, **press and hold the gear for 1.5 second
 - Foe telegraphs its big move (glow + "!"). Defending turns it into a PERFECT block.
 - Synthesized original music and effects, haptics where supported, reduced motion, separate music/effects volume.
 - Auto-save at every turn, resume after closing the app, backup export/import, two-tap reset.
-- Look: STYLE_GUIDE v2, an early-'90s Saturday-morning action cartoon. Inked cel toys with hard cool shadows over a painted night-time bedroom, comic-panel HUD, slashing VS splash, optional TV look (scanlines and grain, Comfort → TV look).
+- Look: STYLE_GUIDE v4, an '80s 8-bit game with modern motion. Art renders on a coarse ~200 px grid with a fixed palette and dithered background (Comfort → 8-bit pixels), while sprites, camera and effects move smoothly at full resolution. Bitmap-font lettering, segmented health bars meeting at a K.O. badge, ROUND 1 / FIGHT!, a bobbing toy crowd, optional scanlines (Comfort → TV look).
 - Placeholder toys (Captain Blocko, Stompy) and arena are drawn in code to that guide and marked TEMP ART.
 
 ## Develop

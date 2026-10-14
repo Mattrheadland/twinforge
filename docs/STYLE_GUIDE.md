@@ -1,18 +1,24 @@
-# TwinForge: Toy Box Tactics: art style guide (v2, 2026-10-13)
+# TwinForge: Toy Box Tactics: art style guide (v4, 2026-10-13)
 
-v2 replaces v1 (2026-10-10). v1 read too young: soft purple lines, candy colors, one gentle shade band. v2 targets the look of an early-'90s Saturday-morning action cartoon: hand-inked cels over painted backgrounds. Think heavy black ink, hard shadows, heroic poses, bold comic-book color. Still made for a 4-year-old, so it's cool, not scary.
+v4 replaces v3 and v2 (same day) and v1 (2026-10-10). Target: **an '80s game that moves like a modern one.** The look is the 8-bit arcade and home-console era (Karate Champ, Double Dragon, Punch-Out!!, the first TMNT arcade): chunky square pixels, a small fixed color palette, two or three tones per surface, blocky bitmap lettering, segmented health bars, CRT scanlines. The motion is modern: 60 fps, eased movement, squash and stretch, screen shake, particles, and sprites that glide smoothly instead of hopping a pixel at a time (the Shovel Knight approach). Still made for a 4-year-old: tough, never scary.
 
-Production specs (canvas, anchor, scale, file names) are unchanged from v1. Only the look changes, so nothing in the game code that places sprites has to move.
+Production specs (canvas, anchor, scale) are unchanged from v1. Only the look changes, so nothing in the game code that places sprites has to move.
 
-## Look: characters (the "cels")
-- **Ink:** near-black **#14111A** lines. Variable weight, like a brush pen: heavy on the outer silhouette and on the shadow side (≈1.5% of character height, ≈12 px on an 820 px toy), thinner for interior detail (≈5 px). Lines taper at the ends. Same rules on every toy.
-- **Shading:** flat color plus a **hard-edged shadow shape** on every surface, big and graphic, covering roughly a third of the form. Light from the **upper left**. A third, darker tone is allowed in deep creases (under arms, under a chin, inside a mouth).
-- **Shadow color:** shift shadows cool, toward blue-violet, instead of just making the base color darker. Red goes to crimson-purple, yellow goes to ochre-olive, skin goes to dusty mauve.
-- **Highlights:** hard-edged white or pale-tint glints, not soft blobs. Shiny plastic gets a sharp streak or a couple of angular glints. Matte parts get none.
-- **Rim light:** a thin hard rim of pale color on the right-side edge (the side away from the key light) for a "backlit hero" pop. Optional on small parts.
-- **No** gradients, airbrush, textures or painterly strokes on characters. They're flat cels; the painting lives in the background.
-- **Toys stay true:** real silhouette, face, proportions, markings, colors and accessories. Colors get more saturated and slightly deeper, never pastel.
-- **Attitude:** confident and determined. Furrowed brows, a cocky grin, a squared stance. Not cutesy, not angry, never scary. A beaten toy is worn out, not hurt.
+## How the pixel look works
+- The game draws art on a coarse grid, about **200 pixels tall** for the whole scene, and scales it up by a whole number of screen pixels so every art pixel is the same chunky square.
+- Every sprite, portrait and background is snapped to **one fixed, original 8-bit-style palette** (about 60 colors, a few ramps per hue plus deep night blues). Backgrounds are ordered-dithered into it, the classic 8-bit gradient.
+- The screen itself stays full resolution. Sprites, camera shake and effects are placed at smooth sub-pixel positions, so the art is 8-bit but the motion is fluid.
+
+**Astra should not fake pixel art.** Image models draw "pixels" on an uneven grid, and resampling that onto the game's grid turns it to mush. Astra draws clean, bold, flat art; the game does the pixels and palette. An 820 px idle toy ends up about **90 art pixels tall**, so everything must read at that size.
+
+## Look: characters (8-bit sprites)
+- **Outline:** dark **#14111A** outline around the whole silhouette, about **1% of character height** (≈8 px on an 820 px toy). Few interior lines, and only bold ones.
+- **Three tones per surface:** shadow, base, light. Hard edges, no blending. Shadow on the lower right, a light patch on the upper left. A fourth, darker tone only in deep creases.
+- **Flat, saturated colors** from a small set per toy (ideally 4–6 colors plus outline). Never pastel, never airbrushed.
+- **Highlights:** one small hard white glint on shiny plastic. Matte parts get none.
+- **Big, simple shapes:** bold silhouette, oversized readable face and eyes, no detail thinner than about 10 px at 820 px tall. If it disappears when the image is shrunk to 90 px tall, it's too fine.
+- **Toys stay true:** real silhouette, face, proportions, markings, colors and accessories.
+- **Attitude:** confident '80s fighter. Determined brows, a smirk or gritted teeth, a squared ready stance. A beaten toy is worn out, not hurt.
 
 ## Color
 Characters keep their own toy colors. Shared accent and effects palette:
@@ -20,45 +26,46 @@ Characters keep their own toy colors. Shared accent and effects palette:
 | Name | Hex | Use |
 |---|---|---|
 | Hero red | #D7263D | impacts, player 1 accents |
-| Blaze orange | #F46036 | fire, energy |
-| Gold | #FFC914 | stars, win effects |
+| Blaze orange | #F46036 | fire, energy, FIGHT! |
+| Gold | #FFC914 | stars, win effects, arcade lettering |
 | Turtle green | #2E9E44 | nature, heal |
 | Hero blue | #1B4FD8 | player 2 accents, shields |
 | Sky | #4EA8DE | ice, sky |
 | Royal purple | #6A3FA0 | special moves |
 | Teal | #1F8A8A | tech, water |
-| Ink | #14111A | all line work |
-| Cool shadow tint | #3A2F5B | multiply tint for shadow shapes |
+| Ink | #14111A | all outlines |
+| Cool shadow tint | #3A2F5B | multiply tint for shadow tones |
 
 ## Camera and framing (characters)
-- Eye-level or **slightly low** camera (a touch heroic), slight 3/4 view, **facing right**. The game mirrors the art for the opponent.
-- Attack and victory poses can use foreshortening (fist or head coming toward the right side of the frame) and a stronger diagonal in the body.
+- Eye-level or **slightly low** camera, slight 3/4 view, **facing right**. The game mirrors the art for the opponent.
+- Attack and victory poses can use foreshortening and a stronger diagonal in the body.
 - If a toy has asymmetric details that must not flip (printed words, a logo, a one-sided accessory), say so; it then needs left-facing poses too.
 - Canvas **1024 × 1024**, transparent background, feet on an invisible floor line at **y = 960**, centered (anchor = bottom-center of the feet, x 512, y 960).
-- Character height about **820 px** in idle, same scale in every pose. At least 40 px clear margin on all sides. No cast shadow (the game draws it).
+- Character height about **820 px** in idle, same scale in every pose. At least 40 px clear margin on all sides. No cast shadow (the game draws a hard floor shadow).
 
-## Environments (arenas)
-This is where the '90s look really comes from: **painted backgrounds behind flat cels.**
-- Backgrounds are painted, gouache-style: soft gradients, airbrushed glows, visible but gentle brush texture, dramatic lighting (moonlight, lamp pools, neon, sunset). This is the one place gradients are welcome.
-- Line work in backgrounds is thin or absent. Shapes are defined by value and color. That separation is what makes the inked toys pop.
-- Moodier and deeper than v1: dusk and night palettes, strong shadows, a few bright light sources.
-- Lower middle stays an open, clear, evenly lit floor where two toys stand.
+## Stages (arenas)
+- Simple, bold stage art: large clear shapes, strong lighting, a few bright light sources, night and dusk palettes. Soft gradients are fine; the game dithers them into the palette. Fine texture and small clutter just turn to noise at 200 px tall, so keep it big.
+- Little or no outline in backgrounds, so the outlined sprites pop in front.
+- A clear, evenly lit floor in the lower middle where two toys stand, with visible floor detail (planks, tiles) for depth.
 - **No letters, numbers or words** anywhere. The game draws every letter and number itself.
-- No characters, UI, health bars or buttons baked in.
+- No characters, crowd, UI, health bars or buttons baked in. The game animates its own background crowd (toys that bob along and jump on big hits).
 
-## Effects (new)
-Wordless effect sprites drawn in the cel style: impact starbursts, speed-line bursts, energy rings, shield flashes, dust puffs. Thick ink, flat color, hard glints. **No** "POW" or "BAM" text; the game adds any words in its own lettering.
+## Effects
+Wordless effect sprites in the sprite style: impact starbursts, speed lines, energy rings, shield flashes, dust puffs. Dark outline, two or three flat tones, hard glints. **No** "POW" text; the game adds words in its own bitmap lettering.
 
 ## Game-side finishing (Claude handles this, not Astra)
-- Light film grain, faint scanlines and a slight warm cast over the whole screen for the TV feel. On by default; grown-ups can switch it off under Comfort → "TV look" if it hurts readability.
-- UI in the same spirit: chunky italic title lettering, beveled health bars with hard highlights, comic-panel portrait frames with thick ink borders, slashing "VS" splash between rounds.
-- Numbers and letters in the learning challenges stay in the upright rounded font with no glints over them, so a 4-year-old reads the shapes cleanly.
-- Assets from Astra stay clean so these effects can change without new art.
+- **8-bit pixels:** the coarse grid, fixed palette and dithered backgrounds above. Grown-ups can switch it off under Comfort → "8-bit pixels" for the smooth version.
+- **Modern motion:** full 60 fps, sub-pixel sprite and camera movement, eased lunges, squash and stretch, afterimage trails, hit-stop, screen shake, particles.
+- **Lettering:** a hand-made 5×7 bitmap font scaled in whole steps, with three color bands (light, base, dark), a 1-pixel ink outline and a hard drop shadow. Used for the logo, names, VS, K.O., ROUND 1, FIGHT!, hit words and results.
+- **HUD:** segmented yellow health bars in gold frames that start at the center K.O. badge and drain toward the corners (lost health shows red), portraits in the corners, names under the bars, arcade-cabinet push buttons.
+- **Screens:** attract-style title with blinking PUSH START, player-select tiles with a blinking 1P frame, split-screen VS, ROUND 1 → FIGHT! before each battle.
+- **TV look:** scanlines like an old arcade monitor. On by default, switch off under Comfort → "TV look".
+- Numbers and letters in the learning challenges stay in the upright rounded font with no glints, so a 4-year-old reads the shapes cleanly.
 
 ## Code-drawn placeholders
-Until Astra art arrives, the toys, arena and effects are drawn in code to this guide. `src/render/draw.js` holds the cel rules in one place (`toon()`: brush ink heavier on the shadow side, cool multiply shadow covering about a third of each part, right-edge rim light, angular glints, optional crease tone). `src/render/arena-bedroom.js` paints the night bedroom with gradients and glows and no ink, except the foreground props, which are inked cels.
+Until Astra art arrives, the toys, arena and effects are drawn in code to this guide. `src/render/draw.js` holds the sprite rules (`toon()`: outline under the fill, three tones nested toward the light, rim, glints). `src/render/pixel.js` holds the palette, dithering, sprite clean-up and the bitmap font. `src/render/stage.js` composites the art-resolution layers onto the full-resolution screen for smooth motion. `src/render/arena-bedroom.js` paints the night bedroom and its bobbing crowd (a teddy bear and a rubber duck).
 
 ## Production deliverables
 - PNG, sRGB. Transparent assets need real alpha. If Astra can't do transparency, use a flat **#FF00FF** magenta background and the pipeline keys it out.
-- File names: `<id>_<pose>_v<version>.png`, e.g. `luca-dino_idle_v2.png`. Art made to v2 starts at v2.
+- File names: `<id>_<pose>_v<version>.png`, e.g. `luca-dino_idle_v4.png`. Art made to v4 starts at v4.
 - Approved files are never regenerated for a new arena; they are reused.
