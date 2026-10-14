@@ -25,13 +25,13 @@ We're making reference art for "TwinForge: Toy Box Tactics," a battle game for m
 
 LOOK: the toy as a chunky low-poly 3D action figure: visible flat facets, simple geometric parts (boxes, faceted spheres, cones, cylinders). Bold saturated colors, never pastel. Every surface in three hard flat tones (cool blue-purple shadow toward the lower right, base color, a flat lighter patch toward the upper left). Small hard white glints on shiny plastic. A clean dark outline (#14111A) around the silhouette. Attitude: confident and heroic, kid-friendly, never scary.
 
-Keep the toy recognizable: same silhouette, proportions, colors, markings and accessories as the real toy. Never add letters, numbers or words. Plain flat light-gray background. I'll send requests one at a time. Don't draw anything yet; just reply "Ready."
+Keep the toy recognizable: same silhouette, proportions, colors, markings and accessories as the real toy. Never add letters, numbers or words. Plain flat light-gray background. I'll send requests one at a time; each one asks for an image, so generate the image right away. For now, just reply "Ready."
 ```
 
 ## 0b. Style test (once, before any real toy)
 ```
 ASTRA REQUEST — STYLE-TEST v5
-Purpose: lock the look before we draw any real toys. Judge only the style.
+Purpose: lock the look before we draw any real toys. Generate the image now.
 Draw ONE landscape image (1536 × 1024 if available): an original, made-up chunky toy robot (boxy body, box head with a dark face screen, one antenna with a ball on top, red body, blue arms and legs, yellow fists) shown twice at the same size as a low-poly 3D action figure in the locked look, standing on a faceted wooden floor.
   Left: front 3/4 view, idle fighting stance, fists up.
   Right: side view facing right, punching forward.
@@ -46,9 +46,10 @@ Front, back, left side, right side, 3/4 view, top, and close-ups of the face and
 ## 2. Turnaround sheet (one per toy)
 ```
 ASTRA REQUEST — <TOY NAME> TURNAROUND v5
-References: the attached photos of the real toy.
-First, list in 3–6 short bullets the details you must keep (shape, face, colors, markings, accessories) and anything the photos don't show that you'll have to guess.
-Then draw ONE landscape image: the same toy as a low-poly 3D action figure in the locked look, shown 4 times side by side at the same size on one floor line: front view, right side view (facing right), back view, 3/4 view. Neutral standing pose, arms slightly away from the body so their shape is clear. Plain flat light-gray background (#EEEEEE).
+Generate an image now (no written plan first).
+Reference: the attached photos of the real toy.
+Create ONE landscape image (1536 × 1024): this toy as a low-poly 3D action figure in our locked look, shown 4 times side by side at the same size on one floor line: front view, right side view (facing right), back view, 3/4 view. Neutral standing pose, arms slightly away from the body so their shape is clear. Plain flat light-gray background (#EEEEEE).
+Keep it true to the photos: same shape, face, colors, markings and accessories. If the photos don't show something, keep it simple rather than inventing details.
 Do not: add text, labels, numbers, color swatches, scenery, shadows on the ground or other characters. Don't crop any part (check ears, tails, horns, wheels, capes, weapons).
 ```
 What to look for: the same toy in all four views, clear simple shapes, colors that match the real toy.
@@ -56,6 +57,7 @@ What to look for: the same toy in all four views, clear simple shapes, colors th
 ## 3. Face sheet (after the turnaround is approved)
 ```
 ASTRA REQUEST — <TOY NAME> FACE SHEET v5
+Generate an image now.
 Reference: the approved <TOY NAME> TURNAROUND v5.
 Draw ONLY the toy's eyes and mouth, flat and front-on, as a 3×3 grid on plain white, each cell the same size and framing. Flat cartoon style, thick dark #14111A lines, no shading, no rest of the head.
   Row 1: eyes open (confident) · eyes angry (determined, brows down at the inner ends) · eyes happy (upside-down U arcs)
