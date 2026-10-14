@@ -17,11 +17,11 @@ import { dedup, prune, resample, textureCompress, unpartition, weld, simplify } 
 import { MeshoptDecoder, MeshoptSimplifier } from 'meshoptimizer';
 import sharp from 'sharp';
 
-// --tris N: simplify to about N triangles (default 9000; the toon shader draws
+// --tris N: simplify to about N triangles (default 6000; the toon shader draws
 // every triangle as a flat facet, so fewer triangles = chunkier, more '90s look)
 const args = process.argv.slice(2);
 const ti = args.indexOf('--tris');
-const TARGET_TRIS = ti >= 0 ? +args.splice(ti, 2)[1] : 9000;
+const TARGET_TRIS = ti >= 0 ? +args.splice(ti, 2)[1] : 6000;
 const [id, main, ...extra] = args;
 if (!id || !main) {
   console.error('usage: node scripts/import-model.mjs <asset-id> <main.glb> [more.glb ...]');

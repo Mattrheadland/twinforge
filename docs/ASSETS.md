@@ -44,10 +44,11 @@ All on flat magenta (#FF00FF) to be keyed out.
 Each character folder also has `views/` (made by `scripts/split-turnaround.py`): the four turnaround views as separate transparent 1024×1024 PNGs for image-to-3D tools.
 
 ## Models — `assets/models/<id>/<id>.glb`
+Imports are simplified to about 6,000 triangles (`--tris N` to change); `npm run perf` compares frame times across scenes.
 3D toys made from the turnarounds (option A). Written by `npm run model:import`; shipped by the build only when present (the build lists them, so missing ones never cause a request). See ASSET_PIPELINE §4.
 
 | id | Character | Status |
 |---|---|---|
-| battle-rex | rex | in game (Hunyuan 3D, 9k triangles, toy joints) |
+| battle-rex | rex | in game (Hunyuan 3D, 6k triangles, toy joints, swappable eyes) |
 | spooky-tree, ragin-rockfish, young-arthur | tree, rockfish, arthur | after Rex |
 | remy-roo, billy-bass | roo, bass | after Rex; code-built stand-ins in game now |

@@ -64,7 +64,7 @@ Turnaround sheet → image-to-3D → `assets/models/<id>/<id>.glb` → loaded by
 2. Hunyuan 3D → **Image to 3D → multi-view**. Slots: front → front, back → back, side → left, side-mirrored → right; add three-quarter if there's room.
 3. Low / smart topology and the lowest face count if offered; texture on. Regenerate until the silhouette matches the sheet (cannon, arms, tail all there).
 4. Download **GLB** and send it to Claude.
-5. In the repo: `npm run model:import -- <id> <file.glb>` (shrinks textures to 1024 px, strips compression, merges extra clip files if a tool ever gives them) → `assets/models/<id>/<id>.glb`.
+5. In the repo: `npm run model:import -- <id> <file.glb>` (simplifies to about 6,000 triangles, shrinks textures to 1024 px JPEG, strips compression, merges extra clip files if a tool ever gives them) → `assets/models/<id>/<id>.glb`.
 6. Set `art.model: '<id>'` and `art.joints` on the character (`src/data/characters.js`): pivot and box for head, jaw, armF (camera side), armB and tail, in rig units. `npm run model:check -- <character>` screenshots the toy in every action into `scratch/model/` and prints the clips, bones and anchors it found. Tune the boxes until the parts bend cleanly, plus `art.anchors.muzzle`, `art.face`, `art.height`, and `art.armScale` (~0.35 for animals, whose "arms" are legs).
 
 A rigged GLB (Mixamo, Tripo, Meshy) also works as-is: its clips are matched to idle / attack / hit / guard / special / win / tired by name (`src/render3d/clipmap.js`; pin one with `art.clips`), and any action without a clip is posed from the bones.

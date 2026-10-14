@@ -20,6 +20,9 @@
 - **Battle Rex**: in game as a real 3D model (Hunyuan 3D, free). Spooky Tree, Ragin' Rockfish and Young Arthur are generating; Remy Roo and Billy Bass are next (Hunyuan runs 3 jobs at a time). Claude drives Hunyuan in Matt's Chrome and pulls the GLBs from his Downloads folder.
 - **Arenas**: Castle, Fishing Pier, Haunted Forest and Bog Shack are in; each opponent fights on its home turf (`src/data/arenas.js`). Bedroom stays for Rex, Remy and the title screen.
 - **Effects art**: Astra's effects sheet is in as painted sprites on hits, shots, splashes, heals, dizzy and power-ups.
+- **Game modes** (`src/game/modes.js`, `src/ui/modes-ui.js`): Play opens Story (every toy on its home turf, then a GIANT boss: Gloomwing, or the next in line if you're playing as it), Tournament (3 rounds, giant final, trophy), Arcade (endless streak, a giant every 5th fight), Quick Fight (pick an arena or SURPRISE!) and Toy Box (spin any toy, try its moves). Runs and records save.
+- **Rex's face**: swappable eyes on both sides of his snout, so his expressions change like the code-built toys.
+- **Astra**: `docs/ASTRA_REQUESTS.md` has paste-ready requests for the Bog Shack floor and Wanda / Gloomwing sheets.
 - **Remy Roo** (the family dog) and **Billy Bass** (the talking wall fish) are in the roster with code-built 3D stand-ins:
   - Remy Roo: Zoomies (dash) · Big Bark (two bark blasts, math) · Roll Over (dodge) · Power Paws (glowing paw-print flurry and a pounce, then heals him: "GOOD BOY!"). 108 HP, +2 attack.
   - Billy Bass: Tail Flop · Take Me to the River (a river surge, math) · Wall Mount (block) · Encore! (music notes spin the foe dizzy). 104 HP, +2 attack.
@@ -27,6 +30,5 @@
 
 ## Next
 1. Import the other five sheet characters as their Hunyuan models finish.
-2. Bog Shack floor texture from Astra (IMAGE 2 of the arena prompt); menu-pieces sheet for HUD frames if it beats the code-drawn ones.
-4. Matt plays it with Luca and reports moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Gloomwing.
-5. Then game modes (campaign / tournament / arcade).
+2. Send Astra the three requests in ASTRA_REQUESTS.md; then Wanda and Gloomwing go through Hunyuan too.
+3. Matt plays the new modes with Luca and reports what's too hard, too long or confusing, and any moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Gloomwing.
