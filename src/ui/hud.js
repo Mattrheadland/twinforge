@@ -4,6 +4,7 @@ import { ICON } from './icons.js';
 import { drawToy, HEAD } from '../render/toys.js';
 import { mix } from '../render/draw.js';
 import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
+import { get3D } from '../render3d/stage3d.js';
 import { RULES } from '../logic/battle.js';
 
 export function portrait(def, size, px, bg) {
@@ -33,6 +34,12 @@ export function portrait(def, size, px, bg) {
     ctx.fill();
   }
   ctx.translate(size / 2 - hd.x * k, size / 2 - hd.y * k + size * 0.08);
+  const s3 = get3D();
+  if (s3) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(s3.snapshot(def, { w: c.width, h: c.height, framing: 'head' }), 0, 0);
+    return c;
+  }
   ctx.scale(k, k);
   drawToy(ctx, def, { t: 1000, eyes: 'open', mouth: 'smile' });
   if (isPixel()) pixelize(ctx, c.width, c.height);

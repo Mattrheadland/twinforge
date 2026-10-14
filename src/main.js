@@ -1,6 +1,7 @@
 // TwinForge: Toy Box Tactics — app shell: layout, screens, audio unlock, saves, PWA.
 import { CHARACTERS, ROSTER, opponentFor } from './data/characters.js';
-import { Stage, VH } from './render/stage.js';
+import { VH } from './render/stage.js';
+import { createStage } from './render3d/stage3d.js';
 import { Audio } from './audio/audio.js';
 import { SaveStore } from './save.js';
 import { UI } from './ui/screens.js';
@@ -15,7 +16,7 @@ class App {
     this.root = document.getElementById('app');
     this.canvas = document.getElementById('stage');
     this.layerEl = document.getElementById('ui');
-    this.stage = new Stage(this.canvas);
+    this.stage = createStage(this.canvas);
     this.audio = new Audio();
     this.save = new SaveStore(CHARACTERS);
     this.ui = new UI(this.layerEl, this);

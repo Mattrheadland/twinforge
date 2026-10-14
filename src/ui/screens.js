@@ -6,6 +6,7 @@ import { portrait } from './hud.js';
 import { drawToy } from '../render/toys.js';
 import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
 import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
+import { get3D } from '../render3d/stage3d.js';
 
 
 export class UI {
@@ -66,7 +67,14 @@ export class UI {
         c.setTransform(1, 0, 0, 1, 0, 0);
         c.clearRect(0, 0, cv.width, cv.height);
         c.setTransform(px * 0.78, 0, 0, px * 0.78, (W / 2 + (id === 'stompy' ? 14 : 0)) * px, (H - 6) * px);
-        drawToy(c, def, { t: 1000, eyes, mouth: eyes === 'happy' ? 'open' : 'smile', armF: eyes === 'happy' ? -2.5 : -0.2, armB: eyes === 'happy' ? 2.5 : 0.25 });
+        const pose = { t: 1000, eyes, mouth: eyes === 'happy' ? 'open' : 'smile', armF: eyes === 'happy' ? -2.5 : -0.2, armB: eyes === 'happy' ? 2.5 : 0.25 };
+        const s3 = get3D();
+        if (s3) {
+          c.setTransform(1, 0, 0, 1, 0, 0);
+          c.drawImage(s3.snapshot(def, { w: cv.width, h: cv.height, framing: 'full', pose }), 0, 0);
+          return;
+        }
+        drawToy(c, def, pose);
         if (isPixel()) pixelize(c, cv.width, cv.height);
       };
       draw('open');
@@ -252,7 +260,7 @@ export class UI {
         h('section', {}, h('h3', {}, 'Comfort'),
           toggle('Reduced motion', 'reducedMotion', 'No screen shake or big flashes'),
           toggle('Haptics', 'haptics', 'Light taps on iPhone (iOS 18+), where supported'),
-          toggle('8-bit pixels', 'pixelArt', 'Chunky \'80s pixel art and palette (off = smooth drawing)'),
+          toggle('Retro resolution', 'pixelArt', 'Chunky low-res 3D like an early arcade game (off = sharp)'),
           toggle('TV look', 'tvLook', 'Scanlines, like an old arcade screen'),
           toggle('Show FPS', 'showFps', 'Frame-rate readout for testing')),
         h('section', {}, h('h3', {}, 'Progress'),

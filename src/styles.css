@@ -34,7 +34,7 @@ html, body {
 }
 body { position: fixed; inset: 0; font-family: var(--font); color: var(--ink); }
 #app { position: fixed; inset: 0; overflow: hidden; }
-#stage { position: absolute; left: 0; top: 0; display: block; }
+#stage, #stage3d { position: absolute; left: 0; top: 0; display: block; }
 #ui { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; }
 #safe-probe {
   position: fixed; left: 0; top: 0; width: 0; height: 0; visibility: hidden; pointer-events: none;
@@ -82,7 +82,7 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 .home-btn { left: var(--sl); }
 
 /* ---------- '80s pixels ---------- */
-#stage.pixel, .pxl, .px-label { image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated; }
+#stage.pixel, #stage3d.pixel, .pxl, .px-label { image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; image-rendering: pixelated; }
 .px-label { display: block; }
 @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
 @keyframes blink-soft { 0%, 59% { opacity: 1; } 60%, 100% { opacity: 0.15; } }

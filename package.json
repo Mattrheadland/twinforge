@@ -19,5 +19,8 @@
     "playwright": "^1.64.0",
     "puppeteer-core": "^25.13.0"
   },
-  "private": "true"
+  "private": "true",
+  "dependencies": {
+    "three": "^0.170.0"
+  }
 }

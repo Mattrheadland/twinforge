@@ -13,7 +13,7 @@ Grown-up settings: on the title screen, **press and hold the gear for 1.5 second
 - Foe telegraphs its big move (glow + "!"). Defending turns it into a PERFECT block.
 - Synthesized original music and effects, haptics where supported, reduced motion, separate music/effects volume.
 - Auto-save at every turn, resume after closing the app, backup export/import, two-tap reset.
-- Look: STYLE_GUIDE v4, an '80s 8-bit game with modern motion. Art renders on a coarse ~200 px grid with a fixed palette and dithered background (Comfort → 8-bit pixels), while sprites, camera and effects move smoothly at full resolution. Bitmap-font lettering, segmented health bars meeting at a K.O. badge, ROUND 1 / FIGHT!, a bobbing toy crowd, optional scanlines (Comfort → TV look).
+- Look: STYLE_GUIDE v5, low-poly early-3D toys and bedroom (three.js) with '80s cartoon cel shading and ink outlines, under a 2D arcade HUD (bitmap lettering, segmented bars, K.O. badge, ROUND 1 / FIGHT!) and CRT scanlines. Retro low-res 3D by default (Comfort → Retro resolution); falls back to the 2D renderer without WebGL.
 - Placeholder toys (Captain Blocko, Stompy) and arena are drawn in code to that guide and marked TEMP ART.
 
 ## Develop
@@ -26,4 +26,4 @@ npm run deploy     # build and push to the gh-pages branch that GitHub Pages ser
 ```
 Code map: `src/logic` (pure rules, no DOM) · `src/game` (battle state machine, choreography) · `src/render` (canvas stage, toys, arena, effects) · `src/ui` (HUD, challenges, menus) · `src/audio` · `src/save.js` · `src/data` (characters as editable data).
 
-Art: see `docs/STYLE_GUIDE.md` and `docs/ASSET_PIPELINE.md`. No third-party code or assets are bundled; the only dependency is the esbuild bundler at build time.
+Art: see `docs/STYLE_GUIDE.md` and `docs/ASSET_PIPELINE.md`. The only bundled third-party code is three.js (MIT license) for 3D rendering; esbuild bundles it at build time. No third-party art or sounds.
