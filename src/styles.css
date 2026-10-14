@@ -3,26 +3,16 @@
   --ink: #14111A;
   --cream: #FFF3D6;
   --red: #D7263D;
-  --orange: #F46036;
   --yellow: #FFC914;
-  --green: #2E9E44;
   --go: #3DBE55;
   --blue: #1B4FD8;
-  --sky: #4EA8DE;
   --purple: #6A3FA0;
-  --teal: #1F8A8A;
   --night: #1A1638;
-  --night2: #2A2458;
   --font: "SF Pro Rounded", ui-rounded, "Arial Rounded MT Bold", "Nunito", system-ui, -apple-system, sans-serif;
   --hero: "Avenir Next Condensed", "AvenirNextCondensed-Heavy", "Futura", "Arial Narrow", "DejaVu Sans Condensed", "Roboto Condensed", Impact, system-ui, sans-serif;
-  /* hard cel button: drop shadow down-right, shadow crescent inside, no blur */
-  --cel: 3px 6px 0 var(--ink), inset -7px -9px 0 rgba(20, 17, 40, 0.32);
   --glint: linear-gradient(115deg, transparent 18%, rgba(255, 255, 255, 0.95) 18% 26%, transparent 26% 31%, rgba(255, 255, 255, 0.95) 31% 33%, transparent 33%);
   --outline: 3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink),
     2px 2px 0 var(--ink), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 0 6px 0 var(--ink);
-  --extrude: 3px 0 0 var(--ink), -3px 0 0 var(--ink), 0 3px 0 var(--ink), 0 -3px 0 var(--ink),
-    2px 2px 0 var(--ink), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink),
-    3px 5px 0 var(--ink), 5px 7px 0 var(--ink), 6px 9px 0 var(--ink);
 }
 * { box-sizing: border-box; }
 html, body {
@@ -43,6 +33,9 @@ body { position: fixed; inset: 0; font-family: var(--font); color: var(--ink); }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; touch-action: manipulation; }
 button svg, span svg, div svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .pressed { transform: scale(0.9) !important; transition: transform 0.08s !important; }
+#ui button:focus-visible { outline: 4px solid #FFC914; outline-offset: 5px; }
+/* windows narrower than the iPhone's shape: the UI is taller than 450, center the title in it */
+.title-screen .logo, .title-screen .big-play, .push-start, .board-track { margin-top: var(--oy, 0px); }
 
 /* ---------- rotate overlay (outside the scaled layer) ---------- */
 #rotate {
@@ -51,7 +44,8 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 }
 #rotate .ph { width: 90px; height: 90px; animation: turn 2.2s ease-in-out infinite; }
 #rotate .arrow { color: var(--yellow); font: 900 52px var(--font); text-shadow: var(--outline); }
-@media (orientation: portrait) { #rotate { display: flex; } }
+/* phones and tablets only: a tall desktop window just gets a taller layout */
+@media (orientation: portrait) and (pointer: coarse) and (hover: none) { #rotate { display: flex; } }
 @keyframes turn { 0%, 25% { transform: rotate(0); } 55%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
 
 /* ---------- shared ---------- */
@@ -87,7 +81,7 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
 @keyframes blink-soft { 0%, 59% { opacity: 1; } 60%, 100% { opacity: 0.15; } }
 /* arcade cabinet button: chrome bezel, concave top in hard bands */
-.arcade-btn, .act, .big-play, .go-btn, .round-btn, .corner-btn, .pause-btn {
+.act, .big-play, .go-btn, .round-btn, .corner-btn, .pause-btn {
   --b: var(--red); --l: #FF7B7B; --d: #8E1023;
   border-radius: 50%; border: 5px solid #DADDE6;
   background: radial-gradient(circle at 40% 34%, var(--l) 0 20%, var(--b) 20% 60%, var(--d) 60%);
@@ -134,14 +128,13 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 .tip-x { position: absolute; right: 4px; top: 2px; width: 26px; height: 26px; font-size: 22px; font-weight: 900; }
 
 /* ---------- select (arcade player select) ---------- */
-.pick-row { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); display: flex; justify-content: center; gap: 44px; }
 .pick-card {
-  position: relative; width: 226px; height: 346px; background: #120E26; border: 4px solid #FFC914;
+  position: relative; background: #120E26; border: 4px solid #FFC914;
   box-shadow: 0 0 0 4px var(--ink), 4px 9px 0 4px rgba(10, 6, 30, 0.6); overflow: hidden; display: flex; flex-direction: column; align-items: center;
   animation: pop-in 0.45s var(--d) both; transition: transform 0.2s;
 }
 .pick-card::before {
-  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 206px;
+  content: ''; position: absolute; left: 0; right: 0; top: 0;
   background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 6px), linear-gradient(180deg, var(--c), color-mix(in srgb, var(--c) 40%, #14111A));
   border-bottom: 4px solid var(--ink);
 }
@@ -150,21 +143,15 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 .pick-card.chosen .pick-art { animation: bob 0.6s steps(3) infinite; }
 .p1-tag { position: absolute; left: 8px; top: 8px; z-index: 3; display: none; }
 .pick-card.chosen .p1-tag { display: block; animation: blink 0.5s steps(1) infinite; }
-.pick-art { position: relative; z-index: 1; margin-top: 10px; }
-.pick-name { position: relative; z-index: 1; margin-top: 10px; white-space: nowrap; }
-.pick-stats { position: relative; display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
-.stat { display: flex; gap: 3px; justify-content: center; }
-.stat span { width: 22px; height: 22px; }
-.stat.special span { width: 28px; height: 28px; }
-.temp-tag {
-  position: absolute; right: -30px; top: 16px; z-index: 2; transform: rotate(35deg); background: var(--yellow);
-  border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); padding: 2px 34px; font-size: 11px; font-weight: 900; letter-spacing: 1px;
-}
+.pick-art { position: relative; z-index: 1; }
+.pick-name { position: relative; z-index: 1; white-space: nowrap; }
 .go-btn {
   position: absolute; right: calc(var(--sr) + 10px); top: 50%; width: 110px; height: 110px; margin-top: -55px;
   --b: var(--go); --l: #8CF29B; --d: #157A33; padding: 22px 16px 22px 28px;
   animation: pop-in 0.4s both, pulse 1s ease-in-out 0.4s infinite;
 }
+/* width-fitted UI (laptop windows, never the iPhone): the pulsing GO sits clear of the card grid */
+.fit-w .select-screen .go-btn { right: calc(var(--sr) - 6px); }
 
 /* ---------- VS ---------- */
 .overlay.vs { display: flex; align-items: center; justify-content: center; gap: 34px; background: #0B0818; overflow: hidden; }
@@ -210,7 +197,6 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 .panel-foe .panel-body { align-items: flex-end; }
 .pname { margin-top: 6px; }
 .hp { display: flex; align-items: center; width: 100%; margin-top: 2px; }
-.hp-heart { display: none; }
 .hp-track {
   position: relative; flex: 1; height: 22px; background: #B3122B; border: 3px solid var(--ink);
   box-shadow: 0 0 0 3px #E8B83A, 0 0 0 6px var(--ink), 3px 7px 0 6px rgba(10, 6, 30, 0.45); overflow: hidden;
@@ -254,21 +240,6 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 }
 .actions.hidden { display: flex !important; transform: translate(-50%, 170%); opacity: 0; pointer-events: none; }
 .act { position: relative; width: 80px; height: 80px; display: grid; place-items: center; transition: transform 0.15s, filter 0.2s; }
-.act .ico { width: 50px; height: 50px; display: block; filter: drop-shadow(1px 2px 0 rgba(10, 6, 30, 0.6)); }
-.act-attack { width: 98px; height: 98px; }
-.act-attack .ico { width: 62px; height: 62px; }
-.act-defend { --b: var(--blue); --l: #6F9BFF; --d: #0B2A85; }
-.act-special { --b: var(--purple); --l: #A983E0; --d: #3A1E66; }
-.act-special.locked { filter: saturate(0.3) brightness(0.8); }
-.act-special.ready { animation: pulse 0.9s ease-in-out infinite; }
-.act-special.ready::before {
-  content: ''; position: absolute; inset: -20px; border-radius: 50%; z-index: -1;
-  background: repeating-conic-gradient(rgba(255, 201, 20, 0.9) 0 12deg, transparent 12deg 30deg);
-  animation: spin 3s steps(24) infinite;
-}
-.act.suggest { animation: wiggle 0.7s ease-in-out infinite; }
-.act-defend.suggest { box-shadow: 0 0 0 4px var(--ink), 3px 7px 0 4px var(--ink), 0 0 0 11px rgba(78, 168, 222, 0.85); }
-.act.nudge { animation: shake 0.4s; }
 .special-ring { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; }
 .special-ring i { width: 14px; height: 14px; background: #0C0A1E; border: 3px solid var(--ink); transition: background 0.2s; }
 .special-ring i.on { background: var(--yellow); box-shadow: 0 0 6px rgba(255, 201, 20, 1); }
@@ -291,14 +262,10 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
   padding: 18px 26px 24px; display: grid; grid-template-columns: auto auto; grid-template-areas: "body q" "opts opts";
   gap: 16px 20px; align-items: center; justify-items: center; max-width: calc(100% - var(--sl) - var(--sr) - 20px);
 }
-.ch-letter { grid-template-columns: auto; grid-template-areas: "body" "opts"; }
-.ch-letter .ch-q { display: none; }
 .ch-badge {
   position: absolute; left: -26px; top: -26px; width: 64px; height: 64px; border-radius: 50%; border: 5px solid var(--ink);
   padding: 8px; box-shadow: 2px 5px 0 var(--ink), inset -5px -6px 0 rgba(20, 17, 40, 0.3); animation: wiggle 0.6s 0.3s;
 }
-.ch-badge-attack { background: var(--red); }
-.ch-badge-special { background: var(--purple); }
 .cnt-tray { grid-area: body; background: #F6DFA6; border: 4px solid var(--ink); border-radius: 2px; box-shadow: inset 6px 6px 0 rgba(120, 80, 60, 0.18); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .cnt-row { display: flex; gap: 8px; justify-content: flex-start; }
 .cnt-item { position: relative; width: 50px; height: 50px; animation: drop-in 0.4s var(--d) both; }
@@ -313,10 +280,6 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 }
 .cnt-item.counted .cnt-num { transform: scale(1); }
 .cnt-item.counted { transform: translateY(-4px); transition: transform 0.15s; }
-.ch-q {
-  grid-area: q; width: 84px; height: 84px; border-radius: 50%; background: var(--purple); border: 5px solid var(--ink); box-shadow: var(--cel);
-  display: grid; place-items: center; font-size: 60px; font-weight: 900; color: #fff; text-shadow: var(--outline); animation: pulse 1.2s infinite;
-}
 .ch-opts { grid-area: opts; display: flex; gap: 26px; justify-content: center; }
 .opt {
   width: 100px; height: 100px; border-radius: 50%; background: var(--c); border: 6px solid var(--ink); box-shadow: 4px 8px 0 var(--ink), inset -8px -10px 0 rgba(40, 30, 90, 0.22);
@@ -405,7 +368,6 @@ html.reduced * { animation-iteration-count: 1 !important; }
   -webkit-mask: radial-gradient(circle at 26% 24%, #000 0 27%, transparent 28%); mask: radial-gradient(circle at 26% 24%, #000 0 27%, transparent 28%);
 }
 .big-play.resume::after { background: var(--yellow); -webkit-mask: none; mask: none; inset: auto; right: -6px; top: -6px; }
-.act-special.locked::after { opacity: 0.4; }
 
 /* ---------- v2: TV look (scanlines, grain, faint warm cast). Parent toggle. ---------- */
 #tv { position: fixed; inset: 0; z-index: 45; pointer-events: none; display: none; }
@@ -471,7 +433,6 @@ html.reduced #tv::after { animation: none; }
 .ch-card { grid-template-columns: auto; grid-template-areas: "prompt" "body" "opts"; gap: 12px; padding-top: 14px; }
 .ch-prompt { grid-area: prompt; font: 800 15px var(--font); color: #5A4A6A; letter-spacing: 0.3px; }
 .ch-body { grid-area: body; display: flex; align-items: center; justify-content: center; }
-.ch-q { display: none; }
 .math-row { display: flex; align-items: center; gap: 12px; }
 .math-op { font: 900 56px var(--font); color: var(--ink); }
 .cnt-item.crossed { opacity: 0.45; }

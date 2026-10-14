@@ -8,7 +8,12 @@ import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
 import { noteLevel } from '../logic/learning-log.js';
 import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
 import { get3D } from '../render3d/stage3d.js';
-import { onModelsChanged } from '../render3d/models.js';
+import { onModelsChanged, modelId, modelReady } from '../render3d/models.js';
+
+// Select-card portraits, rendered once per toy + pose + size (and whether its
+// imported model had loaded), then copied. Building a 3D toy and reading the
+// pixels back is the slow part, so a tap only redraws the two cards that change.
+const shots = new Map();
 
 
 export class UI {
@@ -66,30 +71,40 @@ export class UI {
       cv.width = W * px; cv.height = H * px;
       if (isPixel()) cv.classList.add('pxl');
       cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      const render = (eyes, s3) => {
+        const pose = { t: 1000, eyes, mouth: eyes === 'happy' ? 'open' : 'smile', armF: eyes === 'happy' ? -2.5 : -0.2, armB: eyes === 'happy' ? 2.5 : 0.25 };
+        if (s3) return s3.snapshot(def, { w: cv.width, h: cv.height, framing: 'full', pose });
+        const src = document.createElement('canvas');
+        src.width = cv.width; src.height = cv.height;
+        const c = src.getContext('2d');
+        c.setTransform(px * 0.78, 0, 0, px * 0.78, (W / 2 + (id === 'stompy' ? 14 : 0)) * px, (H - 6) * px);
+        drawToy(c, def, pose);
+        if (isPixel()) pixelize(c, cv.width, cv.height);
+        return src;
+      };
       const draw = (eyes) => {
+        const s3 = get3D();
+        const key = `${id}|${eyes}|${cv.width}x${cv.height}|${isPixel()}|${s3 ? +modelReady(modelId(def)) : '2d'}`;
+        let src = shots.get(key);
+        if (!src) {
+          src = render(eyes, s3);
+          if (shots.size > 48) shots.clear();
+          if (!(s3 && s3.lost)) shots.set(key, src); // never keep a blank frame from a lost GPU
+        }
         const c = cv.getContext('2d');
         c.setTransform(1, 0, 0, 1, 0, 0);
         c.clearRect(0, 0, cv.width, cv.height);
-        c.setTransform(px * 0.78, 0, 0, px * 0.78, (W / 2 + (id === 'stompy' ? 14 : 0)) * px, (H - 6) * px);
-        const pose = { t: 1000, eyes, mouth: eyes === 'happy' ? 'open' : 'smile', armF: eyes === 'happy' ? -2.5 : -0.2, armB: eyes === 'happy' ? 2.5 : 0.25 };
-        const s3 = get3D();
-        if (s3) {
-          c.setTransform(1, 0, 0, 1, 0, 0);
-          c.drawImage(s3.snapshot(def, { w: cv.width, h: cv.height, framing: 'full', pose }), 0, 0);
-          return;
-        }
-        drawToy(c, def, pose);
-        if (isPixel()) pixelize(c, cv.width, cv.height);
+        c.drawImage(src, 0, 0);
+        cv._eyes = eyes;
       };
       draw('open');
-      const statRow = (icon, n) => h('div', { class: 'stat' }, ...Array.from({ length: n }, () => h('span', { html: icon })));
       const card = h('button', { class: 'pick-card', style: { '--c': def.color, '--d': i * 120 + 'ms' }, 'aria-label': def.name },
         h('span', { class: 'p1-tag' }, pixelLabel(vs ? 'VS' : '1P', 20, vs ? '#FFC914' : '#FF4A3A')),
         h('div', { class: 'pick-art' }, cv),
         h('div', { class: 'pick-name' }, pixelLabel(def.name, 15, '#FFC914', { maxW: 156 })),
         h('div', { class: 'pick-moves' }, ...(def.moves || []).map((m) => h('span', { class: `pm pm-${m.slot}`, style: { '--mc': m.color }, html: ICON[m.icon] || ICON.fist }))));
-      void statRow;
-      card._draw = draw;
+      card._draw = (eyes, force) => (force || cv._eyes !== eyes) && draw(eyes);
+      card._model = modelId(def);
       onTap(card, () => {
         chosen = id;
         cards.forEach((c) => {
@@ -122,9 +137,9 @@ export class UI {
     const scr = h('div', { class: 'screen select-screen' }, h('div', { class: 'pick-grid' }, ...cards), go, home);
     this.layer.appendChild(scr);
     // an imported model finished loading: redraw the cards with it
-    const off = onModelsChanged(() => {
+    const off = onModelsChanged((mid) => {
       if (!scr.isConnected) return off();
-      cards.forEach((c, i) => roster[i] && c._draw(roster[i] === chosen ? 'happy' : 'open'));
+      cards.forEach((c, i) => roster[i] && c._model === mid && c._draw(roster[i] === chosen ? 'happy' : 'open', true));
     });
     if (lastHero) {
       const i = roster.indexOf(lastHero);

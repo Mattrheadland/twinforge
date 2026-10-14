@@ -35,6 +35,7 @@ export class BattleController {
     this.token = 0;
     this.log = []; // phase history, used by tests
     this.currentChallenge = null;
+    this.fails = 0;
   }
 
   get learning() {
@@ -55,7 +56,7 @@ export class BattleController {
     this.director = new Director(this.stage, this.audio);
     this.hud = new Hud(this.app.ui.layer, { heroDef, foeDef, px: this.app.px, toVirtual: this.app.ui.toVirtual, learning: this.learning });
     this.challenge = new ChallengeUI(this.app.ui.layer, this.audio, buzz);
-    this.hud.on('action', (k) => this.onAction(k));
+    this.hud.on('action', (k) => this.guard(this.onAction(k)));
     this.hud.on('pause', () => this.pause());
     this.hud.setHP('hero', s.hero.hp, s.hero.maxHp, true);
     this.hud.setHP('foe', s.foe.hp, s.foe.maxHp, true);
@@ -80,6 +81,34 @@ export class BattleController {
     }
     if (s.turn === 'foe') return this.foeTurn();
     return this.heroTurn();
+  }
+
+  // Every async battle step runs through here: if one throws, log it and put
+  // the battle back on its feet instead of leaving a 4-year-old stuck.
+  guard(p) {
+    return Promise.resolve(p).catch((e) => {
+      console.error('[twinforge] battle step failed', e);
+      this.recover();
+    });
+  }
+
+  recover() {
+    if (this.phase === PHASE.GONE) return;
+    // the results screen itself failed, or this keeps failing: back to the menu (the battle is saved)
+    if (this.phase === PHASE.END || ++this.fails > 3) return this.app.goModes();
+    this.token++; // stop whatever was still running
+    this.currentChallenge = null;
+    this.app.ui.layer.querySelectorAll('.challenge').forEach((n) => n.remove());
+    this.stage.dim = 0;
+    const s = this.state;
+    try {
+      for (const f of Object.values(this.stage.fighters)) f && this.director.reset(f);
+      this.hud.setHP('hero', s.hero.hp, s.hero.maxHp, true);
+      this.hud.setHP('foe', s.foe.hp, s.foe.maxHp, true);
+      this.syncStatus();
+    } catch {}
+    if (s.result) return this.guard(this.end());
+    return this.guard(s.turn === 'foe' ? this.foeTurn() : this.heroTurn());
   }
 
   syncStatus() {
@@ -206,7 +235,7 @@ export class BattleController {
       if (e.type === 'energy' && e.gained > 0) {
         const start = e.energy - e.gained;
         if (e.reason === 'bonus') this.stage.fx.word('BONUS!', hero.center().x, hero.center().y - 150, { size: 40, color: '#FFC914' });
-        await d.energyOrbs(e.gained, (i) => this.hud.energyAnchor(i), start);
+        await d.energyOrbs(e.gained, (i) => this.app.toStage(this.hud.energyAnchor(i)), start);
         this.hud.setEnergy(e.energy, true);
         if (e.energy >= RULES.maxEnergy) this.audio.sfx('ready');
       }
@@ -244,7 +273,7 @@ export class BattleController {
     if (tok !== this.token) return;
     for (const e of events) {
       if (e.type === 'energy' && e.gained > 0) {
-        await d.energyOrbs(e.gained, (i) => this.hud.energyAnchor(i), e.energy - e.gained);
+        await d.energyOrbs(e.gained, (i) => this.app.toStage(this.hud.energyAnchor(i)), e.energy - e.gained);
         this.hud.setEnergy(e.energy, true);
         if (e.energy >= RULES.maxEnergy) this.audio.sfx('ready');
       }
@@ -257,6 +286,7 @@ export class BattleController {
   }
 
   async end() {
+    if (this.phase === PHASE.END) return;
     this.setPhase(PHASE.END);
     this.hud.showActions(false);
     this.hud.setPauseVisible(false);
@@ -268,18 +298,20 @@ export class BattleController {
       stars = starsFor(s);
       p.wins++;
       p.stars += stars;
-      this.audio.stopMusic(0.2);
-      await this.director.win();
-      this.audio.play('victory');
-    } else {
-      this.audio.stopMusic(0.4);
-      await this.director.lose();
-      this.audio.play('nap');
     }
     this.save.data.battle = null;
     this.save.save();
+    // a broken victory dance must never cost the stars or the results screen
+    try {
+      this.audio.stopMusic(s.result === 'win' ? 0.2 : 0.4);
+      await (s.result === 'win' ? this.director.win() : this.director.lose());
+      this.audio.play(s.result === 'win' ? 'victory' : 'nap');
+      await this.director.wait(500);
+    } catch (e) {
+      console.error('[twinforge] ending animation failed', e);
+    }
     this.app.wakeLock(false);
-    await this.director.wait(500);
+    if (this.phase !== PHASE.END) return;
     this.app.onBattleEnd({ win: s.result === 'win', stars, total: p.stars, state: s });
   }
 
@@ -295,7 +327,12 @@ export class BattleController {
       onHome: () => {
         this.stage.clock.scale = 1;
         this.audio.resume();
-        this.app.goTitle();
+        try {
+          this.app.goTitle();
+        } catch (e) {
+          console.error('[twinforge] going home failed', e);
+          location.reload(); // the battle is saved; the title offers to resume it
+        }
       },
     });
   }

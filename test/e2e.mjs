@@ -30,7 +30,7 @@ await page.setViewport({ width: 874, height: 402, deviceScaleFactor: +(process.e
 await page.evaluateOnNewDocument(() => { window.__TBB_TEST__ = true; window.__TBB_FORCE__ = { math: 'count' }; });
 const errors = [];
 page.on('pageerror', (e) => { errors.push(e.message); if (process.env.SHOW_ERRORS) console.log('PAGEERROR', e.message, e.stack); });
-page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
+page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); else if (m.text().startsWith('[twinforge]')) console.log('NOTE', m.text()); });
 
 // Headless Chromium renders the 3D stage in software. On a busy machine it can
 // drop to 2–5 frames a second, and two things follow:
@@ -299,18 +299,18 @@ await tap('.go-btn', { wait: 600 });
 await shot('18-story-map');
 check('tournament map: seven stops, the last a giant', (await page.$$('.ladder-node')).length === 7 && (await page.$$('.ladder-node.boss')).length === 1);
 await tap('.ladder-screen .go-btn');
-check('tournament battle starts on the first foe\'s home turf', await waitPhase('choose', 20000) && (await page.evaluate(() => { const a = window.__tbb.app; return a.stage.arenaId === a.save.data.run.path[0].arenaId && a.battle.state.from === 'run'; })));
+check('tournament battle starts on the first foe\'s home turf', await waitPhase('choose', 20000) && (await page.evaluate(() => { const a = window.__tbb.app; return a.stage.arenaId === a.save.data.runs.tournament.path[0].arenaId && a.battle.state.from === 'run'; })));
 await shot('19-story-battle');
 await page.evaluate(() => { const a = window.__tbb.app; a.save.data.settings.learning = false; const b = a.battle; b.state.foe.hp = 1; b.hud.setHP('foe', 1, b.state.foe.maxHp, true); });
 await tap('.move-power');
 await waitSel('.overlay.result', 30000);
 await page.evaluate(() => { window.__tbb.app.save.data.settings.learning = true; });
 await sleep(1500);
-check('tournament win offers NEXT and saves progress', (await page.$('.round-btn.again.pulse')) && (await page.evaluate(() => window.__tbb.app.save.data.run.step === 1)));
+check('tournament win offers NEXT and saves progress', (await page.$('.round-btn.again.pulse')) && (await page.evaluate(() => window.__tbb.app.save.data.runs.tournament.step === 1)));
 await tap('.round-btn.again', { wait: 600 });
 check('next goes back to the map with one stop done', (await page.$$('.ladder-node.done')).length === 1);
 // a giant: jump to the last stop
-await page.evaluate(() => { const a = window.__tbb.app; a.save.data.run.step = a.save.data.run.path.length - 1; a.showRunMap(); });
+await page.evaluate(() => { const a = window.__tbb.app; a.save.data.runs.tournament.step = a.save.data.runs.tournament.path.length - 1; a.showRunMap(); });
 await tap('.ladder-screen .go-btn');
 await waitPhase('choose', 20000);
 check('the last tournament foe is a giant', await page.evaluate(() => { const b = window.__tbb.app.battle; return b.state.boss && b.stage.fighters.foe.big > 1 && b.state.foe.maxHp > b.chars[b.state.foeId].maxHp; }));
@@ -318,6 +318,57 @@ await shot('20-giant');
 await tap('.pause-btn', { wait: 300 });
 await tap('.overlay.pause .round-btn.home', { wait: 800 });
 check('play resumes the paused giant fight', await page.$('.big-play.resume'));
+
+// ---------- arcade beside a tournament, keyboard, safety net, lost GPU ----------
+await page.evaluate(() => { const a = window.__tbb.app; a.save.data.battle = null; a.save.save(); a.goTitle(); });
+await sleep(800);
+await page.keyboard.press('Enter');
+await sleep(700);
+check('keyboard: Enter on the title opens the modes', !!(await page.$('.modes-screen')));
+await page.keyboard.press('ArrowRight');
+check('keyboard: arrows focus a mode card', await page.evaluate(() => document.activeElement.classList.contains('mode-card')));
+await tap('.mode-arcade', { wait: 600 });
+await tap('.pick-card:nth-child(4)', { wait: 400 });
+await tap('.go-btn', { wait: 600 });
+await tap('.pick-card:nth-child(1)', { wait: 400 });
+await tap('.go-btn', { wait: 400 });
+await tap('.arena-card:nth-child(2)', { wait: 300 });
+await waitPhase('choose', 20000);
+check('an arcade fight leaves the tournament in progress alone', await page.evaluate(() => {
+  const a = window.__tbb.app, r = a.save.data.runs;
+  return r.tournament && r.tournament.step === r.tournament.path.length - 1 && r.arcade && r.arcade.mode === 'arcade' && a.battle.state.runMode === 'arcade';
+}));
+await sleep(500);
+await page.evaluate(() => {
+  const a = window.__tbb.app; a.save.data.settings.learning = false;
+  const d = a.battle.director, orig = d.attack;
+  d.attack = function () { d.attack = orig; throw new Error('e2e-boom'); };
+});
+await page.keyboard.press('ArrowRight');
+check('keyboard: arrows focus a move button', await page.evaluate(() => document.activeElement.classList.contains('move')));
+await page.keyboard.press('Enter');
+await sleep(400);
+check('keyboard: Enter uses the focused move', await page.evaluate(() => window.__tbb.app.battle.log.includes('hero-anim')));
+check('a battle step that throws is logged and the battle carries on to his next turn',
+  (await waitPhase('choose', 20000)) && errors.some((e) => e.includes('e2e-boom')) && (await page.evaluate(() => window.__tbb.app.battle.log.slice(-3).includes('foe') && !document.querySelector('.actions.hidden'))));
+const gpu = await page.evaluate(async () => {
+  const st = window.__tbb.app.stage, ext = st.renderer.getContext().getExtension('WEBGL_lose_context');
+  if (!ext) return 'no extension';
+  ext.loseContext();
+  await new Promise((r) => setTimeout(r, 400));
+  const wasLost = st.lost;
+  ext.restoreContext();
+  await new Promise((r) => setTimeout(r, 800));
+  return wasLost && !st.lost && !sessionStorage.getItem('tbb.no3d');
+});
+check('the 3D view comes back after the GPU context is lost', gpu === true, String(gpu));
+await shot('20b-after-context-restore');
+await page.keyboard.press('Escape');
+await sleep(300);
+check('keyboard: Escape pauses', !!(await page.$('.overlay.pause')));
+await tap('.overlay.pause .round-btn.home', { wait: 800 });
+check('pause -> home still works after a failed step', !!(await page.$('.title-screen')));
+await page.evaluate(() => { window.__tbb.app.save.data.settings.learning = true; });
 await page.evaluate(() => { const a = window.__tbb.app; a.save.data.battle = null; a.save.save(); a.goTitle(); });
 await sleep(600);
 await tap('.big-play', { wait: 700 });
@@ -466,7 +517,8 @@ check('closing preview goes back to the report', !(await page.$('.overlay.previe
 const fps = await page.evaluate(() => window.__tbb.app.stage.fps);
 console.log('headless fps sample', JSON.stringify(fps));
 
-check('no page errors', errors.length === 0, errors.slice(0, 5).join(' | '));
+const realErrors = errors.filter((e) => !e.includes('e2e-boom'));
+check('no page errors', realErrors.length === 0, realErrors.slice(0, 5).join(' | '));
 await browser.close();
 server.close();
 const failed = results.filter((r) => !r.ok);

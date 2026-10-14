@@ -4,7 +4,8 @@
 //   tournament  beat every other toy on its home turf, then a GIANT boss
 //   arcade      pick your toy, the opponent and the arena (or SURPRISE!), then fight
 //
-// A run lives in save.data.run so a closed app picks up where it left off.
+// Each mode keeps its own run in save.data.runs[mode], so a closed app picks up
+// where it left off and an arcade fight never replaces a tournament in progress.
 import { ARENAS, arenaFor } from '../data/arenas.js';
 
 export const MODES = ['tournament', 'arcade'];

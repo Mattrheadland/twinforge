@@ -15,7 +15,7 @@
 // Word lists live in logic/words.js.
 import {
   PICS, wordLabel, STARTS, SAME_SOUND, EASY_STARTS, ENDS, RHYMES, CVC, LONG_WORDS, SPELL, SIGHT,
-  VOWELS, CONSONANTS, ALL_WORDS, STORY_NAMES,
+  VOWELS, CONSONANTS, ALL_WORDS, STORY_NAMES, wordsReady,
 } from './words.js';
 
 export { PICS, wordLabel };
@@ -262,7 +262,8 @@ export const READ_KINDS = {
 const READ_MAKERS = {};
 export function makeReading(level, rng, force, off) {
   const lv = clampLevel(level);
-  const kind = force || rng.pick(allowed(READ_KINDS[lv], off));
+  // letter matches need no word list (public/words.json), so they cover the first moments
+  const kind = !wordsReady() ? 'letter' : force || rng.pick(allowed(READ_KINDS[lv], off));
   return READ_MAKERS[kind](lv, rng);
 }
 

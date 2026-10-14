@@ -18,8 +18,10 @@ import { showBoard } from './ui/board-ui.js';
 import { Board3D } from './render3d/board3d.js';
 import { Director } from './game/director.js';
 import { h } from './ui/dom.js';
+import { loadWords } from './logic/words.js';
 
 const BUILD = typeof __BUILD__ !== 'undefined' ? __BUILD__ : 'dev';
+const MIN_W = 976; // narrowest UI world (the select grid + GO button); the iPhone landscape is ~978 wide, so it is never scaled
 
 class App {
   constructor() {
@@ -56,10 +58,96 @@ class App {
     };
     document.addEventListener('pointerdown', unlock, true);
     document.addEventListener('touchend', unlock, true);
+    this.safetyNet();
+    loadWords();
+    this.keyboard();
     this.requestPersistence();
     this.registerSW();
     if (this.save.recovered) setTimeout(() => this.ui.toast('Save restored from backup'), 800);
     this.goTitle();
+  }
+
+  // Last line of defence: log anything that slips through, and make sure there
+  // is always something on screen to tap. Battle steps recover themselves
+  // (BattleController.guard); a lost GPU waits for a restore, then falls back to 2D.
+  safetyNet() {
+    this.errors = [];
+    const log = (e) => {
+      const msg = String((e && (e.stack || e.message)) || e).slice(0, 400);
+      this.errors.push(msg);
+      if (this.errors.length > 20) this.errors.shift();
+      console.error('[twinforge]', msg);
+      // an error outside the battle's own steps (a tween, a timer) can leave an
+      // animation waiting forever: if the battle hasn't moved on in 8 s, restart the turn
+      const b = this.battle, n = b && b.log.length;
+      if (b && !/choose|challenge|end|gone/.test(b.phase)) setTimeout(() => this.battle === b && b.log.length === n && this.stage.clock.scale && b.recover(), 8000);
+      clearTimeout(this._rescue);
+      this._rescue = setTimeout(() => {
+        if (!this.layerEl.querySelector('.screen, .overlay, .hud')) this.goModes();
+      }, 1500);
+    };
+    addEventListener('error', (ev) => log(ev.error || ev.message));
+    addEventListener('unhandledrejection', (ev) => {
+      ev.preventDefault();
+      log(ev.reason);
+    });
+    const st = this.stage;
+    st.onContextLost = () => {
+      console.warn('[twinforge] GPU context lost');
+      if (this.battle) this.battle.persist();
+      clearInterval(this._lostT);
+      let waited = 0;
+      this._lostT = setInterval(() => {
+        if (!st.lost) return clearInterval(this._lostT);
+        // still gone after ~10 s on screen: reload with the 2D stage (everything is saved)
+        if (!document.hidden && (waited += 2) >= 10) {
+          try { sessionStorage.setItem('tbb.no3d', '1'); } catch {}
+          location.reload();
+        }
+      }, 2000);
+    };
+  }
+
+  // Laptop keys: arrows move between the buttons on screen, Enter/Space presses
+  // the focused one (or the main one), Escape pauses.
+  keyboard() {
+    const GROUPS = '.challenge .opt:not(.gone), .actions:not(.hidden) .move, .pick-card, .mode-card, .arena-card, .gal-arrow, .gal-moves .act, .result-btns .round-btn, .overlay.pause button';
+    const MAIN = ['.overlay.pause .big-play', '.result-btns .round-btn.again', '.go-btn:not(.hidden)', '.board-fight:not(.hidden)', '.board-die:not(.hidden)', '.title-screen .big-play'];
+    const shown = (el) => el && el.getClientRects().length && !el.closest('.hidden');
+    const press = (el) => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'mouse', button: 0 }));
+    document.addEventListener('keydown', (e) => {
+      const t = e.target;
+      if (e.repeat || e.altKey || e.ctrlKey || e.metaKey || (t && t.closest && t.closest('input, textarea, select, .parent-card, .pv-bar'))) return;
+      const k = e.key;
+      const focused = this.layerEl.contains(document.activeElement) && shown(document.activeElement) ? document.activeElement : null;
+      if (k === 'Escape') {
+        const p = this.layerEl.querySelector('.pause-btn');
+        if (shown(p)) press(p);
+      } else if (k === 'Enter' || k === ' ') {
+        const b = focused || MAIN.map((s) => this.layerEl.querySelector(s)).find(shown);
+        if (!b) return;
+        e.preventDefault();
+        press(b);
+      } else if (k.startsWith('Arrow')) {
+        const all = [...this.layerEl.querySelectorAll(GROUPS)].filter(shown);
+        if (!all.length) return;
+        e.preventDefault();
+        if (!focused || !all.includes(focused)) return all[0].focus();
+        // nearest button in the arrow's direction
+        const c = (el) => { const r = el.getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2]; };
+        const [x0, y0] = c(focused);
+        const [dx, dy] = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[k] || [0, 0];
+        let best = null, bd = Infinity;
+        for (const el of all) {
+          const [x, y] = c(el);
+          const along = (x - x0) * dx + (y - y0) * dy;
+          if (along <= 1) continue;
+          const d = along + 2 * Math.abs((x - x0) * dy + (y - y0) * dx);
+          if (d < bd) { bd = d; best = el; }
+        }
+        if (best) best.focus();
+      }
+    });
   }
 
   get standalone() {
@@ -68,14 +156,21 @@ class App {
 
   layout() {
     const vw = window.innerWidth, vh = window.innerHeight;
-    // landscape world is always 450 units tall; width follows the screen
-    const s = vh / VH;
+    // The 3D stage is always 450 units tall. The UI layer is too, unless the
+    // window is narrower than MIN_W (4:3, 16:10, 16:9 laptops): then the UI
+    // fits the width and grows taller, and screens center in the extra height.
+    const ss = vh / VH;
+    const s = Math.min(ss, vw / MIN_W);
     this.scale = s;
+    this.uiK = s / ss; // UI units -> stage units
     this.W = vw / s;
+    this.H = vh / s;
     this.px = s * Math.min(window.devicePixelRatio || 1, 3);
     this.layerEl.style.width = this.W + 'px';
-    this.layerEl.style.height = VH + 'px';
+    this.layerEl.style.height = this.H + 'px';
     this.layerEl.style.transform = `scale(${s})`;
+    this.layerEl.style.setProperty('--oy', (this.H - VH) / 2 + 'px');
+    this.layerEl.classList.toggle('fit-w', s < ss);
     this.stage.resize(vw, vh, window.devicePixelRatio || 1);
     // safe-area insets in world units
     const probe = document.getElementById('safe-probe');
@@ -84,6 +179,17 @@ class App {
     this.layerEl.style.setProperty('--sl', Math.max(L / s, 10) + 'px');
     this.layerEl.style.setProperty('--sr', Math.max(R / s, 10) + 'px');
     this.layerEl.style.setProperty('--sb', Math.max(B / s, 6) + 'px');
+  }
+
+  // stage world <-> UI layer coordinates (they differ only on narrow windows)
+  toStage(p) {
+    const k = this.uiK || 1;
+    return { x: p.x * k, y: p.y * k };
+  }
+
+  fromStage(p) {
+    const k = this.uiK || 1;
+    return { x: p.x / k, y: p.y / k };
   }
 
   guardGestures() {
@@ -224,8 +330,8 @@ class App {
         this.goBoard();
       }, () => this.goModes());
     }
-    const run = this.save.data.run;
-    if (mode === 'tournament' && run && run.mode === 'tournament' && !run.done) return this.showRunMap();
+    const run = this.save.data.runs.tournament;
+    if (mode === 'tournament' && run && !run.done) return this.showRunMap();
     this.goSelect((heroId) => {
       if (mode === 'arcade') {
         // pick the opponent (or SURPRISE!), then the arena (or SURPRISE!)
@@ -251,32 +357,35 @@ class App {
     }, () => this.goModes());
   }
 
+  // each mode keeps its own run (save.data.runs), so an arcade fight never
+  // replaces a tournament in progress
   beginRun(run) {
-    this.save.data.run = run;
+    this.save.data.runs[run.mode] = run;
     this.save.save();
     if (run.mode === 'tournament') this.showRunMap();
-    else this.playStop();
+    else this.playStop('arcade');
   }
 
   showRunMap() {
-    const run = this.save.data.run;
+    const run = this.save.data.runs.tournament;
     this.audio.play('title');
     this.stage.setFighters(null, null);
     this.stage.dim = 0.35;
     showLadder(this.ui, {
       run,
       chars: CHARACTERS,
-      onGo: () => this.playStop(),
+      onGo: () => this.playStop('tournament'),
       onHome: () => this.goModes(),
     });
   }
 
-  async playStop() {
-    const run = this.save.data.run;
+  async playStop(mode) {
+    const run = this.save.data.runs[mode];
     const stop = current(run);
+    if (!stop) return this.goModes();
     this.audio.sfx('powerUp');
     await this.ui.showVS(CHARACTERS[run.heroId], CHARACTERS[stop.foeId], { boss: stop.boss });
-    this.startBattle(run.heroId, stop.foeId, null, { ...stop, kind: 'run' });
+    this.startBattle(run.heroId, stop.foeId, null, { ...stop, kind: 'run', mode });
   }
 
   // ---------------- campaign board ----------------
@@ -350,9 +459,12 @@ class App {
       }
       return showRunResult(this.ui, { win, stars, total, onNext: () => this.goBoard(), onHome: home });
     }
-    const run = this.save.data.run;
-    const stop = current(run);
-    const inRun = state.from === 'run' && run && stop && stop.foeId === state.foeId && run.heroId === state.heroId;
+    const runs = this.save.data.runs;
+    const fits = (r) => { const st = current(r); return r && st && st.foeId === state.foeId && r.heroId === state.heroId; };
+    // battles saved before runs were split don't know their mode: find the run they belong to
+    const mode = state.runMode || ['tournament', 'arcade'].find((m) => fits(runs[m]));
+    const run = mode && runs[mode];
+    const inRun = state.from === 'run' && fits(run);
     if (!inRun) {
       return showRunResult(this.ui, { win, stars, total, onAgain: () => this.startBattle(state.heroId, state.foeId), onHome: home });
     }
@@ -361,12 +473,12 @@ class App {
         this.save.data.records = recordRun(this.records, winStop(run, stars));
         this.save.save();
       }
-      return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop(), onHome: home });
+      return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop('arcade'), onHome: home });
     }
     // tournament
-    if (!win) return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop(), onHome: home });
+    if (!win) return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop('tournament'), onHome: home });
     const next = winStop(run, stars);
-    this.save.data.run = next.done ? null : next;
+    runs.tournament = next.done ? null : next;
     this.save.data.records = recordRun(this.records, next);
     this.save.save();
     if (next.done) {
@@ -410,8 +522,9 @@ class App {
       // remember where this fight came from (saved with the battle, so a resume knows too)
       this.battle.state.from = stop.kind;
       if (stop.kind === 'campaign') this.battle.state.at = stop.at;
+      if (stop.mode) this.battle.state.runMode = stop.mode;
     }
-    this.battle.start();
+    this.battle.guard(this.battle.start());
   }
 
   resumeBattle() {

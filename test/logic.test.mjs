@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import './_words.mjs';
 import { CHARACTERS as C, ROSTER } from '../src/data/characters.js';
 import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor, isValidBattle, moveFor, learningFor } from '../src/logic/battle.js';
 import { makeCounting, makeLetter, makeMath, makeReading, validate, qualityFor } from '../src/logic/challenges.js';

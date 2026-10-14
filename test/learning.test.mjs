@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import './_words.mjs';
 import { makeMath, makeReading, makeLetter, KINDS, kindsAt, MATH_KINDS, READ_KINDS } from '../src/logic/challenges.js';
 import { defaultLearning, normalizeLearning, recordAnswer, noteLevel, buildReport, reportText, describe, LOG_MAX, KIND_ORDER } from '../src/logic/learning-log.js';
 import { defaultSkills } from '../src/logic/difficulty.js';

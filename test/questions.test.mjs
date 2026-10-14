@@ -1,6 +1,7 @@
 // The bigger question pool: word banks, new types, no repeats, second tries.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import './_words.mjs';
 import { makeMath, makeReading, validate, keyOf, skillOf, KINDS, MATH_KINDS, READ_KINDS } from '../src/logic/challenges.js';
 import { PICS, STARTS, ENDS, RHYMES, CVC, LONG_WORDS, SPELL, SIGHT, ALL_WORDS } from '../src/logic/words.js';
 import { pickQuestion, rememberAnswer, defaultMem, normalizeMem, RECENT_MAX } from '../src/logic/question-picker.js';

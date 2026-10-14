@@ -192,6 +192,16 @@ export class Stage3D extends Stage {
     this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     overlay.parentNode.insertBefore(gl, overlay);
     this.glCanvas = gl;
+    // GPU reset (driver update, sleep, too many tabs): three.js rebuilds its
+    // state on restore; until then only the 3D draw is skipped
+    gl.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      this.lost = true;
+      this.onContextLost && this.onContextLost();
+    });
+    gl.addEventListener('webglcontextrestored', () => {
+      this.lost = false;
+    });
     overlay.classList.add('overlay2d');
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0b0a1e);
@@ -311,8 +321,8 @@ export class Stage3D extends Stage {
     this.rcam.setViewOffset(W, VH, fx - fx / z - view.x, fy - fy / z - view.y, W / z, VH / z);
     if (this.board) {
       this.board.update(t);
-      this.renderer.render(this.board.scene, this.board.camera);
-    } else this.renderer.render(this.scene, this.rcam);
+      if (!this.lost) this.renderer.render(this.board.scene, this.board.camera);
+    } else if (!this.lost) this.renderer.render(this.scene, this.rcam);
 
     // 2D overlay: effects, words, shields, status
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -343,6 +353,7 @@ export class Stage3D extends Stage {
   // Renders a toy on a transparent background (portraits, select cards).
   // framing: 'head' or 'full'. Returns a canvas `w`×`h` art pixels.
   snapshot(def, { w, h, framing = 'full', pose = {} }) {
+    if (this.lost) return blank(w, h);
     const rig = buildRig(def);
     rig.apply({ t: 1000, eyes: 'open', mouth: 'smile', action: pose.eyes === 'happy' ? 'win' : 'idle', ...pose });
     const scene = new THREE.Scene();
@@ -370,8 +381,7 @@ export class Stage3D extends Stage {
     this.renderer.setClearColor(prevClear, prevAlpha);
     rt.dispose();
     disposeTree(scene);
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
+    const c = blank(w, h);
     const g = c.getContext('2d');
     const im = g.createImageData(w, h);
     for (let y = 0; y < h; y++) im.data.set(buf.subarray((h - 1 - y) * w * 4, (h - y) * w * 4), y * w * 4);
@@ -380,8 +390,18 @@ export class Stage3D extends Stage {
   }
 }
 
-// Prefer 3D; fall back to the 2D stage if WebGL isn't available.
+function blank(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  return c;
+}
+
+// Prefer 3D; fall back to the 2D stage if WebGL isn't available (or the GPU
+// was lost and never came back this session, see main.js).
 export function createStage(canvas) {
+  let no3d = false;
+  try { no3d = !!sessionStorage.getItem('tbb.no3d'); } catch {}
+  if (no3d) return new Stage(canvas);
   try {
     const probe = document.createElement('canvas');
     if (!(probe.getContext('webgl2') || probe.getContext('webgl'))) throw new Error('no webgl');

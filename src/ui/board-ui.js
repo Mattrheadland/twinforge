@@ -191,7 +191,7 @@ function showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make
     showWorld(c.pos);
   };
   const say = (text, color, i, up = 150) => {
-    const at = view.project(i, up);
+    const at = ui.app.fromStage(view.project(i, up));
     const el = h('div', { class: 'pop-word' }, pixelLabel(text, 30, color, { chunk: 2 }));
     el.style.left = at.x + 'px';
     el.style.top = at.y + 'px';
