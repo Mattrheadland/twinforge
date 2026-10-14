@@ -4,6 +4,7 @@
 //
 // quality: 'indep' = right first try · 'hint' = one wrong tap · 'support' = needed the glowing answer
 import { KINDS, wordLabel } from './challenges.js';
+import { defaultMem, normalizeMem, rememberAnswer } from './question-picker.js';
 
 export const LOG_MAX = 120; // individual answers kept for "recent" figures and the misses list
 export const LEVEL_LOG_MAX = 40;
@@ -11,14 +12,16 @@ export const DAYS_MAX = 45;
 export const SLOW_MS = 15000; // "took a while"
 
 export const KIND_LABEL = {
-  count: 'Counting', shape: 'Same shape', compare: 'Most / fewest', pattern: 'What comes next',
-  numeral: 'Number → group', add: 'Adding', sub: 'Take away',
-  letter: 'Letter match', starts: 'Starts with', rhyme: 'Rhymes', word: 'Read a word',
+  count: 'Counting', flash: 'Quick look (dots)', shape: 'Same shape', compare: 'Most / fewest', pattern: 'What comes next',
+  numeral: 'Number → group', oneMore: 'One more / one less', seq: 'Missing number', bigger: 'Bigger / smaller number',
+  add: 'Adding', sub: 'Take away', story: 'Story problems', teen: 'Teen numbers',
+  letter: 'Letter match', starts: 'Starts with (letter)', pickStart: 'Starts with (picture)', ends: 'Ends with',
+  rhyme: 'Rhymes', missing: 'Missing letter', word: 'Read a word', sight: 'Sight words', spell: 'Spelling',
 };
 export const KIND_ORDER = Object.keys(KIND_LABEL);
 
 export function defaultLearning() {
-  return { v: 1, stats: {}, log: [], levels: [], days: {} };
+  return { v: 1, stats: {}, log: [], levels: [], days: {}, mem: defaultMem() };
 }
 
 // Bring a stored learning object up to shape (old saves have none).
@@ -31,6 +34,7 @@ export function normalizeLearning(raw) {
     log: Array.isArray(raw.log) ? raw.log.slice(-LOG_MAX) : [],
     levels: Array.isArray(raw.levels) ? raw.levels.slice(-LEVEL_LOG_MAX) : [],
     days: raw.days && typeof raw.days === 'object' ? raw.days : {},
+    mem: normalizeMem(raw.mem), // recent questions and pending reviews (logic/question-picker.js)
   };
 }
 
@@ -46,8 +50,10 @@ export function recordAnswer(L, ch, quality, stats = {}, now = Date.now()) {
   s.n++;
   s[quality] = (s[quality] || 0) + 1;
   const ms = Number.isFinite(stats.firstMs) ? Math.round(stats.firstMs) : null;
+  L.mem = L.mem ? L.mem : defaultMem();
+  rememberAnswer(L.mem, ch, quality);
   L.log.push({
-    t: now, k: kind, lv: ch.level, q: quality, ms,
+    t: now, k: kind, lv: ch.level, q: quality, ms, ...(ch.review ? { r: 1 } : {}),
     w: (stats.wrongPicks || []).map((o) => optLabel(ch, o)),
     d: describe(ch), a: optLabel(ch, ch.answer),
   });
@@ -105,6 +111,17 @@ export function describe(ch) {
     case 'starts': return `${wordLabel(ch.word)} starts with ${ch.answer} (from ${ch.options.join(' ')})`;
     case 'rhyme': return `${wordLabel(ch.word)} rhymes with ${wordLabel(ch.answer)}`;
     case 'word': return `Read “${ch.word}”`;
+    case 'flash': return `Quick look at ${ch.n} dots`;
+    case 'story': return `${ch.prompt} (${ch.a} ${ch.op === 'add' ? '+' : '−'} ${ch.b})`;
+    case 'oneMore': return `One ${ch.dir} than ${ch.n}`;
+    case 'seq': return `${ch.seq.map((x) => (x == null ? '_' : x)).join(' ')}`;
+    case 'bigger': return `The ${ch.mode} of ${ch.options.join(', ')}`;
+    case 'teen': return `Ten and ${ch.n - 10} more (${ch.n})`;
+    case 'pickStart': return `Which starts with ${ch.letter}: ${ch.options.map(wordLabel).join(', ')}`;
+    case 'ends': return `${wordLabel(ch.word)} ends with ${ch.answer} (from ${ch.options.join(' ')})`;
+    case 'missing': return `${[...ch.word].map((c, i) => (i === ch.pos ? '_' : c)).join('')} (${ch.word})`;
+    case 'sight': return `Find “${ch.word}”`;
+    case 'spell': return `Spell “${ch.word}”`;
     default: return ch.kind;
   }
 }
@@ -173,6 +190,8 @@ export function buildReport(L, skills, off = [], now = Date.now()) {
     today: { n: dayT.n, firstTry: pct(dayT.indep, dayT.n) },
     week: { n: inWeek.length, firstTry: pct(inWeek.filter((e) => e.q === 'indep').length, inWeek.length) },
     all: { n: allN, firstTry: pct(allIndep, allN) },
+    // a missed skill asked again later in a new form (logic/question-picker.js)
+    reviews: { n: L.log.filter((e) => e.r).length, firstTry: pct(L.log.filter((e) => e.r && e.q === 'indep').length, L.log.filter((e) => e.r).length) },
     domains, rows, misses,
     tips: tipsFor(rows, domains),
   };
@@ -208,6 +227,7 @@ export function reportText(R) {
   const lines = [
     `TwinForge learning report (${new Date(R.now).toLocaleString()})`,
     `Today ${R.today.n} questions, ${f(R.today.firstTry)} first try · last 7 days ${R.week.n}, ${f(R.week.firstTry)} · all time ${R.all.n}, ${f(R.all.firstTry)}`,
+    `Second tries (a missed skill asked again later in a new form): ${R.reviews.n}, ${f(R.reviews.firstTry)} first try`,
     ...R.domains.map((d) => `${d.name}: level ${d.level}${d.auto ? ' (auto)' : ' (pinned)'}, ${d.askedAtLevel} asked at this level, ${f(d.firstTryAtLevel)} first try`),
     '',
     'Skill | asked | first try | last 10 | full help (last 10) | think | status',

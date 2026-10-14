@@ -8,9 +8,13 @@
   - special: needs 3 energy, asks a **reading** question when Learning is on
 - **Opponents fight with their own moves**, telegraph their special with a charge-up, then use it.
 - **Learning on/off** (grown-up settings → Learning questions). Off = moves fire straight away.
-- **New challenges** over 5 auto-adjusting levels:
-  - Math: count, same shape, most/fewest, what comes next (patterns), find the group for a number, add, take away
-  - Reading: letter match, upper→lower, tricky letters, starts-with, rhymes, read a word → find the picture
+- **Learning questions: 22 types over 5 auto-adjusting levels** (`src/logic/challenges.js`, words in `src/logic/words.js`):
+  - Math: count, quick look (dots flash then hide), same shape, most/fewest, patterns, find the group, one more / one less, missing number in a row (counting up and down), bigger / smaller number, add, take away, toy story problems ("Rex has 3 balls…"), teen numbers on ten-frames
+  - Reading: letter match, starts with (picture → letter), which picture starts with a letter, ends with, rhymes (26 families), missing letter (_at, ca_, c_t), read a word (41 words), sight words (44), spelling (letter by letter)
+  - About 120 picture words, several per letter, chosen so the picture is named the way the answer expects
+  - **No repeats**: the last 25 questions of each subject aren't asked again. **Second tries**: a missed skill comes back 3–5 questions later in a new form (missed "B" in starts-with comes back as "which picture starts with B"), up to twice
+  - **Read aloud**: the phone's voice reads each question (speaker button to hear it again; grown-up toggle "Read questions aloud")
+  - A tap that lands on an answer in the first 0.8 s doesn't count (kids hammer the move button)
 - **Six characters in 3D**: Battle Rex, Spooky Tree, Ragin' Rockfish, Young Arthur (from Matt's sheets), plus two originals, Wanda Wickwhistle (witch) and Czernobog (night creature), standing in for Hocus Pocus and The Chernabog, which are Disney characters and aren't modeled as-is.
 - **Learning report** (grown-up settings → Learning report): every question is logged in the save (`src/logic/learning-log.js`) with its type, level, first try / after a hint / needed help, the wrong answers tapped and seconds to first tap. The report shows today / 7-day / all-time first-try rates, where each level is parked and why it last moved, a per-type table (asked, first try, last 10, think time, Solid / Learning / Tough / Slow), recent misses and slow ones, and plain-language notes. Each type can be switched off. "Copy as text" gives a summary to paste to Claude for tuning.
 - **Question preview** (settings or the report): any question type at any level, exactly as Luca sees it. Nothing in preview is recorded.

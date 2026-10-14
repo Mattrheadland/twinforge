@@ -246,18 +246,18 @@ export class UI {
     };
     // what each level actually mixes in (logic/challenges.js MATH_KINDS / READ_KINDS)
     const MATH = {
-      1: 'Count 1–5 · same shape · which has more',
-      2: 'Count 3–8 · shapes · more · AB patterns · find the group',
-      3: 'Count 5–10 · adding to 5 · ABB patterns · most & fewest',
-      4: 'Count 8–15 · adding to 10 · take away from 5 · ABC patterns',
-      5: 'Count 10–20 · add & take away to 10 · most & fewest',
+      1: 'Count 1–5 · quick look (1–4 dots) · same shape · which has more',
+      2: 'Count 3–8 · quick look to 5 · shapes · more · AB patterns · find the group',
+      3: 'Count 5–10 · adding to 5 · one more · missing number · ABB patterns · most & fewest',
+      4: 'Count 8–15 · add to 10 · take away from 5 · one more/less · bigger number · toy stories · ABC patterns',
+      5: 'Count 10–20 · add & take away to 10 · teen numbers · count back · smallest/biggest · toy stories',
     };
     const LET = {
       1: 'Match capitals (very different shapes)',
-      2: 'Match any capitals · first sounds (easy letters)',
-      3: 'Match lowercase · first sounds · rhymes',
-      4: 'Capital → lowercase · all first sounds · rhymes · read a word',
-      5: 'Tricky lowercase (b d p q…) · rhymes · read a word',
+      2: 'Match capitals · first sounds (easy letters) · which picture starts with…',
+      3: 'Match lowercase · first sounds · rhymes · missing first letter (_at)',
+      4: 'Capital → lowercase · all first sounds · last sounds · rhymes · read a word · sight words · missing letter',
+      5: 'Tricky lowercase (b d p q…) · last sounds · longer words · sight words · missing vowel · spell a word',
     };
     const reportBtn = h('button', { class: 'pbtn rp-open' }, 'Learning report');
     const previewBtn = h('button', { class: 'pbtn pv-open' }, 'Preview questions');
@@ -294,6 +294,7 @@ export class UI {
         h('section', {}, h('h3', {}, 'Sound'), slider('Music', 'music'), slider('Effects', 'sfx')),
         h('section', {}, h('h3', {}, 'Learning'),
           toggle('Learning questions', 'learning', 'On: power moves ask a math question, specials ask a reading one. Off: just battle.'),
+          toggle('Read questions aloud', 'readAloud', 'The phone reads each question to him (tap the speaker on the card to hear it again)'),
           level('Math (power moves)', 'math', MATH),
           level('Reading (specials)', 'letters', LET),
           h('p', { class: 'note' }, 'Auto moves up after 3 right-first-try answers in a row, and down if he needs full help twice in his last 4. Answers with a hint never move it up.'),

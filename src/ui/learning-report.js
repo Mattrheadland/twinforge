@@ -96,7 +96,7 @@ export function showReport(layer, opts) {
     const card = h('div', { class: 'parent-card rp-card' },
       h('div', { class: 'rp-top' }, h('h2', {}, 'Learning report'), h('div', { class: 'pbtns' }, prev, copy)),
       h('p', { class: 'note' }, R.lastPlayed ? `Last question ${ago(R.lastPlayed)}. “First try” = right with no wrong taps. Think = typical seconds before his first tap.` : 'No questions answered yet. Play a few battles with Learning on and check back.'),
-      h('div', { class: 'rp-chips' }, chip('today', R.today), chip('last 7 days', R.week), chip('all time', R.all)),
+      h('div', { class: 'rp-chips' }, chip('today', R.today), chip('last 7 days', R.week), chip('all time', R.all), chip('second tries', R.reviews)),
       h('div', { class: 'rp-domains' }, ...R.domains.map(domainCard)),
       R.tips.length ? h('section', { class: 'rp-tips' }, h('h3', {}, 'Worth a look'), h('ul', {}, ...R.tips.map((t) => h('li', {}, t)))) : null,
       h('section', {}, h('h3', {}, 'By question type'), table('math'), table('reading'),

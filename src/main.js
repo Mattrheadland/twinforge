@@ -9,6 +9,7 @@ import { SaveStore } from './save.js';
 import { UI } from './ui/screens.js';
 import { BattleController } from './game/battle-controller.js';
 import { buzz, setHaptics } from './haptics.js';
+import { setSpeech, unlockSpeech } from './audio/speech.js';
 import { showReport, showPreview } from './ui/learning-report.js';
 import { newRun, winStop, current, recordRun, BOSS_SCALE } from './game/modes.js';
 import { buildBoard, move, rollDie, winSpace, stopFor, newCampaign } from './game/campaign.js';
@@ -91,11 +92,14 @@ class App {
     document.addEventListener('gesturestart', (e) => e.preventDefault());
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('dblclick', (e) => e.preventDefault());
+    // iOS only lets a page talk after a tap: wake the voice on the first one
+    for (const ev of ['touchend', 'click']) document.addEventListener(ev, unlockSpeech, { once: true, capture: true });
   }
 
   applySettings() {
     const st = this.save.data.settings;
     this.audio.setVolumes(st.music, st.sfx);
+    setSpeech(st.readAloud !== false, Math.min(1, st.sfx * 1.15));
     this.stage.setReduced(!!st.reducedMotion);
     setHaptics(st.haptics);
     this.fpsEl && this.fpsEl.classList.toggle('hidden', !st.showFps);

@@ -167,7 +167,8 @@ test('every math and reading challenge is valid across levels and seeds', () => 
       seen.add(m.kind); seen.add(rd.kind);
     }
   }
-  for (const k of ['count', 'shape', 'compare', 'pattern', 'numeral', 'add', 'sub', 'letter', 'starts', 'rhyme', 'word']) assert.ok(seen.has(k), k);
+  for (const k of ['count', 'shape', 'compare', 'pattern', 'numeral', 'add', 'sub', 'flash', 'story', 'oneMore', 'seq', 'bigger', 'teen',
+    'letter', 'starts', 'pickStart', 'ends', 'rhyme', 'word', 'missing', 'sight', 'spell']) assert.ok(seen.has(k), k);
 });
 
 test('levels gate the harder challenge types', () => {

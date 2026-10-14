@@ -84,3 +84,17 @@ Found and fixed during the run:
 - GPU leaks: Room3D was never disposed; code-toy outline hulls were skipped on dispose; each Rex rebuild left a bone texture (skeleton) behind; the board's painted eyes and standees are disposed with it.
 - Board diorama: outlines were added before props were scaled, which made giant black shards; scale now goes in first.
 - Without WebGL, minions draw with the generic 2D toy (Blocko). Fine for a fallback; nobody plays that way on the iPhone.
+
+## 6. Learning pool round (2026-10-14, evening)
+Target: enough variety that Luca learns the skill instead of memorising answers, plus early spelling.
+
+| Check | Result |
+|---|---|
+| Question types | 22 (was 11): +quick look, one more/less, missing number, bigger/smaller, story problems, teen numbers; +pick-a-picture starts, ends with, missing letter, sight words, spelling |
+| Distinct questions per subject (6,000 draws, unit test) | math 281 / 493 / 970 / 821 and reading 182 / 327 / 360 / 312 at levels 2–5; level 1 is ~30 / 26 on purpose |
+| Repeats | none within the last 25 per subject (unit test, 200 questions per level) |
+| Second tries | missed skill returns after 3–5 questions in a new form, max twice (unit test) |
+| Picture words | every word has an emoji and starts/ends/rhymes as listed (unit test); ambiguous pictures removed (ladybug, panda, rabbit, gift, fork, pan, hen, van…) |
+| Unit / e2e | 54/54 · 77/77 twice (every type renders and is answered in e2e, spelling letter by letter) |
+| Perf | all scenes within 1.0x of baseline; leak check flat; index.html 972 KB (budget 1 MB) |
+| Not testable headless | the read-aloud voice (needs an iPhone check) |

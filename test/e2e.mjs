@@ -29,7 +29,7 @@ const page = await browser.newPage();
 await page.setViewport({ width: 874, height: 402, deviceScaleFactor: +(process.env.DPR || 2), isMobile: true, hasTouch: true, isLandscape: true });
 await page.evaluateOnNewDocument(() => { window.__TBB_TEST__ = true; window.__TBB_FORCE__ = { math: 'count' }; });
 const errors = [];
-page.on('pageerror', (e) => errors.push(e.message));
+page.on('pageerror', (e) => { errors.push(e.message); if (process.env.SHOW_ERRORS) console.log('PAGEERROR', e.message, e.stack); });
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 
 async function tap(sel, { wait = 0 } = {}) {
@@ -61,14 +61,20 @@ async function answerChallenge({ wrong = 0 } = {}) {
   const info = await page.evaluate(() => {
     const ch = window.__tbb.app.battle.currentChallenge;
     const opts = [...document.querySelectorAll('.opt')].map((o) => o.dataset.value);
-    return { opts, answer: String(ch.answer), kind: ch.kind };
+    return { opts, answer: String(ch.answer), kind: ch.kind, steps: ch.steps ? ch.steps.map((s) => String(s.answer)) : null };
   });
-  const wrongs = info.opts.filter((o) => o !== info.answer);
+  const first = info.steps ? info.steps[0] : info.answer;
+  const wrongs = info.opts.filter((o) => o !== first);
   for (let i = 0; i < wrong; i++) {
     await tap(`.opt[data-value="${wrongs[i]}"]`);
     await sleep(1400);
   }
-  await tap(`.opt[data-value="${info.answer}"]`);
+  // spelling is answered one letter at a time
+  for (const a of info.steps || [info.answer]) {
+    await page.waitForSelector(`.challenge.in .opt[data-value="${a}"]:not(.gone):not(.right)`, { visible: true, timeout: 5000 });
+    await tap(`.opt[data-value="${a}"]:not(.gone):not(.right)`);
+    if (info.steps) await sleep(500);
+  }
   return info;
 }
 // ---------- title ----------
@@ -219,7 +225,9 @@ await answerChallenge();
 await waitPhase('choose', 30000);
 
 // ---------- every challenge type renders ----------
-const kinds = [['math', 'add'], ['math', 'sub'], ['math', 'compare'], ['math', 'pattern'], ['math', 'numeral'], ['math', 'shape'], ['reading', 'rhyme'], ['reading', 'word'], ['reading', 'letter']];
+const kinds = [['math', 'add'], ['math', 'sub'], ['math', 'compare'], ['math', 'pattern'], ['math', 'numeral'], ['math', 'shape'],
+  ['math', 'flash'], ['math', 'story'], ['math', 'oneMore'], ['math', 'seq'], ['math', 'bigger'], ['math', 'teen'],
+  ['reading', 'rhyme'], ['reading', 'word'], ['reading', 'letter'], ['reading', 'pickStart'], ['reading', 'ends'], ['reading', 'missing'], ['reading', 'sight'], ['reading', 'spell']];
 for (const [domain, kind] of kinds) {
   await waitPhase('choose', 30000);
   await page.evaluate((domain, kind) => { window.__TBB_FORCE__ = { [domain]: kind }; const b = window.__tbb.app.battle; b.state.hero.energy = 3; b.hud.setEnergy(3); for (const k of ['hero', 'foe']) { b.state[k].hp = b.state[k].maxHp; b.hud.setHP(k, b.state[k].hp, b.state[k].maxHp, true); } }, domain, kind);
@@ -353,10 +361,10 @@ const logLen = await page.evaluate(() => window.__tbb.app.save.data.learning.log
 check('every question was logged for the report', logLen >= 10, `log ${logLen}`);
 await page.evaluate(() => document.querySelector('.rp-open').scrollIntoView());
 await tap('.rp-open', { wait: 500 });
-check('learning report opens with real numbers', await page.evaluate(() => {
+check('learning report opens with real numbers, all 22 question types listed', await page.evaluate(() => {
   const rows = [...document.querySelectorAll('.overlay.report .rp-table tbody tr')];
   const counting = rows.find((r) => r.cells[0].textContent.startsWith('Counting'));
-  return rows.length === 11 && counting && +counting.cells[1].textContent > 0;
+  return rows.length === 22 && counting && +counting.cells[1].textContent > 0;
 }));
 check('report lists the misses with what he tapped first', await page.evaluate(() => [...document.querySelectorAll('.rp-misses li')].some((li) => /tapped .* before the right one/.test(li.textContent))));
 await shot('23-learning-report');

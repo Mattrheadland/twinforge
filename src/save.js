@@ -22,6 +22,7 @@ export function defaultSave() {
       showFps: false,
       tvLook: true,
       learning: true,
+      readAloud: true, // the phone's voice reads each question (audio/speech.js)
       pixelArt: true,
       offKinds: [], // question types switched off in the learning report
     },
