@@ -87,7 +87,7 @@ export function showRunResult(ui, { win, stars, total, streak = null, best = nul
   const home = h('button', { class: 'round-btn home', 'aria-label': 'Home', html: ICON.home });
   const btns = [home];
   let busy = false;
-  const guard = (fn) => () => { if (!busy) { busy = true; fn(); } };
+  const guard = (fn) => () => { if (!busy) { busy = true; ui.app.audio.sfx('select'); fn(); } };
   onTap(home, guard(onHome), 800);
   if (win && onNext) {
     const next = h('button', { class: 'round-btn again pulse', 'aria-label': 'Next', html: ICON.play });
@@ -124,7 +124,7 @@ export function showTrophy(ui, { mode, heroDef, stars, onHome }) {
   const icon = mode === 'campaign' ? ICON.crown : ICON.trophy;
   const title = mode === 'campaign' ? 'HERO OF TOWN!' : 'CHAMPION!';
   const home = h('button', { class: 'round-btn again pulse', 'aria-label': 'Home', html: ICON.home });
-  onTap(home, onHome, 800);
+  onTap(home, () => { ui.app.audio.sfx('select'); onHome(); }, 800);
   ui.layer.appendChild(h('div', { class: 'overlay result trophy' },
     h('div', { class: 'trophy-card' },
       h('div', { class: 'trophy-icon', html: icon }),

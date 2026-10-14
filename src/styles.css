@@ -558,10 +558,10 @@ html.reduced #tv::after { animation: none; }
 .streak > span { width: 38px; height: 38px; display: block; }
 .streak .best { display: flex; align-items: center; gap: 4px; margin-left: 14px; }
 .streak .best i { width: 28px; height: 28px; display: block; }
-.overlay.result.trophy { background: radial-gradient(circle at 50% 45%, rgba(255, 201, 20, 0.35), rgba(12, 8, 30, 0.75) 60%); }
+.overlay.result.trophy { gap: 8px; background: radial-gradient(circle at 50% 45%, rgba(255, 201, 20, 0.35), rgba(12, 8, 30, 0.75) 60%); }
 .trophy-card { display: flex; flex-direction: column; align-items: center; gap: 6px; animation: pop-in 0.5s steps(6) both; }
-.trophy-icon { width: 130px; height: 130px; animation: bob 1s steps(3) infinite; filter: drop-shadow(0 0 18px rgba(255, 201, 20, 0.9)); }
-.trophy-hero { width: 124px; height: 124px; border-radius: 50%; display: grid; place-items: center; background: var(--c); border: 4px solid #FFC914; box-shadow: 0 0 0 4px var(--ink); margin-top: -26px; }
+.trophy-icon { width: 88px; height: 88px; /* the card + home button must fit the 450-unit screen */ animation: bob 1s steps(3) infinite; filter: drop-shadow(0 0 18px rgba(255, 201, 20, 0.9)); }
+.trophy-hero { width: 124px; height: 124px; border-radius: 50%; display: grid; place-items: center; background: var(--c); border: 4px solid #FFC914; box-shadow: 0 0 0 4px var(--ink); margin-top: -26px; overflow: hidden; }
 
 .gallery-screen .gal-spin { position: absolute; inset: 60px 120px 110px; touch-action: none; }
 .gal-name { position: absolute; top: 18px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; animation: drop-in 0.4s both; }

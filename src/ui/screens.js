@@ -116,7 +116,7 @@ export class UI {
       }, 300);
       cards.push(card);
     }
-    onTap(go, () => chosen && onPick(chosen === '?' ? null : chosen), 800);
+    onTap(go, () => { if (!chosen) return; this.app.audio.sfx('select'); onPick(chosen === '?' ? null : chosen); }, 800);
     const home = h('button', { class: 'corner-btn home-btn', 'aria-label': 'Home', html: ICON.home });
     onTap(home, onHome, 500);
     const scr = h('div', { class: 'screen select-screen' }, h('div', { class: 'pick-grid' }, ...cards), go, home);

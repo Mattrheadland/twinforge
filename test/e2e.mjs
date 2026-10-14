@@ -359,6 +359,30 @@ await shot('26-board-cleared');
 await tap('.home-btn', { wait: 600 });
 check('modes shows the campaign in progress', !!(await page.$('.mode-campaign .mode-badge')));
 check('leaving the board drops the diorama scene', await page.evaluate(() => !window.__tbb.app.stage.board));
+// races a child finds: tapping the FIST the moment it pops up after a roll (the auto-fight
+// follows 650 ms later), and tapping Home while the die is still rolling onto a fight
+await page.evaluate(() => {
+  const a = window.__tbb.app;
+  window.__rnd = Math.random; Math.random = () => 0; // the die shows 1: space 1 is a creature fight
+  a._starts = 0; const sb = a.startBattle.bind(a); a.startBattle = (...x) => { a._starts++; return sb(...x); };
+  const c = a.save.data.campaign; c.pos = 0; c.cleared = [0]; a.goBoard();
+});
+await sleep(800);
+await tap('.board-die');
+await page.waitForSelector('.board-fight:not(.hidden)', { visible: true, timeout: 8000 });
+const fistBox = await (await page.$('.board-fight')).boundingBox();
+await page.touchscreen.tap(fistBox.x + fistBox.width / 2, fistBox.y + fistBox.height / 2);
+await waitPhase('choose', 20000);
+await sleep(1500);
+check('tapping FIGHT as it pops up starts one fight, not two', await page.evaluate(() => window.__tbb.app._starts === 1), `starts=${await page.evaluate(() => window.__tbb.app._starts)}`);
+await page.evaluate(() => { const a = window.__tbb.app; a.endBattle(); a.save.data.battle = null; const c = a.save.data.campaign; c.pos = 0; c.cleared = [0]; a._starts = 0; a.goBoard(); });
+await sleep(800);
+await tap('.board-die');
+await sleep(150);
+await tap('.board-screen .home-btn');
+await sleep(3000);
+check('Home while the die rolls onto a fight stays home (no surprise battle)', await page.evaluate(() => window.__tbb.app._starts === 0 && !!document.querySelector('.modes-screen')));
+await page.evaluate(() => { Math.random = window.__rnd; delete window.__tbb.app.startBattle; });
 await tap('.home-btn', { wait: 600 });
 await tap('.big-play', { wait: 700 });
 await tap('.mode-gallery', { wait: 900 });

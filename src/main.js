@@ -195,6 +195,7 @@ class App {
   goModes() {
     this.endBattle();
     this.leaveGallery();
+    this.audio.play('title'); // menu music again after a battle (no-op if it's already on)
     this.stage.setArena('bedroom');
     this.stage.setFighters(null, null);
     this.stage.dim = 0.3;
@@ -259,6 +260,7 @@ class App {
 
   showRunMap() {
     const run = this.save.data.run;
+    this.audio.play('title');
     this.stage.setFighters(null, null);
     this.stage.dim = 0.35;
     showLadder(this.ui, {
@@ -283,6 +285,7 @@ class App {
     this.leaveGallery();
     const c = this.save.data.campaign;
     const board = buildBoard(c.heroId);
+    this.audio.play('title'); // the board had no music after the first fight's victory jingle
     this.stage.setFighters(null, null);
     this.stage.dim = this.stage.is3D ? 0 : 0.6;
     this.boardView = showBoard(this.ui, {
@@ -303,7 +306,8 @@ class App {
         const ev = await api.play(roll, res);
         if (ev === 'fight') {
           await new Promise((r) => setTimeout(r, 650));
-          this.boardFight();
+          // only if he's still looking at this board (not Home, not already tapped FIGHT)
+          if (this.boardView === api && this.ui.layer.querySelector('.board-screen')) this.boardFight();
         }
       },
       onFight: () => this.boardFight(),
@@ -312,12 +316,19 @@ class App {
   }
 
   async boardFight() {
-    const c = this.save.data.campaign;
-    const sp = buildBoard(c.heroId)[c.pos];
-    const stop = stopFor(sp);
-    this.audio.sfx('powerUp');
-    await this.ui.showVS(CHARACTERS[c.heroId], CHARACTERS[stop.foeId], { boss: stop.boss });
-    this.startBattle(c.heroId, stop.foeId, null, { ...stop, kind: 'campaign', at: c.pos });
+    // one fight at a time: the FIST tap and the auto-fight after a roll can land together
+    if (this._boardFighting) return;
+    this._boardFighting = true;
+    try {
+      const c = this.save.data.campaign;
+      const sp = buildBoard(c.heroId)[c.pos];
+      const stop = stopFor(sp);
+      this.audio.sfx('powerUp');
+      await this.ui.showVS(CHARACTERS[c.heroId], CHARACTERS[stop.foeId], { boss: stop.boss });
+      this.startBattle(c.heroId, stop.foeId, null, { ...stop, kind: 'campaign', at: c.pos });
+    } finally {
+      this._boardFighting = false;
+    }
   }
 
   // Called by the battle when it's over.
