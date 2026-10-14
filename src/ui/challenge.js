@@ -6,6 +6,7 @@ import { h, onTap } from './dom.js';
 import { ICON } from './icons.js';
 import { qualityFor, PICS, wordLabel } from '../logic/challenges.js';
 import { say, speechOn } from '../audio/speech.js';
+import { answerGate } from './answer-gate.js';
 
 const INK = '#14111A';
 const ITEM_SVG = {
@@ -225,6 +226,11 @@ export class ChallengeUI {
         h('div', { class: 'ch-body' }, body),
         optsBox);
       const root = h('div', { class: 'challenge' }, card);
+      // the card covers the whole screen, so every tap while it is up lands here
+      // first (capture) and the gate sees the whole burst, not just answer taps
+      const gate = answerGate(t0);
+      let mayAnswer = false;
+      root.addEventListener('pointerdown', () => { mayAnswer = gate.down(performance.now()); }, true);
       this.layer.appendChild(root);
       requestAnimationFrame(() => root.classList.add('in'));
       this.audio.sfx('pop');
@@ -281,8 +287,8 @@ export class ChallengeUI {
       };
 
       const choose = async (o, b) => {
-        // taps that started on the move button (kids hammer it) don't answer the question
-        if (busy || b.classList.contains('gone') || performance.now() - t0 < 800) return; // answers pop in first
+        // answers pop in first, and hammering that started on the move button never answers (ui/answer-gate.js)
+        if (busy || b.classList.contains('gone') || !mayAnswer) return;
         if (firstMs == null) firstMs = performance.now() - t0;
         const step = steps[si];
         if (String(o) === String(step.answer)) {

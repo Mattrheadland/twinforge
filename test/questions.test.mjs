@@ -35,6 +35,31 @@ test('every new type is valid at every level it appears, across many seeds', () 
   }
 });
 
+test('any type at any level (as forced previews and reviews ask) and the picker always give a full card', () => {
+  // a card with a missing or short answer row would leave the battle waiting on a question that never shows
+  const full = (ch, what) => {
+    for (const st of ch.steps || [ch]) {
+      assert.equal(st.options.length, 3, what);
+      assert.equal(st.options.filter((o) => String(o) === String(st.answer)).length, 1, what);
+    }
+  };
+  for (const [kind, { domain }] of Object.entries(KINDS)) {
+    const make = domain === 'math' ? makeMath : makeReading;
+    for (let lv = 1; lv <= 5; lv++) {
+      const rng = new Rng(lv * 977 + kind.length);
+      for (let i = 0; i < 300; i++) full(make(lv, rng, kind), `${kind} L${lv}`);
+    }
+  }
+  for (const domain of ['math', 'reading']) for (let lv = 1; lv <= 5; lv++) {
+    const rng = new Rng(lv * 31), mem = defaultMem();
+    for (let i = 0; i < 400; i++) {
+      const ch = pickQuestion(domain, lv, rng, { mem });
+      full(ch, `${domain} L${lv} ${ch.kind}`);
+      rememberAnswer(mem, ch, i % 3 ? 'indep' : 'support');
+    }
+  }
+});
+
 test('the pool is big: hundreds of different questions per subject at each level', () => {
   const distinct = (make, lv) => { const r = new Rng(lv * 7); const s = new Set(); for (let i = 0; i < 6000; i++) s.add(keyOf(make(lv, r))); return s.size; };
   for (let lv = 2; lv <= 5; lv++) {

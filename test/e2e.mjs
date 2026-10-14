@@ -32,32 +32,64 @@ const errors = [];
 page.on('pageerror', (e) => { errors.push(e.message); if (process.env.SHOW_ERRORS) console.log('PAGEERROR', e.message, e.stack); });
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 
-async function tap(sel, { wait = 0 } = {}) {
-  const el = await page.waitForSelector(sel, { visible: true, timeout: 15000 });
-  // wait for slide-in animations to settle so the tap lands where the button ends up
-  let b = await el.boundingBox();
-  for (let i = 0; i < 20; i++) {
-    await sleep(50);
-    const nb = await el.boundingBox();
-    if (nb && b && Math.abs(nb.x - b.x) < 0.5 && Math.abs(nb.y - b.y) < 0.5) { b = nb; break; }
-    b = nb;
+// Headless Chromium renders the 3D stage in software. On a busy machine it can
+// drop to 2–5 frames a second, and two things follow:
+//  - CSS slide-ins only move when a frame is drawn, so sampling a button's box on
+//    the wall clock can see a still-offscreen button as "settled";
+//  - the game clock is capped at 50 ms a frame (render/stage.js), so turns take
+//    several times longer than wall-clock timeouts expect.
+// So taps wait across real frames until the finger point lands on the target, and
+// waits count game time as well as wall time (with a hard wall-clock cap).
+const frame = () => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r())));
+const gameNow = () => page.evaluate(() => window.__tbb?.app?.stage?.clock?.time ?? 0);
+async function within(ms, test, { poll = 60, cap = 10 } = {}) {
+  const w0 = Date.now(), g0 = await gameNow();
+  for (;;) {
+    const v = await test();
+    if (v) return v;
+    const wall = Date.now() - w0;
+    if (wall > ms * cap || (wall > ms && (await gameNow()) - g0 > ms)) return null;
+    if (poll) await sleep(poll);
   }
-  await page.touchscreen.tap(b.x + b.width / 2, b.y + b.height / 2);
+}
+async function tap(sel, { wait = 0 } = {}) {
+  let el = await page.waitForSelector(sel, { visible: true, timeout: 15000 });
+  // the target must hold still between two drawn frames (pulsing/wiggling buttons
+  // move a little; slide-ins move a lot) and the tap point must really hit it
+  let last = null, at = null;
+  const ok = await within(15000, async () => {
+    await frame();
+    let r = await el.evaluate((n) => {
+      if (!n.isConnected) return 'gone';
+      const b = n.getBoundingClientRect();
+      const x = b.x + b.width / 2, y = b.y + b.height / 2;
+      const hitEl = document.elementFromPoint(x, y);
+      return { x, y, size: Math.min(b.width, b.height), hit: !!hitEl && n.contains(hitEl), at: hitEl ? `${hitEl.tagName}.${hitEl.getAttribute('class') || ''}` : null };
+    });
+    if (r === 'gone') { el = await page.waitForSelector(sel, { visible: true, timeout: 15000 }); r = null; }
+    const still = r && last && Math.hypot(r.x - last.x, r.y - last.y) < Math.max(1, r.size * 0.1);
+    last = r;
+    return still && r.hit ? (at = r) : null;
+  }, { poll: 0 });
+  if (!ok) throw new Error(`tap: ${sel} never settled under the finger (${JSON.stringify(last)})`);
+  await page.touchscreen.tap(at.x, at.y);
   if (wait) await sleep(wait);
 }
 const phase = () => page.evaluate(() => window.__tbb.phase);
 async function waitPhase(p, timeout = 20000) {
-  const t0 = Date.now();
-  while (Date.now() - t0 < timeout) {
-    if ((await phase()) === p) return true;
-    await sleep(60);
-  }
-  return false;
+  const want = [].concat(p);
+  return !!(await within(timeout, async () => want.includes(await phase())));
 }
+const waitSel = async (sel, timeout) => {
+  if (!(await within(timeout, () => page.$(sel)))) throw new Error(`waiting for ${sel} failed (${timeout} ms of game and wall time)`);
+};
 const shot = (n) => page.screenshot({ path: `${SHOTS}/${n}.png` });
+// ChallengeUI ignores answer taps for the first 800 ms a card is up (taps that
+// started on the move button); the card is only visible after that clock starts.
+const ANSWER_LOCK = 900;
 async function answerChallenge({ wrong = 0 } = {}) {
   await page.waitForSelector('.challenge.in .opt', { visible: true });
-  await sleep(700);
+  await sleep(ANSWER_LOCK);
   const info = await page.evaluate(() => {
     const ch = window.__tbb.app.battle.currentChallenge;
     const opts = [...document.querySelectorAll('.opt')].map((o) => o.dataset.value);
@@ -117,16 +149,23 @@ check('tutorial hand points at attack on first battle', await page.$eval('.tut-h
 await tap('.move-special', { wait: 400 });
 check('locked special does not start a challenge', !(await page.$('.challenge')) && (await phase()) === 'choose');
 
-// rapid repeated taps: only one challenge
+// rapid repeated taps: only one challenge, and the hammering answers nothing (the
+// card's right-hand answer sits where the power button was). The six taps go out
+// back to back without waiting for each to be handled, so they stay a fast burst
+// even when the machine is busy (awaited taps can end up a second apart).
 const atk = await (await page.$('.move-power')).boundingBox();
-for (let i = 0; i < 6; i++) await page.touchscreen.tap(atk.x + atk.width / 2, atk.y + atk.height / 2);
+const cdp = await page.createCDPSession();
+const pt = { x: Math.round(atk.x + atk.width / 2), y: Math.round(atk.y + atk.height / 2), radiusX: 0.5, radiusY: 0.5, force: 0.5 };
+await Promise.all(Array.from({ length: 6 }, (_, id) => ['touchStart', 'touchEnd'].map((type) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: [{ ...pt, id }] }))).flat());
+await cdp.detach();
 await sleep(500);
 check('six fast taps open exactly one challenge', (await page.$$('.challenge')).length === 1);
 await shot('06-count-challenge');
 
 // wrong -> hint, wrong -> support, then correct
 await page.waitForSelector('.challenge.in .opt', { visible: true });
-await sleep(700);
+await sleep(ANSWER_LOCK);
+check('hammering the move button did not answer the question', await page.evaluate(() => window.__tbb.phase === 'challenge' && document.querySelectorAll('.challenge .opt').length === 3 && !document.querySelector('.challenge .opt.gone, .challenge .opt.right, .challenge .opt.nope')));
 const info1 = await page.evaluate(() => ({ n: document.querySelectorAll('.cnt-item').length, opts: [...document.querySelectorAll('.opt')].map((o) => o.dataset.value) }));
 const wrong1 = info1.opts.filter((o) => o !== String(info1.n));
 const foeHp0 = await page.evaluate(() => window.__tbb.app.battle.state.foe.hp);
@@ -184,18 +223,13 @@ while (turns++ < 30) {
     await answerChallenge();
   }
   await sleep(300);
-  const t0 = Date.now();
-  while (Date.now() - t0 < 25000) {
-    const p = await phase();
-    if (p === 'choose' || p === 'end') break;
-    await sleep(80);
-  }
+  await waitPhase(['choose', 'end'], 25000);
 }
 check('used a special', specials > 0, `specials=${specials}`);
 check('saw enemy telegraph and answered it (defend or special)', sawCharge && defends + specials > 0, `defends=${defends}`);
 const endState = await page.evaluate(() => window.__tbb.app.battle.state);
 check('battle won', endState.result === 'win', `hero ${endState.hero.hp}/${endState.hero.maxHp}`);
-await page.waitForSelector('.overlay.result', { timeout: 15000 });
+await waitSel('.overlay.result', 15000);
 await sleep(2200);
 await shot('12-victory');
 const prog = await page.evaluate(() => JSON.parse(localStorage.getItem('tbb.save')));
@@ -207,7 +241,7 @@ await tap('.round-btn.again');
 check('play again starts a fresh battle', await waitPhase('choose'));
 await page.evaluate(() => { const b = window.__tbb.app.battle; b.state.hero.hp = 1; b.hud.setHP('hero', 1, b.state.hero.maxHp, true); });
 await tap('.move-quick');
-await page.waitForSelector('.overlay.result', { timeout: 30000 });
+await waitSel('.overlay.result', 30000);
 await sleep(1500);
 await shot('13-nap');
 check('losing shows friendly nap screen with retry', await page.$('.result-card.nap') && await page.$('.round-btn.again.pulse'));
@@ -229,7 +263,7 @@ const kinds = [['math', 'add'], ['math', 'sub'], ['math', 'compare'], ['math', '
   ['math', 'flash'], ['math', 'story'], ['math', 'oneMore'], ['math', 'seq'], ['math', 'bigger'], ['math', 'teen'],
   ['reading', 'rhyme'], ['reading', 'word'], ['reading', 'letter'], ['reading', 'pickStart'], ['reading', 'ends'], ['reading', 'missing'], ['reading', 'sight'], ['reading', 'spell']];
 for (const [domain, kind] of kinds) {
-  await waitPhase('choose', 30000);
+  if (!(await waitPhase('choose', 30000))) throw new Error(`no player turn before the ${kind} question (phase ${await phase()})`);
   await page.evaluate((domain, kind) => { window.__TBB_FORCE__ = { [domain]: kind }; const b = window.__tbb.app.battle; b.state.hero.energy = 3; b.hud.setEnergy(3); for (const k of ['hero', 'foe']) { b.state[k].hp = b.state[k].maxHp; b.hud.setHP(k, b.state[k].hp, b.state[k].maxHp, true); } }, domain, kind);
   await tap(domain === 'math' ? '.move-power' : '.move-special');
   await page.waitForSelector('.challenge.in .opt', { visible: true });
@@ -269,7 +303,7 @@ check('tournament battle starts on the first foe\'s home turf', await waitPhase(
 await shot('19-story-battle');
 await page.evaluate(() => { const a = window.__tbb.app; a.save.data.settings.learning = false; const b = a.battle; b.state.foe.hp = 1; b.hud.setHP('foe', 1, b.state.foe.maxHp, true); });
 await tap('.move-power');
-await page.waitForSelector('.overlay.result', { timeout: 30000 });
+await waitSel('.overlay.result', 30000);
 await page.evaluate(() => { window.__tbb.app.save.data.settings.learning = true; });
 await sleep(1500);
 check('tournament win offers NEXT and saves progress', (await page.$('.round-btn.again.pulse')) && (await page.evaluate(() => window.__tbb.app.save.data.run.step === 1)));
@@ -316,7 +350,7 @@ check('the creature fight is on its world\'s arena', await page.evaluate(() => {
 await shot('25-minion-fight');
 await page.evaluate(() => { const a = window.__tbb.app; a.save.data.settings.learning = false; const b = a.battle; b.state.foe.hp = 1; b.hud.setHP('foe', 1, b.state.foe.maxHp, true); });
 await tap('.move-power');
-await page.waitForSelector('.overlay.result', { timeout: 30000 });
+await waitSel('.overlay.result', 30000);
 await page.evaluate(() => { window.__tbb.app.save.data.settings.learning = true; });
 await sleep(1500);
 await tap('.round-btn.again', { wait: 1200 });
