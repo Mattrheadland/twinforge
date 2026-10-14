@@ -57,7 +57,16 @@ export const CHARACTERS = {
       { slot: 'special', id: 'hauntedForest', name: 'Haunted Forest', icon: 'forest', color: '#FF8A1F', power: 1, effect: 'dizzy', hits: 3 },
     ],
     foePattern: ['quick', 'charge', 'slam', 'power'],
-    art: { kind: 'procedural', draw: 'tree' },
+    art: {
+      kind: 'procedural', draw: 'tree', model: 'spooky-tree',
+      // imported model (Hunyuan 3D, static): the two big branches swing as arms; no head joint, since any cut
+      // would split the carved glowing face (it stays painted in the texture)
+      armScale: 0.6,
+      joints: {
+        armF: { pivot: [0, 108, 26], box: [[-30, 92, 27], [30, 155, 70]] },
+        armB: { pivot: [0, 95, -24], box: [[-30, 45, -70], [30, 115, -24]] },
+      },
+    },
   },
   rockfish: {
     id: 'rockfish',
@@ -73,7 +82,20 @@ export const CHARACTERS = {
       { slot: 'special', id: 'tidalRage', name: 'Tidal Rage', icon: 'wave', color: '#33AFE4', power: 1.2, hits: 4 },
     ],
     foePattern: ['power', 'quick', 'charge', 'slam'],
-    art: { kind: 'procedural', draw: 'rockfish' },
+    art: {
+      kind: 'procedural', draw: 'rockfish', model: 'ragin-rockfish',
+      // imported model (Hunyuan 3D, static): head and jaw between the shoulder cannons, armored arms, tail fin
+      anchors: { muzzle: [34, 172, 0] },
+      armScale: 0.35, // his forearms are fused to his hips in the mesh; small swings keep that seam from stretching
+      face: { pair: true, pos: [44, 138, 15], yaw: 1.0, size: [14, 14], style: { iris: '#E8A33A', lid: '#A8B0B4', brow: '#14111A', size: 0.34 } },
+      joints: {
+        head: { pivot: [10, 108, 0], box: [[-5, 100, -21], [72, 176, 21]] },
+        jaw: { pivot: [20, 128, 0], box: [[24, 104, -20], [72, 127, 20]] },
+        armF: { pivot: [8, 115, 38], box: [[-20, 48, 39], [42, 122, 72]] },
+        armB: { pivot: [8, 115, -38], box: [[-20, 48, -72], [42, 122, -39]] },
+        tail: { pivot: [-22, 60, 0], box: [[-80, 0, -22], [-22, 76, 22]] },
+      },
+    },
   },
   arthur: {
     id: 'arthur',
@@ -89,7 +111,16 @@ export const CHARACTERS = {
       { slot: 'special', id: 'swordInStone', name: 'Sword in the Stone', icon: 'stone', color: '#FFC914', power: 1.1, effect: 'shield' },
     ],
     foePattern: ['quick', 'quick', 'charge', 'slam'],
-    art: { kind: 'procedural', draw: 'arthur' },
+    art: {
+      kind: 'procedural', draw: 'arthur', model: 'young-arthur',
+      // imported model (Hunyuan 3D, static): head from the chin up, arms from the shoulders; the cape and sword stay on the body
+      face: { pos: [26, 153, 0], size: [30, 12], style: { iris: '#2F7FD0', lid: '#F2C29B', brow: '#C98A2B', size: 0.36 } },
+      joints: {
+        head: { pivot: [2, 132, 0], box: [[-45, 134, -45], [45, 200, 45]] },
+        armF: { pivot: [2, 115, 24], box: [[-14, 52, 22], [26, 121, 50]] },
+        armB: { pivot: [2, 115, -24], box: [[-14, 52, -50], [26, 121, -22]] },
+      },
+    },
   },
   witch: {
     id: 'witch',

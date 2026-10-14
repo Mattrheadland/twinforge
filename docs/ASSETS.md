@@ -50,5 +50,7 @@ Imports are simplified to about 6,000 triangles (`--tris N` to change); `npm run
 | id | Character | Status |
 |---|---|---|
 | battle-rex | rex | in game (Hunyuan 3D, 6k triangles, toy joints, swappable eyes) |
-| spooky-tree, ragin-rockfish, young-arthur | tree, rockfish, arthur | after Rex |
-| remy-roo, billy-bass | roo, bass | after Rex; code-built stand-ins in game now |
+| young-arthur | arthur | in game (443 KB, head + arm joints, swappable eyes) |
+| ragin-rockfish | rockfish | in game (559 KB, head, jaw, arms, tail, side eyes; armScale 0.35) |
+| spooky-tree | tree | in game (365 KB, branch arms; carved face stays painted) |
+| remy-roo, billy-bass | roo, bass | generating on Hunyuan; code-built stand-ins in game now |

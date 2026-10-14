@@ -24,7 +24,7 @@
 ## In progress: option A (characters as real 3D models)
 - **Loader shipped** (`src/render3d/models.js`): GLBs in `assets/models/<id>/` get the toon shader and ink outlines, are scaled and turned to face the foe, play clips matched to idle / attack / hit / guard / special / win / tired, pose the bones from the old pose values when a clip is missing, keep the head / center / muzzle anchors, and fall back to the code-built toy if the file is missing or broken. Tested with a stand-in rigged model.
 - **Toy joints**: static models (what free image-to-3D tools export) get head / jaw / arm / tail bones cut by region (`art.joints`), so no rigging tool is needed.
-- **Battle Rex**: in game as a real 3D model (Hunyuan 3D, free). Spooky Tree, Ragin' Rockfish and Young Arthur are generating; Remy Roo and Billy Bass are next (Hunyuan runs 3 jobs at a time). Claude drives Hunyuan in Matt's Chrome and pulls the GLBs from his Downloads folder.
+- **Real 3D models in game**: Battle Rex, Young Arthur, Ragin' Rockfish and Spooky Tree (Hunyuan 3D, free). Remy Roo and Billy Bass are generating (Hunyuan runs 3 jobs at a time). Claude drives Hunyuan in Matt's Chrome and pulls the GLBs from his Downloads folder.
 - **Arenas**: Castle, Fishing Pier, Haunted Forest and Bog Shack are in; each opponent fights on its home turf (`src/data/arenas.js`). Bedroom stays for Rex, Remy and the title screen.
 - **Effects art**: Astra's effects sheet is in as painted sprites on hits, shots, splashes, heals, dizzy and power-ups.
 - **Game modes** (`src/game/modes.js`, `src/game/campaign.js`, `src/ui/modes-ui.js`, `src/ui/board-ui.js`, `src/render3d/board3d.js`): Play opens four cards.
@@ -41,6 +41,6 @@
   - The select screen is now 4 × 2.
 
 ## Next
-1. Import the other five sheet characters as their Hunyuan models finish.
+1. Import Remy Roo and Billy Bass when their Hunyuan jobs finish.
 2. Send Astra the three requests in ASTRA_REQUESTS.md; then Wanda and Czernobog go through Hunyuan too.
 3. Matt plays the new modes with Luca, then sends the learning report ("Copy as text") plus what felt too hard, too long or confusing, and any moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Czernobog.

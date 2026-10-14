@@ -54,8 +54,8 @@ If you can only make one image per reply, make IMAGE 1 now, then IMAGE 2 and IMA
 
 ## Status (2026-10-14)
 - Battle Rex: imported (6k triangles, 469 KB), toy joints and side-eye decals set.
-- Spooky Tree, Ragin' Rockfish, Young Arthur: generated on Hunyuan, waiting to be downloaded from Matt's PC.
-- Remy Roo: views uploaded, waiting for a free job slot. Billy Bass: not started.
+- Young Arthur, Ragin' Rockfish, Spooky Tree: imported and in game (443 / 559 / 365 KB). Arthur has swappable eyes; Rockfish has side eyes, a jaw and a tail, and keeps his arm swings small (armScale 0.35) because his forearms are fused to his hips in the mesh; Tree has branch arms only (a head cut would split his carved face).
+- Remy Roo and Billy Bass: generating on Hunyuan (queued 2026-10-14 afternoon). Remy has two jobs: the first went in with his sides flipped; use the second (Left = his mirrored side).
 - Wanda Wickwhistle, Czernobog: waiting on Astra's sheets (`ASTRA_REQUESTS.md`).
 - Wild creatures (campaign minions) don't go through this pipeline; they're code-built on purpose (STYLE_GUIDE → Wild creatures).
 
@@ -68,7 +68,7 @@ Turnaround sheet → image-to-3D → `assets/models/<id>/<id>.glb` → loaded by
 **Tool: Hunyuan 3D** (Tencent, 3d.hunyuanglobal.com; checked Oct 2026). Free: 20 generations a day, at most 3 jobs running at once, up to 8 views of the same toy (Front, Back, Left, Right, Left45, Right45, Top, Bottom), GLB export. It doesn't rig, and doesn't need to: the game gives static models **toy joints** (below). Paid tools (Meshy, Tripo) aren't needed; their free tiers lock downloads or rigged exports.
 
 1. Split the sheet into clean views: `python3 scripts/split-turnaround.py <id>` → `assets/characters/<id>/views/` (front, side, side-mirrored, back, three-quarter; background removed).
-2. Hunyuan 3D → **Image to 3D → multi-view**. Slots: front → Front, back → Back, side → Left, side-mirrored → Right; three-quarter → Left45 if there's room. Upload one view at a time, about 10 s apart, on a white background (transparent or rushed uploads give "Detection failed"; just retry). "The current concurrency exceeds the limit" means 3 jobs are already running: wait for one to finish.
+2. Hunyuan 3D → **Image to 3D → multi-view**. Slots: front → Front, back → Back, then by which way the toy faces in the side view. **Hunyuan's Left slot wants the toy facing right in the picture.** Most sheets face right (Rex, Rockfish, Arthur, Billy): side → Left, side-mirrored → Right, three-quarter → Left45. Remy's sheet faces left, so his flip: side-mirrored → Left, side → Right, three-quarter → Right45. A side view in the wrong slot usually fails detection every time. Claude in Chrome can't upload files from Matt's PC directly; Claude has the Hunyuan page fetch the view straight from the public repo (raw.githubusercontent.com), flatten it onto white and drop it into the slot's file input. Upload one view at a time, about 10 s apart, on a white background (transparent or rushed uploads give "Detection failed"; just retry). "The current concurrency exceeds the limit" means 3 jobs are already running: wait for one to finish.
 3. Low / smart topology and the lowest face count if offered; texture on. Regenerate until the silhouette matches the sheet (cannon, arms, tail all there).
 4. Download **GLB** and send it to Claude.
 5. In the repo: `npm run model:import -- <id> <file.glb>` (simplifies to about 6,000 triangles, shrinks textures to 1024 px JPEG, strips compression, merges extra clip files if a tool ever gives them) → `assets/models/<id>/<id>.glb`.

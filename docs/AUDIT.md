@@ -98,3 +98,16 @@ Target: enough variety that Luca learns the skill instead of memorising answers,
 | Unit / e2e | 54/54 · 77/77 twice (every type renders and is answered in e2e, spelling letter by letter) |
 | Perf | all scenes within 1.0x of baseline; leak check flat; index.html 972 KB (budget 1 MB) |
 | Not testable headless | the read-aloud voice (needs an iPhone check) |
+
+## 7. Models round (2026-10-14, afternoon)
+Young Arthur, Ragin' Rockfish and Spooky Tree imported from Hunyuan and given toy joints.
+
+| Check | Result |
+|---|---|
+| Unit / e2e | 54/54 · 77/77 |
+| Model check | all three in every pose and on the foe side, no console errors; Rockfish's arm seam fixed with armScale 0.35 |
+| Sizes | young-arthur 443 KB · ragin-rockfish 559 KB · spooky-tree 365 KB (budget 600) · index.html 973 KB |
+| Leak check | geometries 164 → 162 → 164, textures 32 → 40 → 40 (flat after lap 1) |
+| Median frame (headless, 4x throttle) | bedroom 100 ms, castle 83 ms, forest giant 83 ms, bog minion 67 ms, board 67 ms |
+
+The bedroom "baseline" is Tree vs Arthur, which are now both models, so the 1.5x budget no longer compares against code toys. Headless software GL draws triangles on the CPU; the board scene (no new models) also moved from 50 to 67 ms on this run, so part of the change is the machine. The iPhone steps in §4 decide this one.

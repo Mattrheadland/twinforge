@@ -42,16 +42,15 @@ Commands: `npm test` (unit), `npm run build`, `npm run e2e` (Puppeteer, ~5 min),
 - **Roster (8)**: Battle Rex, Spooky Tree, Ragin' Rockfish, Young Arthur, Wanda Wickwhistle, Czernobog, Remy Roo (family dog; special Power Paws), Billy Bass (wall fish; power Take Me to the River).
 - **Modes**: Campaign (board game over five island worlds, wild creatures, a boss per world, giant Czernobog at the end), Tournament (every toy on its home turf, then a giant boss), Arcade (pick toy, opponent or Surprise, arena or Surprise), Toy Box.
 - **Wild creatures (9)**: Rexlet, Spooky Sprout, Rock Minnow, Little Squire, Bog Frog, Sneaky Squirrel, Bubble Crab, Shadow Imp and Jitterbones (Czernobog's crew, from Matt's mountaintop reference).
-- **3D models**: only Battle Rex is a real model (Hunyuan, 6k triangles, 469 KB). Everyone else is code-built until their GLB arrives.
+- **3D models**: Battle Rex, Young Arthur, Ragin' Rockfish and Spooky Tree are real models (Hunyuan, 6k triangles each, 365–559 KB). Remy Roo and Billy Bass are generating; Wanda and Czernobog wait on Astra's sheets. Everyone without a GLB uses the code-built toy.
 - **Learning**: 22 question types (13 math, 9 reading incl. spelling and sight words) over 5 auto levels, about 120 picture words, 26 rhyme families, 41 read-a-word words, 44 sight words. Hundreds of distinct questions per subject from level 2 up (unit-tested). The last 25 questions per subject never repeat; a missed skill comes back 3–5 questions later in a new form, up to twice. The phone reads each question aloud. Learning report and question preview cover every type, and the report counts "second tries".
 - **Tests**: 54 unit, 77 e2e, all passing. Perf and leak checks pass (results in `docs/AUDIT.md`).
 - **Conflicts settled when merging the two chats**: the name is Czernobog everywhere (not Gloomwing); the mode list is Campaign / Tournament / Arcade / Toy Box (the older Story / endless Arcade / Quick Fight list is gone).
 
 ## Next up (needs Matt's PC online with Chrome + the Claude extension)
-1. **Pull the finished Hunyuan models.** Open the Hunyuan tabs in Matt's Chrome (3d.hunyuanglobal.com, free, 20 a day, 3 jobs at once). Download Spooky Tree, Ragin' Rockfish and Young Arthur GLBs. Stage them from `C:\Users\mattr\Downloads` (Matt approved access), then `npm run model:import <id> <file>`.
-2. For each: set `art.model`, `art.joints` (head / jaw / arms / tail boxes), `art.face` and anchors in `characters.js`, the way Battle Rex is set up. Check with `CHAR=<id> npm run model:check`, then in game.
-3. **Remy Roo**: views are already uploaded in a Hunyuan tab; press Generate once a slot is free. **Billy Bass**: not started. Upload views one at a time about 10 s apart on white backgrounds ("Detection failed" means retry).
-4. Import Remy and Billy the same way. Test, commit, deploy after each batch.
+1. **Pull Remy Roo and Billy Bass from Hunyuan.** hy3d.tencent.ai → Assets (free, 20 a day, 3 jobs at once). Remy has two jobs; use the **newer** one (the first had his sides flipped; see ASSET_PIPELINE §4 on slot orientation). Download the GLBs into `C:\Users\mattr\Downloads`, stage them, then `npm run model:import <id> <file>`.
+2. Set `art.joints` (and `art.face` / anchors where useful) in `characters.js`. Plan the boxes from side / front / top views in rig units, then check with `node test/model-check.mjs <char> scratch/model/<char>` and look at every pose. Watch for parts fused together in the mesh (Rockfish's forearms are fused to his hips): a swing stretches the seam, so cut elsewhere or lower `armScale`.
+3. Test, commit, deploy.
 5. **Astra**: send the three requests in `docs/ASTRA_REQUESTS.md` (Bog Shack floor, Wanda pack, Czernobog pack). When the sheets come back, split them (`scripts/split-turnaround.py`) and run them through Hunyuan too.
 6. Matt plays with Luca and sends the learning report ("Copy as text") plus anything too hard, too long or confusing; tune from that. On the iPhone, check that the voice reads the questions (it needs one tap first) and that the emoji pictures read the way the answers expect.
 7. iPhone performance pass (manual steps in `docs/AUDIT.md` §4).
