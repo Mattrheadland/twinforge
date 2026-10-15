@@ -60,6 +60,7 @@ export const CHARACTERS = {
     ],
     foePattern: ['quick', 'charge', 'slam', 'power'],
     art: {
+      portrait: { y: -6 }, // HUD head frame nudge (rig units): x, y, r
       kind: 'procedural', draw: 'tree', model: 'spooky-tree',
       // imported model (Hunyuan 3D, static): the two big branches swing as arms; no head joint, since any cut
       // would split the carved glowing face (it stays painted in the texture)
@@ -85,6 +86,7 @@ export const CHARACTERS = {
     ],
     foePattern: ['power', 'quick', 'charge', 'slam'],
     art: {
+      portrait: { y: -20, r: 64 }, // HUD head frame nudge (rig units): x, y, r
       kind: 'procedural', draw: 'rockfish', model: 'ragin-rockfish',
       // imported model (Hunyuan 3D, static): head and jaw between the shoulder cannons, armored arms, tail fin
       anchors: { muzzle: [34, 172, 0] },
@@ -139,6 +141,7 @@ export const CHARACTERS = {
     ],
     foePattern: ['quick', 'power', 'charge', 'slam'],
     art: {
+      portrait: { y: 6, r: 38 }, // HUD head frame nudge (rig units): x, y, r
       kind: 'procedural', draw: 'witch', model: 'wanda-wickwhistle',
       // imported model (Hunyuan 3D, static): head from the collar up (hair tower + hat), broom arm on the
       // camera side, spark hand on the far side; the painted wicked face stays
@@ -166,6 +169,7 @@ export const CHARACTERS = {
     ],
     foePattern: ['power', 'charge', 'slam', 'quick'],
     art: {
+      portrait: { y: -6, r: 62 }, // HUD head frame nudge (rig units): x, y, r
       kind: 'procedural', draw: 'nightwing', model: 'czernobog',
       // imported model (Hunyuan 3D, static): the giant demon god. Head from the chin up (horns included),
       // arms from the shoulders, wings behind the back sway as the tail; the painted glowing eyes stay.
@@ -224,6 +228,7 @@ export const CHARACTERS = {
     ],
     foePattern: ['power', 'quick', 'charge', 'slam'],
     art: {
+      portrait: { x: 40, y: -40, r: 64 }, // HUD head frame nudge (rig units): x, y, r
       kind: 'procedural', draw: 'bass', model: 'billy-bass', height: 150, yaw: 0.45, // turned toward his foe: a long fish reads best side-on
       // imported model (Hunyuan 3D, static), scaled to 150 tall so he's about Rex's length:
       // open lower jaw, head, pectoral fins as arms, tail fin; he stands on his pelvic fins

@@ -364,8 +364,12 @@ export class Stage3D extends Stage {
     scene.add(holder);
     holder.updateMatrixWorld(true);
     const camera = new THREE.PerspectiveCamera(22, w / h, 10, 3000);
-    const target = (framing === 'head' ? rig.anchors.head : new THREE.Vector3(10, 104, 0)).clone().applyMatrix4(rig.root.matrixWorld);
-    const span = framing === 'head' ? rig.headR * 2.1 : 250;
+    // art.portrait = { x, y, r } nudges the head frame (rig units) for toys whose
+    // head anchor isn't where the face reads best (a fish, a tall hat, a dome)
+    const nudge = (framing === 'head' && def.art?.portrait) || {};
+    const local = framing === 'head' ? rig.anchors.head.clone().add(new THREE.Vector3(nudge.x || 0, nudge.y || 0, 0)) : new THREE.Vector3(10, 104, 0);
+    const target = local.applyMatrix4(rig.root.matrixWorld);
+    const span = framing === 'head' ? (nudge.r || rig.headR) * 2.1 : 250;
     const d = span / 2 / Math.tan((22 * Math.PI) / 360);
     camera.position.set(target.x, target.y + 12, target.z + d);
     camera.lookAt(target);
@@ -389,6 +393,15 @@ export class Stage3D extends Stage {
     g.putImageData(im, 0, 0);
     return c;
   }
+}
+
+// For tooling: where a toy's head frame sits (rig units) and how big the toy is.
+export function headFrame(def) {
+  const rig = buildRig(def);
+  rig.apply({ t: 1000, eyes: 'open', mouth: 'smile', action: 'idle' });
+  rig.root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(rig.root);
+  return { head: rig.anchors.head.toArray().map(Math.round), headR: Math.round(rig.headR), box: [box.min.toArray().map(Math.round), box.max.toArray().map(Math.round)] };
 }
 
 function blank(w, h) {
