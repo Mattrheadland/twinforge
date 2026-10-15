@@ -1,11 +1,31 @@
 # TwinForge master handoff (start here)
 
-Last updated 2026-10-15 (midday). Everything is merged on `main` and deployed.
+Last updated 2026-10-15, 5 PM. `main` is ahead of the live site: the music engine, arena tracks, Czernobog's piece and storm are committed but NOT deployed (Matt is reviewing the renders). Everything before the music (spelling ladder, specials, power moves, portraits, sounds) is live.
 
 ## How to start a new chat
 Paste this:
 
-> TwinForge: continue the build. Clone Mattrheadland/twinforge, read docs/HANDOFF.md first, then docs/NEXT_STEPS.md, docs/STYLE_GUIDE.md and docs/ASSET_PIPELINE.md. Pick up at "Next up" in HANDOFF.md.
+> TwinForge: continue the build. Clone Mattrheadland/twinforge, read docs/HANDOFF.md first, then docs/NEXT_STEPS.md, docs/STYLE_GUIDE.md and docs/ASSET_PIPELINE.md. Pick up at "Next up" in HANDOFF.md. Matt is the creative director; you run the studio. Constant status updates.
+
+## DEADLINE: a full, polished, playable game (all modes incl. campaign) deployed by 8 PM ET on 2026-10-15. Whatever is not done by then keeps going afterwards.
+
+## Matt's direction from today (2026-10-15 afternoon), in his words where it matters
+- **Music**: "needs to absolutely crank." Fighting music and adventure themes, catchy, not Pokémon, and "not Nintendo Game Boy music from the 90s"; "a sophisticated video game." The chiptune engine was replaced by `src/audio/synth.js` (supersaw, bass, sub, pad, brass, pluck, bell, modern drum kit, reverb, delay, sidechain). He heard round 2 (title, battle, boss, board, victory on the new engine): "way better." He wants **several different tracks so it's not the same music all the time** (done: one battle track per arena + boss + Czernobog, see below) and is open to improving the existing ones further. Renders of the five newest tracks are in `scratch/music-*.wav` (rendered by `scratch/render-music.mjs`), not yet heard by Matt.
+- **Produced music option**: ChatGPT does not make music. Suno free: ~10 songs/day but downloads only for accounts made before 2026-09-03 (7 trial downloads for life), non-commercial. Udio free: 1–3 songs/day, downloads intermittent. Ask Matt whether he has an older Suno account; if yes, 5 tracks (title, battle, boss, board, Czernobog) via his Chrome, dropped in as `TRACKS[name].file` (mp3 loop support with loop points and synth fallback is already in `audio.js`). Matt offered style references; ask for them (game titles per mood).
+- **Czernobog**: the ultimate villain. His music must resemble *Night on Bald Mountain* (Mussorgsky 1867 / Rimsky-Korsakov 1886, public domain; Disney's 1940 Fantasia arrangement is NOT to be copied). `czernobog` track written in that idiom. His fight gets its own screen effects (storm: purple vignette, embers, lightning + thunder, in; still to add: fire underglow pulsing with the kicks, rising spirit wisps, heavier shake and a red flash on his special). Visual/environment mood reference, for reference only: the Kingdom Hearts 1 Chernabog fight (giant on a peak, black sky, dark cloud sea, fire glow from below, spirits streaming up). Lore reference, as spin-offs never copies: Fantasia's ghost storm, dancing fire minions, and dark shadow minions. Our originals: Shadow Imp and Jitterbones exist; add **fire dancers** (flame bodies with little arms and a grin) and **shadow peekers** (flat-eyed silhouettes rising from the ground). Never faces or shapes from Disney or Square Enix.
+- **Campaign board, "Mario Party-style"**: a fully animated board with a free camera. (1) Free look: pinch to zoom, drag to pan, wheel + drag on the laptop; snaps back to the piece on the next roll; a recenter button. (2) Czernobog alive on his mountain: full 3D toy on the peak, idle animation, glowing summit, embers, lightning over that end of the board, so zooming there shows him waiting. (3) Ambient life everywhere: water shimmer, waving flags and banners, lighthouse beam, swaying reeds and trees, fireflies, pulsing moon; wild creatures and bosses bob and idle on their spaces (standees first, real 3D where smooth). (4) A short fly-over when the board opens; a swoop to the boss on landing on a boss space. (5) **Cutscenes between turns**: every few rounds a 3–5 s skippable cinematic: camera swoops to the mountain, Czernobog stirs (roar, lightning, summit flare) and darkness spreads across the board (water darkens island by island, more wisps and fire dancers, redder sky), escalating with how many worlds Luca has cleared.
+- **Spelling**: real 3–5 letter words, not letter matching (done: the spelling ladder).
+- **Portraits**: all aligned, Billy Bass no longer cut off (done).
+- Matt wants **constant status updates** and plain "blocked" calls. Helper agents: he now says to split into multiple agents (a "digital game studio") where it saves time; his permission prompt may still decline them, so ask once and fall back to solo.
+
+## Studio plan (agents, if the harness allows them)
+- **Lead / integrator (this chat)**: owns `main`, tests, deploys, HANDOFF. Merges the others' work.
+- **Board agent**: `src/render3d/board3d.js`, `src/ui/board-ui.js`: free look camera, fly-over, ambient animation, Czernobog on the peak, cutscenes. Must keep `test/e2e.mjs` board tests and `test/campaign-run.mjs` passing and 60 fps on the iPhone/laptop.
+- **Villain agent**: Czernobog fight effects (underglow, wisps, special flash), fire dancers and shadow peekers (`src/render3d/minion-rigs.js` style, cheap), `docs/lore/czernobog.md`.
+- **Music agent**: tune tracks from Matt's notes; optional Suno pipeline when the laptop is on. `scratch/render-music.mjs <name,name>` renders any track to WAV for review.
+- **QA agent**: `npm test`, `npm run e2e` (run alone), `node test/campaign-run.mjs tree@desktop nightwing@iphone`, perf; laptop timing pass when Chrome is visible.
+Each agent commits small, with tests, as Matt Headland; the lead deploys.
+
 
 ## Project in one paragraph
 "TwinForge: Toy Box Tactics" is a turn-based battle game for Matt's son Luca (4), starring his real toys rebuilt as low-poly, '80s-cartoon-shaded 3D toys. It's a single-file web app (three.js, esbuild) played on an iPhone 16 Pro in landscape from the home screen, hosted on GitHub Pages (`gh-pages` branch). Power moves ask a math question and specials ask a reading question when Learning is on.
@@ -37,6 +57,8 @@ Paste this:
 | Learning log + report | `src/logic/learning-log.js`, `src/ui/learning-report.js` |
 | Save + migration | `src/save.js` |
 | Sounds | `src/audio/audio.js` (`SFX` table; a move's `sfx` / `sfxHit`, a toy's `winSfx`) |
+| Music | `src/audio/music.js` (tracks on a 16th grid; `battleTrackFor(arenaId, boss)`), `src/audio/synth.js` (voices, fx, modern kit), sequencer + mp3 loop player in `audio.js`; render any track: `node scratch/render-music.mjs battle,boss` |
+| Czernobog storm | `Director.setStorm()` in `src/game/director.js`; `stage.vignette`; sfx `thunder` |
 | Build | `build.mjs`: index.html (app) + `three-<hash>.js` (three.js, generated from what src/ uses) |
 | Audit, checklist, perf results | `docs/AUDIT.md` |
 | Art requests for Astra | `docs/ASTRA_REQUESTS.md` |
@@ -56,11 +78,14 @@ Commands: `npm test` (unit, 68), `npm run build`, `npm run e2e` (Puppeteer, ~5 m
 - **Tests**: 68 unit, 89 e2e (run e2e alone; overlapping headless runs fail spuriously).
 - Matt's save on the laptop gained 3 stars from Claude's Crookhook test win and one "after a hint" quick-look entry (Claude, not Luca).
 
-## Next up
-1. Matt listens to the new-four sounds mp3 and says which miss; retune. Matt and Luca play; tune from the learning report, especially the new spelling ladder (too easy / too hard per level, whether "copy" holds his attention). Luca's verdict on the new four and their names.
-2. Finish the laptop pass when Chrome is open and in front: Jack-Knife, Wolfgang, Payne battles (frame times) and a mouse campaign.
-3. Send Astra the new-four packs (`docs/ASTRA_REQUESTS_NEW_FOUR.md`), then Hunyuan for each toy as painted sheets come back; arenas through `scripts/build-arenas.py` and `src/data/arenas-new-four.js`.
-4. Bog Shack floor from Astra (ChatGPT TwinForge project, "Bog Shack Floor Texture" chat) → `assets/arenas/bog-shack/arena-bog-shack-floor.png`, then `scripts/build-arenas.py`.
+## Next up (ordered for the 8 PM deploy)
+1. **Deploy what's on main once Matt OKs the music** (he has heard round 2 and liked it; send him the renders of the four arena tracks + Czernobog, `scratch/music-*.wav` → mp3). If he hasn't answered by 7:30 PM, deploy anyway: round 2 is already approved and the new ones are the same engine.
+2. **Board free look** (pinch/drag/wheel, snap-back, recenter) and **Czernobog alive on the peak**. Deploy by ~7:15 PM.
+3. **First ambient layer** on the board: water shimmer, flags, bobbing creatures. Deploy with 2 if it fits.
+4. **Czernobog fight extras**: fire underglow pulsing on kicks, spirit wisps, special flash/shake.
+5. After 8 PM, keep going: fire dancers and shadow peekers; fly-over and boss swoop; between-turn cutscenes with escalating darkness; all creatures as bobbing/3D figures; remaining ambient props.
+6. Matt's inputs when he has them: music verdicts per track and style references; Suno account age; Luca's learning report (spelling ladder tuning); sounds mp3 verdict.
+7. Laptop (any time Chrome is in front): 8-min timing pass (Jack-Knife, Wolfgang, Payne, mouse campaign); Bog Shack floor from the ChatGPT project; Astra packs → Hunyuan for the new four (separate evening).
 
 ## Known gaps
 - Read-aloud can't be tested headless; it uses the iPhone's built-in voice (Web Speech API) and needs a real-device check.

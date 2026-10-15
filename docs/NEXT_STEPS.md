@@ -53,7 +53,10 @@
 - **Signature power moves** for the new four (parrot, howl rings, pumpkin lob, gravity well) and **HUD portrait framing** fixed per toy (Billy Bass was cut off).
 - **Sounds** for all 16 new-four moves plus win stings (`move.sfx`, `move.sfxHit`, `def.winSfx`).
 
-## Next
+## Next (see HANDOFF.md "Next up" for the 8 PM order)
+- Deploy the music engine + arena tracks + Czernobog piece after Matt's listen.
+- Campaign board: free look, Czernobog alive on the peak, ambient animation, fly-over, between-turn cutscenes (Mario Party-style).
+- Czernobog fight extras; fire dancers and shadow peekers (original spin-offs of the Fantasia ghost storm / dancing fire / shadow minions).
 1. Matt reviews the sounds mp3; Luca plays the spelling ladder; tune both.
 2. Send Astra the new-four packs; Hunyuan for each toy as the painted sheets come back. Wanda and Czernobog too (ASTRA_REQUESTS.md).
 2. Arenas for the new four once painted (`scripts/build-arenas.py`, merge `src/data/arenas-new-four.js`).
