@@ -394,7 +394,7 @@ check('rolling the die moves the token 1–3 spaces and saves', after.pos >= 1 &
 // stand on the first wild-creature fight and play it
 await page.evaluate(() => { const a = window.__tbb.app; const c = a.save.data.campaign; c.pos = 1; c.cleared = [0]; a.goBoard(); });
 await sleep(800);
-check('an unfought creature shows the FIGHT button instead of the die', !!(await page.$('.board-fight:not(.hidden)')) && !!(await page.$('.board-die.hidden')));
+{ const fb = await page.evaluate(() => ({ f: document.querySelector('.board-fight')?.className, d: document.querySelector('.board-die')?.className, n: document.querySelectorAll('.board-screen').length, c: JSON.stringify(window.__tbb.app.save.data.campaign) })); check('an unfought creature shows the FIGHT button instead of the die', fb.f === 'board-fight' && fb.d === 'board-die hidden', JSON.stringify(fb)); }
 await tap('.board-fight');
 await waitPhase('choose', 20000);
 check('the creature fight is on its world\'s arena', await page.evaluate(() => { const a = window.__tbb.app; return a.battle.state.from === 'campaign' && a.stage.arenaId === 'bedroom' && a.battle.chars[a.battle.state.foeId].minion; }));

@@ -424,7 +424,8 @@ class App {
       board,
       chars: CHARACTERS,
       make3D: this.stage.is3D ? (opts) => {
-        const b = new Board3D(this.stage, opts);
+        const clearedWorlds = board.filter((sp, i) => sp.type === 'boss' && c.cleared.includes(i)).length;
+        const b = new Board3D(this.stage, { ...opts, audio: this.audio, clearedWorlds });
         this.stage.setBoard(b, opts.owner);
         return b;
       } : null,

@@ -112,6 +112,8 @@ export function showBoard(ui, { campaign, board, chars, onRoll, onFight, onHome,
     // Animate a roll: die tumble, then one hop per space with the count shown.
     async play(roll, result) {
       busy = true;
+      view.recenter();
+      onFree();
       die.classList.add('rolling');
       for (let k = 0; k < 6; k++) { die.innerHTML = dieFace(1 + (k % 3)); ui.app.audio.sfx('tap'); await wait(80); }
       die.innerHTML = dieFace(roll);
@@ -167,9 +169,40 @@ function showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make
   const fight = h('button', { class: 'board-fight hidden', 'aria-label': 'Fight', html: ICON.fist });
   const home = h('button', { class: 'corner-btn home-btn', 'aria-label': 'Home', html: ICON.home });
   onTap(home, onHome, 500);
-  const scr = h('div', { class: 'screen board-screen board-3d', 'data-spaces': board.length }, worldName, pop, stars, die, fight, home);
+  const recenter = h('button', { class: 'board-recenter hidden', 'aria-label': 'Back to my toy', html: '<svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"><circle cx="20" cy="20" r="9"/><path d="M20 3v7M20 30v7M3 20h7M30 20h7"/></svg>' });
+  const scr = h('div', { class: 'screen board-screen board-3d', 'data-spaces': board.length }, worldName, pop, stars, die, fight, home, recenter);
   ui.layer.appendChild(scr);
   const view = make3D({ board, chars, heroDef: chars[campaign.heroId], cleared: campaign.cleared, pos: campaign.pos, owner: scr });
+
+  // ---- free look: drag to pan, pinch or wheel to zoom; the next roll snaps back ----
+  const ptrs = new Map();
+  let lastPinch = 0, dragged = false;
+  const onFree = () => recenter.classList.toggle('hidden', !view.look.free);
+  scr.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    dragged = false;
+    if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; lastPinch = Math.hypot(a.x - b.x, a.y - b.y); }
+  });
+  scr.addEventListener('pointermove', (e) => {
+    const p = ptrs.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    if (ptrs.size === 1) {
+      if (Math.abs(dx) + Math.abs(dy) > 1) { dragged = true; view.pan(dx / ui.app.scale, dy / ui.app.scale); onFree(); }
+    } else if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (lastPinch > 0 && d > 0) { view.zoomBy(d / lastPinch); onFree(); }
+      lastPinch = d;
+    }
+  });
+  const up = (e) => { ptrs.delete(e.pointerId); if (ptrs.size < 2) lastPinch = 0; };
+  scr.addEventListener('pointerup', up);
+  scr.addEventListener('pointercancel', up);
+  scr.addEventListener('wheel', (e) => { e.preventDefault(); view.zoomBy(e.deltaY < 0 ? 1.12 : 0.89); onFree(); }, { passive: false });
+  onTap(recenter, () => { view.recenter(); onFree(); }, 300);
 
   let busy = false;
   let shownWorld = -1;
@@ -205,6 +238,8 @@ function showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make
     view,
     async play(roll, result) {
       busy = true;
+      view.recenter();
+      onFree();
       die.classList.add('rolling');
       for (let k = 0; k < 6; k++) { die.innerHTML = dieFace(1 + (k % 3)); ui.app.audio.sfx('tap'); await wait(80); }
       die.innerHTML = dieFace(roll);

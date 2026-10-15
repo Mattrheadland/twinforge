@@ -84,11 +84,16 @@ function topTexture(kind) {
 }
 
 export class Board3D {
-  constructor(stage, { board, chars, heroDef, cleared = [], pos = 0 }) {
+  constructor(stage, { board, chars, heroDef, cleared = [], pos = 0, audio = null, clearedWorlds = 0 }) {
     this.stage = stage;
     this.board = board;
     this.chars = chars;
     this.heroDef = heroDef;
+    this.audio = audio;
+    this.clearedWorlds = clearedWorlds; // how far Luca is: the storm over the mountain grows with it
+    // free look: pan (ox along the board, oz toward/away) and zoom, on top of the follow camera
+    this.look = { ox: 0, oz: 0, oy: 0, zoom: 1, tx: 0, tz: 0, ty: 0, tzoom: 1, free: false };
+    this.amb = { flags: [], beams: [], flies: [], embers: [], bolt: 4000 + Math.random() * 4000 };
     this.scene = new THREE.Scene();
     this.sky = new THREE.Color(LOOK.bedroom.sky);
     this.scene.background = this.sky;
@@ -123,6 +128,27 @@ export class Board3D {
     water.position.set(this.pts.at(-1).x / 2, -34, 0);
     water.scale.set(this.pts.at(-1).x + 4000, 3000, 1);
     this.scene.add(water);
+    // shimmer: a second, lighter plane with a scrolling ripple texture
+    const rip = document.createElement('canvas');
+    rip.width = rip.height = 128;
+    const rx = rip.getContext('2d');
+    rx.strokeStyle = 'rgba(255,255,255,0.55)';
+    rx.lineWidth = 3;
+    rx.lineCap = 'round';
+    for (let k = 0; k < 9; k++) {
+      const y = 8 + k * 14, x0 = (k * 37) % 128;
+      rx.beginPath(); rx.moveTo(x0, y); rx.lineTo(x0 + 22 + (k % 3) * 8, y); rx.stroke();
+    }
+    const rtex = new THREE.CanvasTexture(rip);
+    rtex.wrapS = rtex.wrapT = THREE.RepeatWrapping;
+    rtex.repeat.set(40, 18);
+    rtex.magFilter = THREE.NearestFilter;
+    this.rippleTex = rtex;
+    const shimmer = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: rtex, transparent: true, opacity: 0.1, depthWrite: false }));
+    shimmer.rotation.x = -Math.PI / 2;
+    shimmer.position.set(water.position.x, -33, 0);
+    shimmer.scale.copy(water.scale);
+    this.scene.add(shimmer);
     this.worldX = [];
     let rnd = 7;
     const r = () => ((rnd = (rnd * 16807) % 2147483647) / 2147483647);
@@ -172,6 +198,13 @@ export class Board3D {
     this.scene.add(peb);
   }
 
+  // a little flag on a pole, waving (the pole is drawn by the caller)
+  flag(x, y, z, color) {
+    const f = this.P(g.box, color, [x + 14, y, z], [28, 16, 2], { ink: 1.2 });
+    f.userData.baseY = y;
+    this.amb.flags.push(f);
+  }
+
   // a few cheap low-poly props per world, kept off the path
   props(kind, cx, hx, r, idx) {
     const spots = [];
@@ -206,7 +239,13 @@ export class Board3D {
       // the keep behind the boss space
       const b = this.pts[idx.at(-1)];
       this.P(g.box, 0xb8b0a8, [b.x - 40, 60, -250], [150, 120, 70]);
-      for (const dx of [-110, 30]) { this.P(g.cyl, 0xb8b0a8, [b.x + dx, 80, -250], [30, 160, 30]); this.P(g.cone, 0xd7263d, [b.x + dx, 182, -250], [38, 50, 38]); }
+      for (const dx of [-110, 30]) { this.P(g.cyl, 0xb8b0a8, [b.x + dx, 80, -250], [30, 160, 30]); this.P(g.cone, 0xd7263d, [b.x + dx, 182, -250], [38, 50, 38]); this.flag(b.x + dx, 207, -250, 0xffc914); }
+    }
+    if (kind === 'blocks') {
+      // a pennant on the block fortress
+      const b = this.pts[idx.at(-1)];
+      this.P(g.cyl, 0xffffff, [b.x + 40, 50, -200], [4, 100, 4], { ink: 1 });
+      this.flag(b.x + 40, 96, -200, 0x3fc46a);
     }
     if (kind === 'pier') {
       // a lighthouse
@@ -214,6 +253,16 @@ export class Board3D {
       this.P(g.cyl, 0xffffff, [b.x - 60, 80, -260], [26, 160, 26]);
       this.P(g.cyl, 0xe84a3a, [b.x - 60, 120, -260], [27, 30, 27], { ink: 1 });
       this.P(g.cone, 0xe84a3a, [b.x - 60, 186, -260], [32, 40, 32]);
+      // the beam sweeps around
+      const beam = new THREE.Mesh(g.cone, new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0.35, depthWrite: false }));
+      beam.rotation.z = Math.PI / 2;
+      beam.scale.set(36, 420, 36);
+      const pivot = new THREE.Group();
+      pivot.position.set(b.x - 60, 136, -260);
+      beam.position.set(-210, 0, 0);
+      pivot.add(beam);
+      this.scene.add(pivot);
+      this.amb.beams.push(pivot);
     }
     if (kind === 'bog') {
       const b = this.pts[idx.at(-1)];
@@ -224,7 +273,35 @@ export class Board3D {
       // Czernobog's mountain behind the last space, glowing at the peak
       const b = this.pts.at(-1);
       this.P(g.cone, 0x2a1f44, [b.x + 60, 190, -420], [320, 400, 260], { ink: 3 });
-      this.P(g.cone, 0xff4a3a, [b.x + 60, 370, -420], [70, 50, 56], { ink: 2 });
+      this.peakGlow = this.P(g.cone, 0xff4a3a, [b.x + 60, 370, -420], [70, 50, 56], { ink: 2 });
+      // the villain himself, alive on the summit (his real toy, bigger than life)
+      const v = this.chars.nightwing;
+      if (v) {
+        this.villain = { rig: buildRig(v), group: new THREE.Group() };
+        this.villain.group.position.set(b.x + 60, 392, -420);
+        this.villain.group.scale.setScalar(1.15);
+        this.villain.group.rotation.y = -0.85;
+        this.villain.group.add(this.villain.rig.root);
+        this.scene.add(this.villain.group);
+      }
+      // embers drifting up from the summit
+      const emberMat = new THREE.MeshBasicMaterial({ color: 0xff8a3a });
+      for (let k = 0; k < 14; k++) {
+        const e = new THREE.Mesh(g.ball, emberMat);
+        e.scale.setScalar(3 + Math.random() * 3);
+        e.userData = { x: b.x + 60 + (Math.random() - 0.5) * 120, z: -420 + (Math.random() - 0.5) * 80, phase: Math.random() * 5, speed: 0.6 + Math.random() * 0.6 };
+        this.scene.add(e);
+        this.amb.embers.push(e);
+      }
+      // fireflies in the forest
+      const flyMat = new THREE.MeshBasicMaterial({ color: 0xd6ff5a });
+      for (let k = 0; k < 10; k++) {
+        const f = new THREE.Mesh(g.ball, flyMat);
+        f.scale.setScalar(2.4);
+        f.userData = { x: cx - hx + 40 + r() * (hx * 2 - 80), z: -120 - r() * 160, y: 30 + r() * 60, phase: r() * 6 };
+        this.scene.add(f);
+        this.amb.flies.push(f);
+      }
     }
   }
 
@@ -290,6 +367,30 @@ export class Board3D {
     });
   }
 
+  // ---- free look (pinch / drag / wheel from board-ui.js) ----
+  pan(dx, dy) {
+    const k = 1.1 / this.look.zoom;
+    const maxX = this.pts.at(-1).x + 300;
+    this.look.tx = Math.max(-this.token.position.x - 200, Math.min(maxX - this.token.position.x, this.look.tx - dx * k));
+    // dragging down tilts the camera up (to see the mountain top); dragging up looks down the path
+    this.look.ty = Math.max(0, Math.min(420, this.look.ty + dy * k * 0.9));
+    this.look.tz = Math.max(-200, Math.min(240, this.look.tz + dy * k * 0.25));
+    this.look.free = true;
+  }
+
+  zoomBy(f) {
+    this.look.tzoom = Math.max(0.55, Math.min(2.4, this.look.tzoom * f));
+    this.look.free = true;
+  }
+
+  recenter() {
+    this.look.tx = 0;
+    this.look.tz = 0;
+    this.look.ty = 0;
+    this.look.tzoom = 1;
+    this.look.free = false;
+  }
+
   setCleared(list) {
     this.spaces.forEach((s, i) => {
       const c = i > 0 && list.includes(i);
@@ -350,12 +451,46 @@ export class Board3D {
       this.scene.remove(f.m); f.m.material.dispose();
       return false;
     });
-    // camera follows the piece; the sky shifts with the world
+    // ---- ambient life ----
+    const A = this.amb;
+    for (const f of A.flags) { f.scale.x = 28 * (0.85 + 0.15 * Math.sin(now / 160 + f.position.x)); f.position.y = f.userData.baseY + Math.sin(now / 300 + f.position.z) * 1.5; }
+    for (const p of A.beams) p.rotation.y = now / 1400;
+    for (const f of A.flies) { const u = f.userData; f.position.set(u.x + Math.sin(now / 900 + u.phase) * 30, u.y + Math.sin(now / 600 + u.phase * 2) * 14, u.z + Math.cos(now / 1100 + u.phase) * 24); f.visible = Math.sin(now / 350 + u.phase * 3) > -0.3; }
+    for (const e of A.embers) {
+      const u = e.userData;
+      const k = ((now / 1000) * u.speed + u.phase) % 1;
+      e.position.set(u.x + Math.sin(k * 9 + u.phase) * 14, 395 + k * 180, u.z);
+      const sc = (1 - k) * (3 + u.phase);
+      e.scale.setScalar(Math.max(0.5, sc));
+    }
+    if (this.rippleTex) { this.rippleTex.offset.x = now / 9000; this.rippleTex.offset.y = Math.sin(now / 4000) * 0.02; }
+    if (this.peakGlow) this.peakGlow.scale.setScalar(1 + 0.12 * Math.sin(now / 260));
+    // Czernobog on the summit: breathing idle, slow turn, wings in the wind; angrier the further Luca gets
+    if (this.villain) {
+      const anger = Math.min(1, this.clearedWorlds / 4);
+      const v = this.villain;
+      v.rig.apply({ t: now, eyes: anger > 0.6 ? 'angry' : 'open', mouth: anger > 0.6 ? 'grit' : 'flat', action: 'idle', armF: -0.4 + Math.sin(now / 700) * 0.25, armB: 0.3 + Math.sin(now / 820) * 0.25, headBob: Math.sin(now / 900) * 3 });
+      v.group.rotation.y = -0.85 + Math.sin(now / (2200 - anger * 900)) * (0.18 + anger * 0.2);
+      v.group.position.y = 392 + Math.sin(now / 1100) * 4;
+      // lightning over the mountain now and then (more often as the storm grows)
+      A.bolt -= dt;
+      if (A.bolt <= 0) {
+        A.bolt = (3500 + Math.random() * 5000) * (1 - anger * 0.5);
+        this.stage.flash(0.22 + anger * 0.15, '#D8C8FF');
+        this.stage.shake(0.08 + anger * 0.1);
+        this.audio && this.audio.sfx('thunder');
+      }
+    }
+    // camera follows the piece, with the free-look pan/zoom on top; the sky shifts with the world
     const x = this.token.position.x;
     this.camX += (x - this.camX) * Math.min(1, dt / 220);
+    const L = this.look, ease = Math.min(1, dt / 160);
+    L.ox += (L.tx - L.ox) * ease; L.oz += (L.tz - L.oz) * ease; L.oy += (L.ty - L.oy) * ease; L.zoom += (L.tzoom - L.zoom) * ease;
+    const zf = 1 / L.zoom;
+    const cx = this.camX + L.ox;
     this.camera.aspect = this.stage.W / VH;
-    this.camera.position.set(this.camX + CAM.x, CAM.y, CAM.z);
-    this.camera.lookAt(this.camX + AHEAD, 0, -30);
+    this.camera.position.set(cx + CAM.x * zf, CAM.y * zf + L.oy * 0.35, CAM.z * zf + L.oz);
+    this.camera.lookAt(cx + AHEAD * zf, L.oy, -30 + L.oz * 0.55 - L.oy * 0.6);
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld(true);
     const w = this.worldX.find((q) => x <= q.x1 + GAP / 2) || this.worldX.at(-1);
