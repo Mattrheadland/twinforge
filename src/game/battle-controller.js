@@ -62,7 +62,7 @@ export class BattleController {
     this.hud.setHP('foe', s.foe.hp, s.foe.maxHp, true);
     this.hud.setEnergy(s.hero.energy);
     this.syncStatus();
-    this.audio.play('battle');
+    this.audio.play(this.state.boss ? 'boss' : 'battle');
     this.app.wakeLock(true);
     const tok = ++this.token;
     this.setPhase(PHASE.INTRO);

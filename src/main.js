@@ -416,7 +416,7 @@ class App {
     this.leaveGallery();
     const c = this.save.data.campaign;
     const board = buildBoard(c.heroId);
-    this.audio.play('title'); // the board had no music after the first fight's victory jingle
+    this.audio.play('board');
     this.stage.setFighters(null, null);
     this.stage.dim = this.stage.is3D ? 0 : 0.6;
     this.boardView = showBoard(this.ui, {

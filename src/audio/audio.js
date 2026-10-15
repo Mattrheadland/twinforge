@@ -1,6 +1,7 @@
 // Web Audio engine: every sound is synthesized (no files), so it is original,
 // tiny and works offline. Sounds are triggered by game events, never by timers.
 import { TRACKS } from './music.js';
+export { TRACKS };
 
 export class Audio {
   constructor() {
