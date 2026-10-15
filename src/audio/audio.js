@@ -1,7 +1,8 @@
 // Web Audio engine: every sound is synthesized (no files), so it is original,
 // tiny and works offline. Sounds are triggered by game events, never by timers.
 import { TRACKS } from './music.js';
-export { TRACKS };
+import { INST, drumModern, riser, setupMusicFx } from './synth.js';
+export { TRACKS, setupMusicFx };
 
 export class Audio {
   constructor() {
@@ -147,16 +148,23 @@ export class Audio {
     this.stopMusic(0.35);
     const track = TRACKS[name];
     if (!track) return;
+    if (track.file) return this.playFile(name, track);
     const c = this.ctx;
     const bus = c.createGain();
     bus.gain.value = 0.0001;
     bus.gain.exponentialRampToValueAtTime(1, c.currentTime + 0.4);
     bus.connect(this.musicBus);
+    // the modern voices and drums run through the shared effect chain, which
+    // always feeds the track that is playing (so fades still work)
+    const fx = setupMusicFx(this);
+    fx.duck.disconnect();
+    fx.duck.connect(bus);
+    fx.setTempo(track.bpm);
     const seq = {
       name, track, bus, stopped: false,
       step: 0,
       next: c.currentTime + 0.08,
-      spb: 60 / track.bpm / 2, // 8th-note grid
+      spb: 60 / track.bpm / ((track.grid || 8) / 4), // 8th-note grid by default, 16ths with grid: 16
     };
     this.current = seq;
     const tick = () => {
@@ -179,6 +187,31 @@ export class Audio {
     tick();
   }
 
+  // A produced track (mp3/ogg under assets/music/), looped. Decoded once and kept.
+  playFile(name, track) {
+    const c = this.ctx;
+    const bus = c.createGain();
+    bus.gain.value = 0.0001;
+    bus.gain.exponentialRampToValueAtTime(track.gain ?? 1, c.currentTime + 0.6);
+    bus.connect(this.musicBus);
+    const seq = { name, track, bus, stopped: false, src: null };
+    this.current = seq;
+    this.files ||= new Map();
+    const ready = this.files.get(track.file) || fetch(track.file).then((r) => r.arrayBuffer()).then((ab) => c.decodeAudioData(ab));
+    this.files.set(track.file, ready);
+    ready.then((buf) => {
+      if (seq.stopped || this.current !== seq) return;
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      src.loop = !!track.loop;
+      if (track.loopStart != null) src.loopStart = track.loopStart;
+      if (track.loopEnd != null) src.loopEnd = track.loopEnd;
+      src.connect(bus);
+      src.start();
+      seq.src = src;
+    }).catch(() => { /* missing file: silence rather than a crash; the synth track is the fallback */ if (this.current === seq && track.fallback) { this.current = null; this.play(track.fallback); } });
+  }
+
   stopMusic(fade = 0.3) {
     const s = this.current;
     if (!s) return;
@@ -189,7 +222,7 @@ export class Audio {
       s.bus.gain.cancelScheduledValues(now);
       s.bus.gain.setValueAtTime(Math.max(0.0001, s.bus.gain.value), now);
       s.bus.gain.exponentialRampToValueAtTime(0.0001, now + fade);
-      setTimeout(() => s.bus.disconnect(), (fade + 0.2) * 1000);
+      setTimeout(() => { s.bus.disconnect(); try { s.src && s.src.stop(); } catch {} }, (fade + 0.2) * 1000);
     }
     this.current = null;
   }
@@ -199,15 +232,24 @@ export class Audio {
     const len = tr.length;
     const i = step % len;
     const delay = time - this.ctx.currentTime;
+    const modern = tr.kit === 'modern';
     for (const part of tr.parts) {
       const note = part.notes[i];
       if (note == null || note === '-' || note === '.') continue;
       // hold length = following '-' tokens
       let hold = 1;
-      while (part.notes[(i + hold) % len] === '-' && hold < 16) hold++;
+      while (part.notes[(i + hold) % len] === '-' && hold < 32) hold++;
       const dur = hold * seq.spb * (part.legato ?? 0.9);
       if (part.kind === 'drum') {
-        drum(this, note, delay, seq.bus, part.gain ?? 1);
+        if (modern) drumModern(this, note, time, part.gain ?? 1);
+        else drum(this, note, delay, seq.bus, part.gain ?? 1);
+      } else if (part.kind === 'riser') {
+        riser(this, time, hold * seq.spb, part.gain ?? 0.25);
+      } else if (part.inst && INST[part.inst]) {
+        for (const n of String(note).split('+')) {
+          const f = midiFreq(n);
+          if (f) INST[part.inst](this, f, time, Math.max(0.05, dur), part);
+        }
       } else {
         const notes = String(note).split('+');
         for (const n of notes) {
