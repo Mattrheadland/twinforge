@@ -50,6 +50,7 @@
 - **Laptop pass** on FastWillie: 60 fps everywhere measured; install tip hidden off-iOS; select portraits pre-warmed on the title screen.
 - **Bundle**: three.js split into its own cached file; index.html 383 KB.
 - **Signature specials** for the new four: Cannon Broadside, Pumpkin Bomb Barrage, Huff and Puff, Orbital Strike (`src/game/director.js`, pieces in `src/render/fx-moves.js`).
+- **Signature power moves** for the new four (parrot, howl rings, pumpkin lob, gravity well) and **HUD portrait framing** fixed per toy (Billy Bass was cut off).
 - **Sounds** for all 16 new-four moves plus win stings (`move.sfx`, `move.sfxHit`, `def.winSfx`).
 
 ## Next

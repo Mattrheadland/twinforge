@@ -575,3 +575,102 @@ export function reticle({ x, y, r0 = 150, r1 = 70, color = '#4EE8FF', life = 900
     },
   };
 }
+
+// Squawks the parrot: flies from the captain to the foe in a swooping arc,
+// wings flapping, and pecks (Squawks Attack).
+export function parrot({ x0, y0, x1, y1, life = 700, delay = 0, size = 30, onHit }) {
+  const dir = Math.sign(x1 - x0) || 1;
+  const pos = (k) => ({ x: lerp(x0, x1, k), y: lerp(y0, y1, k) - Math.sin(k * Math.PI) * 90 + Math.sin(k * 14) * 6 });
+  return {
+    max: life, delay, onDone: onHit,
+    draw(ctx, k, t) {
+      const p = pos(k);
+      const flap = Math.sin(t / 45) * 0.9;
+      ctx.save();
+      ctx.globalAlpha = k < 0.1 ? k / 0.1 : 1;
+      ctx.translate(p.x, p.y);
+      ctx.scale(dir, 1);
+      ctx.rotate(-0.2 + Math.cos(k * Math.PI) * 0.35);
+      const wing = (side) => {
+        ctx.save(); ctx.rotate(side * (0.6 + flap));
+        for (const [g, c] of [[3, INK], [0, '#2E9E44']]) { ctx.beginPath(); ctx.ellipse(-size * 0.2, side * size * 0.2, size * 0.95 + g, size * 0.38 + g, 0, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); }
+        ctx.restore();
+      };
+      wing(-1);
+      // body, tail, head, beak
+      for (const [g, c] of [[3, INK], [0, '#D7263D']]) {
+        ctx.beginPath(); ctx.ellipse(0, 0, size * 0.7 + g, size * 0.45 + g, 0, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-size * 0.5, 0); ctx.lineTo(-size * 1.3 - g, -size * 0.35 - g); ctx.lineTo(-size * 1.3 - g, size * 0.35 + g); ctx.closePath(); ctx.fillStyle = c === INK ? INK : '#1B4FD8'; ctx.fill();
+        ctx.beginPath(); ctx.arc(size * 0.7, -size * 0.3, size * 0.42 + g, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
+      }
+      ctx.fillStyle = '#FFC914'; ctx.beginPath(); ctx.moveTo(size * 1.0, -size * 0.4); ctx.lineTo(size * 1.5, -size * 0.2); ctx.lineTo(size * 1.0, -size * 0.05); ctx.closePath(); ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(size * 0.78, -size * 0.38, size * 0.14, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(size * 0.82, -size * 0.38, size * 0.07, 0, Math.PI * 2); ctx.fill();
+      wing(1);
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
+// Howl rings: sound rings that race from the muzzle to the foe and burst (Howl).
+export function howlRing({ x0, y0, x1, y1, color = '#FFD84A', life = 420, delay = 0, onHit }) {
+  const dir = Math.sign(x1 - x0) || 1;
+  return {
+    max: life, delay, onDone: onHit,
+    draw(ctx, k) {
+      const x = lerp(x0, x1, ease(k)), y = lerp(y0, y1, k);
+      const r = 18 + k * 46;
+      ctx.save();
+      ctx.globalAlpha = k > 0.75 ? (1 - k) / 0.25 : 1;
+      ctx.lineCap = 'round';
+      for (const [lw, c] of [[11, INK], [6, color], [2.5, '#ffffff']]) {
+        ctx.lineWidth = lw; ctx.strokeStyle = c;
+        for (let i = 0; i < 3; i++) {
+          const rr = r - i * 10; if (rr <= 4) continue;
+          ctx.beginPath(); ctx.arc(x - dir * rr * 0.3, y, rr, dir > 0 ? -1.1 : Math.PI - 1.1, dir > 0 ? 1.1 : Math.PI + 1.1); ctx.stroke();
+        }
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
+// Gravity grip: a dark field opens over the foe, pulls in with ring lines,
+// then snaps shut (Gravity Grip).
+export function gravityWell({ x, y, r = 120, color = '#4EE8FF', life = 900, delay = 0, onHit }) {
+  let hit = false;
+  return {
+    max: life, delay,
+    draw(ctx, k, t) {
+      if (!hit && k > 0.72) { hit = true; onHit && onHit(); }
+      const open = k < 0.2 ? ease(k / 0.2) : k > 0.85 ? 1 - ease((k - 0.85) / 0.15) : 1;
+      const R = r * open;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.globalAlpha = 0.9;
+      // dark field
+      ctx.beginPath(); ctx.ellipse(0, 0, R, R * 0.7, 0, 0, Math.PI * 2); ctx.fillStyle = 'rgba(20,16,40,.55)'; ctx.fill();
+      ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
+      // rings being pulled in
+      for (let i = 0; i < 4; i++) {
+        const kk = ((k * 2.2 + i / 4) % 1);
+        const rr = R * (1 - kk);
+        if (rr < 6) continue;
+        ctx.globalAlpha = 0.9 * (1 - kk) * open;
+        ctx.beginPath(); ctx.ellipse(0, 0, rr, rr * 0.7, 0, 0, Math.PI * 2); ctx.lineWidth = 4; ctx.strokeStyle = color; ctx.stroke();
+      }
+      // sparks circling
+      ctx.globalAlpha = open;
+      for (let i = 0; i < 6; i++) {
+        const a = t / 140 + (i / 6) * Math.PI * 2;
+        const rr = R * (0.55 + 0.35 * Math.sin(t / 200 + i));
+        ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.7, 5, 0, Math.PI * 2); ctx.fillStyle = i % 2 ? '#ffffff' : color; ctx.fill();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    },
+  };
+}

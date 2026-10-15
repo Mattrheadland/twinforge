@@ -13,7 +13,7 @@ export const NEW_FOUR = {
     attackBonus: 2,
     moves: [
       { slot: 'quick', id: 'hookSwipe', name: 'Hook Swipe', icon: 'claw', color: '#DDE6F2', anim: 'lunge', word: 'SNAG!', sfx: 'hookShing' },
-      { slot: 'power', id: 'squawksAttack', name: 'Squawks Attack', icon: 'wings', color: '#2E9E44', anim: 'shot', shots: 2, word: 'SQUAWK!', sfx: 'squawk' },
+      { slot: 'power', id: 'squawksAttack', name: 'Squawks Attack', icon: 'wings', color: '#2E9E44', anim: 'parrot', word: 'SQUAWK!', sfx: 'squawk' },
       { slot: 'guard', id: 'barrelRoll', name: 'Barrel Roll', icon: 'roll', color: '#9A6232', guard: 'dodge', sfx: 'barrelClonk' },
       { slot: 'special', id: 'cannonBroadside', name: 'Cannon Broadside', icon: 'cannon', color: '#FFC914', power: 1.15, hits: 4, sfx: 'broadside' },
     ],
@@ -32,7 +32,7 @@ export const NEW_FOUR = {
     attackBonus: 3,
     moves: [
       { slot: 'quick', id: 'rattleKick', name: 'Rattle Kick', icon: 'zoom', color: '#EDE6D2', anim: 'lunge', word: 'RATTLE!', sfx: 'boneRattle' },
-      { slot: 'power', id: 'pumpkinToss', name: 'Pumpkin Toss', icon: 'pumpkin', color: '#5CF2A0', anim: 'shot', lob: true, word: 'SPLAT!', sfx: 'giggle', sfxHit: 'pumpkinThonk' },
+      { slot: 'power', id: 'pumpkinToss', name: 'Pumpkin Toss', icon: 'pumpkin', color: '#5CF2A0', anim: 'pumpkinToss', word: 'SPLAT!', sfx: 'giggle', sfxHit: 'pumpkinThonk' },
       { slot: 'guard', id: 'foldUp', name: 'Fold Up', icon: 'roll', color: '#5CF2A0', guard: 'dodge', sfx: 'snikt' },
       { slot: 'special', id: 'pumpkinBarrage', name: 'Pumpkin Bomb Barrage', icon: 'pumpkin', color: '#5CF2A0', power: 1.1, effect: 'dizzy', hits: 5, sfx: 'slideWhistle' },
     ],
@@ -51,7 +51,7 @@ export const NEW_FOUR = {
     attackBonus: 1,
     moves: [
       { slot: 'quick', id: 'pawSwat', name: 'Paw Swat', icon: 'paw', color: '#FFFFFF', anim: 'lunge', word: 'SWAT!', sfx: 'sniff', sfxHit: 'pawThud' },
-      { slot: 'power', id: 'howl', name: 'Howl', icon: 'bark', color: '#FFD84A', anim: 'shot', shots: 2, word: 'AWOOO!', sfx: 'howl' },
+      { slot: 'power', id: 'howl', name: 'Howl', icon: 'bark', color: '#FFD84A', anim: 'howl', shots: 2, word: 'AWOOO!', sfx: 'howl' },
       { slot: 'guard', id: 'sheepsDisguise', name: "Sheep's Disguise", icon: 'roll', color: '#FAF6EE', guard: 'dodge', sfx: 'baa' },
       { slot: 'special', id: 'huffAndPuff', name: 'Huff & Puff', icon: 'gust', color: '#FFFFFF', power: 1.15, effect: 'dizzy', hits: 3, sfx: 'huffPuff' },
     ],
@@ -70,7 +70,7 @@ export const NEW_FOUR = {
     attackBonus: 1,
     moves: [
       { slot: 'quick', id: 'halberdSweep', name: 'Halberd Sweep', icon: 'sword', color: '#4EE8FF', anim: 'lunge', word: 'VRRMM!', sfx: 'halberdHum' },
-      { slot: 'power', id: 'gravityGrip', name: 'Gravity Grip', icon: 'spark', color: '#4EE8FF', anim: 'shot', word: 'ZZZRK!', sfx: 'gravityVwoom' },
+      { slot: 'power', id: 'gravityGrip', name: 'Gravity Grip', icon: 'spark', color: '#4EE8FF', anim: 'gravity', word: 'ZZZRK!', sfx: 'gravityVwoom' },
       { slot: 'guard', id: 'deflectorShield', name: 'Deflector Shield', icon: 'shield', color: '#4EE8FF', guard: 'reflect', sfx: 'shieldZap' },
       { slot: 'special', id: 'orbitalStrike', name: 'Orbital Strike', icon: 'bolt', color: '#4EE8FF', power: 1.2, hits: 4, sfx: 'orbitalStrike', sfxHit: 'servoStep' },
     ],

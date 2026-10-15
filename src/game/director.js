@@ -226,6 +226,10 @@ export class Director {
     };
     switch (move.anim) {
       case 'shot': return this.shot(att, def, move, onHit);
+      case 'parrot': return this.parrotAttack(att, def, move, onHit);
+      case 'howl': return this.howlAttack(att, def, move, onHit);
+      case 'pumpkinToss': return this.pumpkinToss(att, def, move, onHit);
+      case 'gravity': return this.gravityGrip(att, def, move, onHit);
       case 'ground': return this.ground(att, def, move, onHit);
       case 'dancers': return this.dancers(att, def, move, onHit);
       case 'river': return this.river(att, def, move, onHit);
@@ -259,6 +263,81 @@ export class Director {
     await onHit();
     att.mouth = 'smile';
     await this.to(att, { sx: 1, sy: 1, armF: -0.2, cannon: 0 }, 260, Ease.outCubic);
+  }
+
+  // Capt'n Crookhook: Squawks the parrot launches off his shoulder, swoops
+  // across and pecks twice.
+  async parrotAttack(att, def, move, onHit) {
+    att.mouth = 'open';
+    att.eyes = 'happy';
+    const s = this.pt(att, 'top');
+    const c = def.center();
+    await this.to(att, { armF: -2.0, sy: 0.95 }, 160, Ease.outQuad);
+    this.fx.burst(s.x, s.y, { count: 6, colors: ['#2E9E44', '#D7263D'], kind: 'puff', speed: 120 });
+    const peck = () => { this.audio.sfx('hit'); this.fx.burst(c.x, c.y - 20, { count: 8, colors: [move.color, '#ffffff'], speed: 220 }); def.flash = 0.6; };
+    await this.fx.add(FXM.parrot({ x0: s.x, y0: s.y - 10, x1: c.x - 30 * def.flip * -1, y1: c.y - 30, life: 620, onHit: peck }));
+    // a second peck from a quick loop
+    await this.fx.add(FXM.parrot({ x0: c.x - 90 * att.flip, y0: c.y - 110, x1: c.x, y1: c.y - 20, life: 380 }));
+    await onHit();
+    // flies home
+    this.fx.add(FXM.parrot({ x0: c.x, y0: c.y - 40, x1: s.x, y1: s.y - 10, life: 520 }));
+    att.eyes = 'open';
+    att.mouth = 'smile';
+    await this.to(att, { armF: -0.2, sy: 1 }, 240, Ease.outCubic);
+  }
+
+  // Big Bad Wolfgang: throws his head back and howls; two sound rings blast across.
+  async howlAttack(att, def, move, onHit) {
+    att.mouth = 'open';
+    att.eyes = 'closed';
+    await this.to(att, { rot: -0.3, sy: 1.08, oy: -8 }, 240, Ease.outQuad);
+    const m = this.pt(att, 'muzzle');
+    const c = def.center();
+    this.fx.word('AWOOO!', m.x + 30 * att.flip, m.y - 70, { size: 40, color: move.color, life: 900 });
+    let last;
+    for (let i = 0; i < (move.shots || 2); i++) {
+      last = this.fx.add(FXM.howlRing({ x0: m.x, y0: m.y - 10, x1: c.x, y1: c.y - 10, color: move.color, life: 420, delay: i * 260, onHit: i < (move.shots || 2) - 1 ? () => { this.audio.sfx('hit'); def.flash = 0.6; this.fx.burst(c.x, c.y, { count: 8, colors: [move.color, '#ffffff'], speed: 220 }); } : null }));
+      this.wait(i * 260).then(() => this.stage.shake(0.15));
+    }
+    await last;
+    await onHit();
+    att.eyes = 'open';
+    att.mouth = 'smile';
+    await this.to(att, { rot: 0, sy: 1, oy: 0 }, 260, Ease.outCubic);
+  }
+
+  // Jack-Knife: winds up and lobs a real pumpkin that splats on the foe.
+  async pumpkinToss(att, def, move, onHit) {
+    att.mouth = 'grit';
+    const h = this.pt(att, 'top');
+    const c = def.center();
+    await this.to(att, { armF: -2.6, rot: -0.15, sx: 0.95 }, 200, Ease.outQuad);
+    this.to(att, { armF: 0.6, rot: 0.15, sx: 1.05 }, 140, Ease.inQuad).then(() => this.to(att, { armF: -0.2, rot: 0, sx: 1 }, 260));
+    await this.fx.add(FXM.pumpkin({ x0: h.x, y0: h.y - 10, x1: c.x, y1: c.y, size: 24, glow: move.color, arc: 170, life: 520 }));
+    this.fx.burst(c.x, c.y - 10, { count: 16, kind: 'puff', colors: ['#E8762B', '#F6A04A', move.color], speed: 240 });
+    await onHit();
+    att.mouth = 'smile';
+  }
+
+  // Commander Payne: raises a hand and a gravity well opens over the foe,
+  // pulling it in, then snaps shut.
+  async gravityGrip(att, def, move, onHit) {
+    att.mouth = 'grit';
+    att.eyes = 'angry';
+    const c = def.center();
+    await this.to(att, { armF: -1.9, sy: 1.03 }, 220, Ease.outBack);
+    this.fx.orb(att.x, att.y - 150, c.x, c.y, move.color, 0);
+    await this.wait(200);
+    def.eyes = 'squint';
+    // the foe gets tugged toward the well and lifted while it's open
+    const tug = this.to(def, { oy: -26, sx: 0.94, sy: 1.08 }, 500, Ease.inOutQuad);
+    await this.fx.add(FXM.gravityWell({ x: c.x, y: c.y, r: 110, color: move.color, life: 820, onHit: () => { this.audio.sfx('hit'); this.stage.shake(0.2); } }));
+    await tug;
+    this.to(def, { oy: 0, sx: 1, sy: 1 }, 180, Ease.inQuad);
+    await onHit();
+    att.eyes = 'open';
+    att.mouth = 'smile';
+    await this.to(att, { armF: -0.2, sy: 1 }, 240, Ease.outCubic);
   }
 
   async ground(att, def, move, onHit) {
