@@ -31,6 +31,10 @@ const LOOK = {
   'haunted-forest': { top: 0x4a3a6a, side: 0x2e2440, sky: 0x4a2a5a, water: 0x24204a, props: 'forest' },
 };
 const SPACE = { start: 0xffffff, fight: 0xe84a3a, star: 0xffc914, lucky: 0x3fc46a, boss: 0x8a4ae0 };
+// "the villain is winning": islands nearest the mountain drift toward this palette
+const GLOOM = { top: new THREE.Color(0x4a3a6a), side: new THREE.Color(0x2e2440), sky: new THREE.Color(0x3a2048), water: new THREE.Color(0x1c1838) };
+const smooth = (k) => k * k * (3 - 2 * k); // ease in and out
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 
 // standee pictures survive between visits (they're just canvases)
 const shots = new Map();
@@ -84,13 +88,22 @@ function topTexture(kind) {
 }
 
 export class Board3D {
-  constructor(stage, { board, chars, heroDef, cleared = [], pos = 0, audio = null, clearedWorlds = 0 }) {
+  constructor(stage, { board, chars, heroDef, cleared = [], pos = 0, audio = null, clearedWorlds = 0, rounds = 0 }) {
     this.stage = stage;
     this.board = board;
     this.chars = chars;
     this.heroDef = heroDef;
     this.audio = audio;
     this.clearedWorlds = clearedWorlds; // how far Luca is: the storm over the mountain grows with it
+    this.rounds = rounds; // rolls so far: the darkness creeps along the board with them
+    this.gloom = gloomFor(clearedWorlds, rounds); // what the board shows now
+    this.gloomTarget = this.gloom;
+    // cinematics: a fly-over, the boss swoop and the villain scene drive the camera
+    // instead of the follow view; `blend` eases the camera back afterwards
+    this.cine = null;
+    this.blend = null;
+    this.camPos = new THREE.Vector3();
+    this.camLook = new THREE.Vector3();
     // free look: pan (ox along the board, oz toward/away) and zoom, on top of the follow camera
     this.look = { ox: 0, oz: 0, oy: 0, zoom: 1, tx: 0, tz: 0, ty: 0, tzoom: 1, free: false };
     this.amb = { flags: [], beams: [], flies: [], embers: [], bolt: 4000 + Math.random() * 4000 };
@@ -157,7 +170,8 @@ export class Board3D {
       const idx = this.board.map((s, i) => (s.world === wi ? i : -1)).filter((i) => i >= 0);
       const x0 = this.pts[idx[0]].x - 90, x1 = this.pts[idx.at(-1)].x + 90;
       const cx = (x0 + x1) / 2, hx = (x1 - x0) / 2;
-      this.worldX.push({ x0, x1, sky: new THREE.Color(look.sky), water: new THREE.Color(look.water), name: w.arena });
+      const W = { x0, x1, sky: new THREE.Color(look.sky), water: new THREE.Color(look.water), name: w.arena, base: { sky: new THREE.Color(look.sky), water: new THREE.Color(look.water), top: new THREE.Color(look.top), side: new THREE.Color(look.side) }, dark: 0 };
+      this.worldX.push(W);
       // chunky island: dirt sides, a thin top slab a little larger
       const side = new THREE.CylinderGeometry(1, 0.86, 1, 11, 1);
       const pos = side.attributes.position;
@@ -167,9 +181,9 @@ export class Board3D {
         pos.setX(k, pos.getX(k) * j); pos.setZ(k, pos.getZ(k) * j);
       }
       side.computeVertexNormals();
-      this.P(side, look.side, [cx, -26, 0], [hx + 40, 52, 230], { ink: 3 });
+      W.sideMesh = this.P(side, look.side, [cx, -26, 0], [hx + 40, 52, 230], { ink: 3 });
       const top = side.clone();
-      this.P(top, look.top, [cx, -2, 0], [hx + 52, 8, 242], { ink: 3 });
+      W.topMesh = this.P(top, look.top, [cx, -2, 0], [hx + 52, 8, 242], { ink: 3 });
       // bridge to the next world
       if (wi < WORLDS.length - 1) {
         const a = this.pts[idx.at(-1)], b = this.pts[idx.at(-1) + 1];
@@ -326,6 +340,8 @@ export class Board3D {
         standee.scale.setScalar(STANDEE * big);
         standee.position.set(p.x + 16, 10, p.z - 14);
         standee.userData.y = 10;
+        standee.userData.big = big;
+        standee.userData.phase = (i * 1.37) % 4; // so they don't all hop at once
         this.scene.add(standee);
       }
       return { disc, face, standee, type: sp.type, cleared: false };
@@ -391,6 +407,115 @@ export class Board3D {
     this.look.free = false;
   }
 
+  // ---- cinematics (camera key frames; everything else keeps animating) ----
+  // keys: [{ at: 0..1, pos, look }], eased between neighbours. `hold` keeps the
+  // last key until endCine(); otherwise the camera blends back when it's over.
+  startCine(kind, dur, keys, { hold = false, onTick = null } = {}) {
+    this.endCine(false);
+    const first = keys[0];
+    first.pos = first.pos || this.camPos.clone();
+    first.look = first.look || this.camLook.clone();
+    this.cine = { kind, dur, keys, hold, onTick, t0: performance.now(), done: false };
+    return new Promise((resolve) => { this.cine.resolve = resolve; });
+  }
+
+  // where a cinematic puts the camera at time k (0..1)
+  cineAt(c, k) {
+    const ks = c.keys;
+    let i = 0;
+    while (i < ks.length - 2 && k > ks[i + 1].at) i++;
+    const a = ks[i], b = ks[i + 1];
+    const u = smooth(Math.max(0, Math.min(1, (k - a.at) / Math.max(1e-3, b.at - a.at))));
+    return { pos: a.pos.clone().lerp(b.pos, u), look: a.look.clone().lerp(b.look, u) };
+  }
+
+  // stop the current cinematic; the camera eases back to the follow view
+  endCine(blend = true) {
+    const c = this.cine;
+    if (!c) return;
+    this.cine = null;
+    if (this.villain) this.villain.stir = 0;
+    if (blend) this.blend = { pos: this.camPos.clone(), look: this.camLook.clone(), t0: performance.now(), dur: 700 };
+    if (!c.done) { c.done = true; c.resolve && c.resolve(); }
+  }
+
+  // a tap during any cinematic: jump to its end
+  skipCine() {
+    const c = this.cine;
+    if (!c) return;
+    if (c.kind === 'villain') this.gloom = this.gloomTarget;
+    if (c.hold) {
+      const end = this.cineAt(c, 1);
+      this.camPos.copy(end.pos); this.camLook.copy(end.look);
+      c.t0 = -1e9; // sit on the last key
+      if (!c.done) { c.done = true; c.resolve && c.resolve(); }
+    } else this.endCine(true);
+  }
+
+  // the top of the follow view (no free look), for cinematics to land on
+  followView(x = this.token.position.x) {
+    return { pos: V3(x + CAM.x, CAM.y, CAM.z), look: V3(x + AHEAD, 0, -30) };
+  }
+
+  // Opening fly-over: high over the first island, along the path to the mountain,
+  // then down into the follow view behind the piece. ~3.5 s, any tap skips it.
+  flyOver() {
+    const p0 = this.pts[0], pN = this.pts.at(-1);
+    const end = this.followView();
+    const keys = [
+      { at: 0, pos: V3(p0.x - 260, 820, 980), look: V3(p0.x + 180, 40, -60) },
+      { at: 0.55, pos: V3(pN.x - 520, 760, 1150), look: V3(pN.x + 40, 240, -380) },
+      { at: 1, pos: end.pos, look: end.look },
+    ];
+    this.camPos.copy(keys[0].pos); this.camLook.copy(keys[0].look);
+    return this.startCine('fly', 3500, keys, {});
+  }
+
+  // Boss swoop: frame the boss standee on space i and hold there (endCine() lets go).
+  frameBoss(i, dur = 900) {
+    const s = this.spaces[i];
+    const p = this.pts[i];
+    const big = s && s.standee ? s.standee.scale.x / STANDEE : 1;
+    const keys = [
+      { at: 0 },
+      { at: 1, pos: V3(p.x + 90, 150 * big + 70, 330 * big + 90), look: V3(p.x + 24, 62 * big + 24, p.z - 14) },
+    ];
+    return this.startCine('boss', dur, keys, { hold: true });
+  }
+
+  // "The villain is winning": glide to the summit, Czernobog stirs, the darkness
+  // spreads one notch, and the camera comes back. ~4 s, tap skips.
+  villainScene(rounds) {
+    this.rounds = rounds;
+    this.gloomTarget = gloomFor(this.clearedWorlds, rounds);
+    if (!this.villain) { this.gloom = this.gloomTarget; return Promise.resolve(); }
+    const m = this.villain.group.position;
+    const back = this.followView();
+    const keys = [
+      { at: 0 },
+      { at: 0.3, pos: V3(m.x - 360, m.y + 170, m.z + 640), look: V3(m.x, m.y + 100, m.z) },
+      { at: 0.7, pos: V3(m.x - 250, m.y + 140, m.z + 500), look: V3(m.x, m.y + 105, m.z) },
+      { at: 0.86, pos: V3(m.x - 700, 720, 1000), look: V3(m.x - 300, 160, -200) }, // pull back over the board, not through the mountain
+      { at: 1, pos: back.pos, look: back.look },
+    ];
+    const self = this;
+    let struck = false;
+    return this.startCine('villain', 4200, keys, {
+      onTick(k) {
+        // he stirs while the camera is on him, and the storm cracks once
+        self.villain.stir = k > 0.2 && k < 0.8 ? Math.min(1, (k - 0.2) / 0.15) : 0;
+        if (k > 0.42 && !struck) {
+          struck = true;
+          self.stage.flash(0.5, '#D8C8FF');
+          self.stage.shake(0.3);
+          self.audio && self.audio.sfx('thunder');
+          self.amb.emberBurst = performance.now();
+        }
+        self.gloom += (self.gloomTarget - self.gloom) * (k > 0.4 ? 0.06 : 0);
+      },
+    });
+  }
+
   setCleared(list) {
     this.spaces.forEach((s, i) => {
       const c = i > 0 && list.includes(i);
@@ -439,8 +564,16 @@ export class Board3D {
       if (k >= 1) { this.hop = null; h.resolve(); }
     }
     this.rig.apply({ t: now, eyes: 'open', mouth: 'smile', action: air > 0 ? 'win' : 'idle', headBob: air * 4 });
-    // standees breathe a little
-    this.spaces.forEach((s, i) => { if (s.standee && s.standee.visible) s.standee.position.y = s.standee.userData.y + Math.abs(Math.sin(now / 420 + i)) * 4; });
+    // standees breathe a little, and every few seconds one does a little hop
+    this.spaces.forEach((s, i) => {
+      if (!s.standee || !s.standee.visible) return;
+      const u = s.standee.userData;
+      const cyc = (now / 1000 + u.phase) % 4.6; // one hop (0.42 s) every 4.6 s
+      const hop = cyc < 0.42 ? Math.sin((cyc / 0.42) * Math.PI) * 16 : 0;
+      s.standee.position.y = u.y + Math.abs(Math.sin(now / 420 + i)) * 4 + hop;
+      const sq = 1 + hop / 160; // a bit of stretch on the way up
+      s.standee.scale.set(STANDEE * u.big / sq, STANDEE * u.big * sq, 1);
+    });
     // star bursts
     this.fx = this.fx.filter((f) => {
       const k = (now - f.t0) / 700;
@@ -456,30 +589,49 @@ export class Board3D {
     for (const f of A.flags) { f.scale.x = 28 * (0.85 + 0.15 * Math.sin(now / 160 + f.position.x)); f.position.y = f.userData.baseY + Math.sin(now / 300 + f.position.z) * 1.5; }
     for (const p of A.beams) p.rotation.y = now / 1400;
     for (const f of A.flies) { const u = f.userData; f.position.set(u.x + Math.sin(now / 900 + u.phase) * 30, u.y + Math.sin(now / 600 + u.phase * 2) * 14, u.z + Math.cos(now / 1100 + u.phase) * 24); f.visible = Math.sin(now / 350 + u.phase * 3) > -0.3; }
+    // embers drift up; a burst (the villain scene) throws them faster and bigger for a moment
+    const burst = A.emberBurst ? Math.max(0, 1 - (now - A.emberBurst) / 1400) : 0;
     for (const e of A.embers) {
       const u = e.userData;
-      const k = ((now / 1000) * u.speed + u.phase) % 1;
-      e.position.set(u.x + Math.sin(k * 9 + u.phase) * 14, 395 + k * 180, u.z);
-      const sc = (1 - k) * (3 + u.phase);
+      const k = ((now / 1000) * u.speed * (1 + burst * 1.5) + u.phase) % 1;
+      e.position.set(u.x + Math.sin(k * 9 + u.phase) * (14 + burst * 30), 395 + k * (180 + burst * 120), u.z);
+      const sc = (1 - k) * (3 + u.phase) * (1 + burst);
       e.scale.setScalar(Math.max(0.5, sc));
     }
     if (this.rippleTex) { this.rippleTex.offset.x = now / 9000; this.rippleTex.offset.y = Math.sin(now / 4000) * 0.02; }
-    if (this.peakGlow) this.peakGlow.scale.setScalar(1 + 0.12 * Math.sin(now / 260));
+    if (this.peakGlow) this.peakGlow.scale.setScalar(1 + 0.12 * Math.sin(now / 260) + (this.villain?.stir || 0) * 0.3);
     // Czernobog on the summit: breathing idle, slow turn, wings in the wind; angrier the further Luca gets
     if (this.villain) {
-      const anger = Math.min(1, this.clearedWorlds / 4);
+      const anger = Math.min(1, this.clearedWorlds / 4 + this.gloom * 0.5);
       const v = this.villain;
-      v.rig.apply({ t: now, eyes: anger > 0.6 ? 'angry' : 'open', mouth: anger > 0.6 ? 'grit' : 'flat', action: 'idle', armF: -0.4 + Math.sin(now / 700) * 0.25, armB: 0.3 + Math.sin(now / 820) * 0.25, headBob: Math.sin(now / 900) * 3 });
-      v.group.rotation.y = -0.85 + Math.sin(now / (2200 - anger * 900)) * (0.18 + anger * 0.2);
-      v.group.position.y = 392 + Math.sin(now / 1100) * 4;
+      const stir = v.stir || 0; // the villain scene: big sway, wings up, angry
+      v.rig.apply({ t: now, eyes: anger > 0.6 || stir > 0 ? 'angry' : 'open', mouth: stir > 0.5 ? 'open' : anger > 0.6 ? 'grit' : 'flat', action: 'idle', armF: -0.4 + Math.sin(now / 700) * 0.25 - stir * 0.9, armB: 0.3 + Math.sin(now / 820) * 0.25 + stir * 0.9, headBob: Math.sin(now / 900) * 3 + Math.sin(now / 140) * 4 * stir });
+      v.group.rotation.y = -0.85 + Math.sin(now / (2200 - anger * 900)) * (0.18 + anger * 0.2) + Math.sin(now / 330) * 0.35 * stir;
+      v.group.rotation.z = Math.sin(now / 260) * 0.12 * stir;
+      v.group.position.y = 392 + Math.sin(now / 1100) * 4 + stir * 14;
       // lightning over the mountain now and then (more often as the storm grows)
       A.bolt -= dt;
       if (A.bolt <= 0) {
-        A.bolt = (3500 + Math.random() * 5000) * (1 - anger * 0.5);
+        A.bolt = (3500 + Math.random() * 5000) * (1 - anger * 0.5) * (1 - this.gloom * 0.4);
         this.stage.flash(0.22 + anger * 0.15, '#D8C8FF');
         this.stage.shake(0.08 + anger * 0.1);
         this.audio && this.audio.sfx('thunder');
       }
+    }
+    // the darkness creeps along the board from the mountain end: each island
+    // lerps toward the forest palette by how far the gloom has reached it
+    if (this.gloomShown !== this.gloom) {
+      this.gloomShown = this.gloom;
+      const n = this.worldX.length;
+      this.worldX.forEach((w, i) => {
+        const d = Math.max(0, Math.min(1, this.gloom * 1.6 - (n - 1 - i) * 0.3));
+        if (d === w.dark) return;
+        w.dark = d;
+        w.sky.copy(w.base.sky).lerp(GLOOM.sky, d);
+        w.water.copy(w.base.water).lerp(GLOOM.water, d);
+        w.topMesh.material.uniforms.uColor.value.copy(w.base.top).lerp(GLOOM.top, d);
+        w.sideMesh.material.uniforms.uColor.value.copy(w.base.side).lerp(GLOOM.side, d);
+      });
     }
     // camera follows the piece, with the free-look pan/zoom on top; the sky shifts with the world
     const x = this.token.position.x;
@@ -488,14 +640,36 @@ export class Board3D {
     L.ox += (L.tx - L.ox) * ease; L.oz += (L.tz - L.oz) * ease; L.oy += (L.ty - L.oy) * ease; L.zoom += (L.tzoom - L.zoom) * ease;
     const zf = 1 / L.zoom;
     const cx = this.camX + L.ox;
+    const pos = this.camPos, look = this.camLook;
+    const c = this.cine;
+    if (c) {
+      // a cinematic owns the camera
+      const k = Math.min(1, (now - c.t0) / c.dur);
+      const at = this.cineAt(c, k);
+      pos.copy(at.pos); look.copy(at.look);
+      c.onTick && c.onTick(k);
+      if (k >= 1 && !c.done) { c.done = true; c.resolve && c.resolve(); }
+      if (k >= 1 && !c.hold) this.endCine(true);
+    } else {
+      pos.set(cx + CAM.x * zf, CAM.y * zf + L.oy * 0.35, CAM.z * zf + L.oz);
+      look.set(cx + AHEAD * zf, L.oy, -30 + L.oz * 0.55 - L.oy * 0.6);
+      const b = this.blend;
+      if (b) {
+        // easing back from where the cinematic left the camera
+        const k = Math.min(1, (now - b.t0) / b.dur);
+        pos.lerpVectors(b.pos, pos, smooth(k)); look.lerpVectors(b.look, look, smooth(k));
+        if (k >= 1) this.blend = null;
+      }
+    }
     this.camera.aspect = this.stage.W / VH;
-    this.camera.position.set(cx + CAM.x * zf, CAM.y * zf + L.oy * 0.35, CAM.z * zf + L.oz);
-    this.camera.lookAt(cx + AHEAD * zf, L.oy, -30 + L.oz * 0.55 - L.oy * 0.6);
+    this.camera.position.copy(pos);
+    this.camera.lookAt(look);
     this.camera.updateProjectionMatrix();
     this.camera.updateMatrixWorld(true);
     const w = this.worldX.find((q) => x <= q.x1 + GAP / 2) || this.worldX.at(-1);
-    this.sky.lerp(w.sky, Math.min(1, dt / 600));
-    this.waterMat.color.lerp(w.water, Math.min(1, dt / 600));
+    const wSky = c && c.kind === 'villain' ? this.worldX.at(-1) : w; // the summit scene shows the forest sky
+    this.sky.lerp(wSky.sky, Math.min(1, dt / 600));
+    this.waterMat.color.lerp(wSky.water, Math.min(1, dt / 600));
     this.world = w.name;
   }
 
@@ -503,6 +677,11 @@ export class Board3D {
     disposeTree(this.scene);
     for (const t of Object.values(this.tex)) t.dispose();
   }
+}
+
+// how far the villain's darkness has spread: by worlds beaten and rolls taken
+export function gloomFor(clearedWorlds = 0, rounds = 0) {
+  return Math.min(1, clearedWorlds / 4 + rounds / 30);
 }
 
 function disposeTree(o) {

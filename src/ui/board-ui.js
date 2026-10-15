@@ -31,9 +31,10 @@ function face(def, size, px) {
   return c;
 }
 
-export function showBoard(ui, { campaign, board, chars, onRoll, onFight, onHome, make3D = null }) {
+// intro: true when the board opens fresh (from the menu), so the 3D board flies over it first
+export function showBoard(ui, { campaign, board, chars, onRoll, onFight, onHome, make3D = null, intro = false }) {
   ui.clear();
-  if (make3D) return showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make3D });
+  if (make3D) return showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make3D, intro });
   const px = ui.app.px;
   const hero = chars[campaign.heroId];
   const W = xAt(board.length - 1) + PAD + 200;
@@ -160,7 +161,7 @@ export function showBoard(ui, { campaign, board, chars, onRoll, onFight, onHome,
 // ---------- 3D diorama version (render3d/board3d.js draws the board) ----------
 // Same HUD and the same play() contract; the stage renders the island scene
 // behind this transparent screen.
-function showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make3D }) {
+function showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make3D, intro }) {
   const pop = h('div', { class: 'board-pop' });
   const worldName = h('div', { class: 'board-world-name' });
   const starNum = h('span', { class: 'board-stars-num' });
@@ -172,7 +173,10 @@ function showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make
   const recenter = h('button', { class: 'board-recenter hidden', 'aria-label': 'Back to my toy', html: '<svg viewBox="0 0 40 40" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"><circle cx="20" cy="20" r="9"/><path d="M20 3v7M20 30v7M3 20h7M30 20h7"/></svg>' });
   const scr = h('div', { class: 'screen board-screen board-3d', 'data-spaces': board.length }, worldName, pop, stars, die, fight, home, recenter);
   ui.layer.appendChild(scr);
-  const view = make3D({ board, chars, heroDef: chars[campaign.heroId], cleared: campaign.cleared, pos: campaign.pos, owner: scr });
+  const view = make3D({ board, chars, heroDef: chars[campaign.heroId], cleared: campaign.cleared, pos: campaign.pos, owner: scr, rounds: campaign.rounds || 0 });
+  // any tap skips a cinematic (the die still rolls: its own handler runs too)
+  scr.addEventListener('pointerdown', () => view.skipCine(), { capture: true });
+  if (intro && !campaign.done) view.flyOver();
 
   // ---- free look: drag to pan, pinch or wheel to zoom; the next roll snaps back ----
   const ptrs = new Map();
@@ -240,6 +244,10 @@ function showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make
       busy = true;
       view.recenter();
       onFree();
+      view.endCine();
+      // every third roll: the villain is winning (a short, skippable scene)
+      const rounds = result.campaign.rounds || 0;
+      if (rounds > 0 && rounds % 3 === 0) await view.villainScene(rounds);
       die.classList.add('rolling');
       for (let k = 0; k < 6; k++) { die.innerHTML = dieFace(1 + (k % 3)); ui.app.audio.sfx('tap'); await wait(80); }
       die.innerHTML = dieFace(roll);
@@ -268,7 +276,9 @@ function showBoard3D(ui, { campaign, board, chars, onRoll, onFight, onHome, make
         ui.app.audio.sfx('powerUp');
         say('AGAIN!', '#5CE07A', at);
       } else if (result.event === 'fight') {
-        say(board[at].type === 'boss' ? 'BOSS!' : 'FIGHT!', '#FF5A4A', at, 190);
+        const boss = board[at].type === 'boss';
+        if (boss) await Promise.race([view.frameBoss(at, 900), wait(1400)]); // swoop in on the boss first
+        say(boss ? 'BOSS!' : 'FIGHT!', '#FF5A4A', at, 190);
         ui.app.audio.sfx('warn');
       }
       busy = false;

@@ -345,11 +345,11 @@ class App {
     if (mode === 'gallery') return this.goGallery();
     if (mode === 'campaign') {
       const c = this.save.data.campaign;
-      if (c && !c.done) return this.goBoard();
+      if (c && !c.done) return this.goBoard({ intro: true });
       return this.goSelect((heroId) => {
         this.save.data.campaign = newCampaign(heroId);
         this.save.save();
-        this.goBoard();
+        this.goBoard({ intro: true });
       }, () => this.goModes());
     }
     const run = this.save.data.runs.tournament;
@@ -411,7 +411,8 @@ class App {
   }
 
   // ---------------- campaign board ----------------
-  goBoard() {
+  // intro: a fly-over of the board when it opens from the menu (not after a battle)
+  goBoard({ intro = false } = {}) {
     this.endBattle();
     this.leaveGallery();
     const c = this.save.data.campaign;
@@ -425,13 +426,15 @@ class App {
       chars: CHARACTERS,
       make3D: this.stage.is3D ? (opts) => {
         const clearedWorlds = board.filter((sp, i) => sp.type === 'boss' && c.cleared.includes(i)).length;
-        const b = new Board3D(this.stage, { ...opts, audio: this.audio, clearedWorlds });
+        const b = new Board3D(this.stage, { ...opts, audio: this.audio, clearedWorlds, rounds: c.rounds || 0 });
         this.stage.setBoard(b, opts.owner);
         return b;
       } : null,
+      intro,
       onRoll: async (api) => {
         const roll = rollDie();
         const res = move(this.save.data.campaign, board, roll);
+        res.campaign.rounds = (this.save.data.campaign.rounds || 0) + 1; // every 3rd one, the villain stirs
         this.save.data.campaign = res.campaign;
         if (res.event === 'star') this.save.data.progress.stars++;
         this.save.save();
