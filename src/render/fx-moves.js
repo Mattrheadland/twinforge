@@ -778,3 +778,105 @@ export function gravityWell({ x, y, r = 120, color = '#4EE8FF', life = 900, dela
     },
   };
 }
+
+// ---------------- Czernobog's night crew (storm extras) ----------------
+// Fire dancer: a little living flame that hops side to side on the floor line
+// beside Czernobog. Our own shape: a chunky inked teardrop with a flickering
+// tip, a yellow core, two stubby swinging arms, dot eyes and a wide grin. Pops
+// up over the first 8%, dances, then shrinks away over the last 15%. `y` is
+// the floor line (its feet); `size` is roughly its body height.
+export function fireDancer({ x, y, size = 36, life = 6000, delay = 0, seed = Math.random() * 1000 }) {
+  const ph = seed % 6.283, sideDir = seed % 2 < 1 ? 1 : -1;
+  return {
+    max: life, delay, x0: x,
+    draw(ctx, k, t) {
+      const grow = k < 0.08 ? ease(k / 0.08) : k > 0.85 ? Math.max(0, 1 - (k - 0.85) / 0.15) : 1;
+      if (grow <= 0) return;
+      const hop = (t / 1000) * Math.PI * 4 + ph; // 2 Hz hops
+      const air = Math.abs(Math.sin(hop));
+      const sway = Math.sin(hop * 0.5) * size * 0.55 * sideDir; // one side to the other every hop pair
+      const squash = 1 - 0.18 * Math.max(0, Math.cos(hop * 2)) * (1 - air);
+      const s = size * grow;
+      const flick = Math.sin(t / 55 + ph) * s * 0.22 + Math.sin(t / 130 + ph * 2) * s * 0.12;
+      const lean = Math.sin(hop) * 0.18 * sideDir;
+      ctx.save();
+      ctx.translate(x + sway, y - air * s * 0.4);
+      ctx.rotate(lean);
+      ctx.scale(1 / squash, squash);
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      // body: round bottom, pointed flickering tip
+      const flame = (w, h, tipX) => {
+        ctx.beginPath();
+        ctx.moveTo(-w, -h * 0.35);
+        ctx.quadraticCurveTo(-w * 1.05, h * 0.02, 0, 0);
+        ctx.quadraticCurveTo(w * 1.05, h * 0.02, w, -h * 0.35);
+        ctx.quadraticCurveTo(w * 0.85, -h * 0.75, tipX, -h);
+        ctx.quadraticCurveTo(-w * 0.35, -h * 0.62, -w, -h * 0.35);
+        ctx.closePath();
+      };
+      // arms: stubby, swinging with the hop
+      const swing = Math.sin(hop) * 0.9;
+      ctx.lineWidth = s * 0.26; ctx.strokeStyle = INK;
+      for (const d of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(d * s * 0.5, -s * 0.42); ctx.lineTo(d * s * 0.82, -s * 0.42 - d * swing * s * 0.3 - s * 0.1); ctx.stroke();
+      }
+      ctx.lineWidth = s * 0.14; ctx.strokeStyle = '#F46036';
+      for (const d of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(d * s * 0.5, -s * 0.42); ctx.lineTo(d * s * 0.82, -s * 0.42 - d * swing * s * 0.3 - s * 0.1); ctx.stroke();
+      }
+      flame(s * 0.55, s, flick);
+      ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.fillStyle = '#F46036'; ctx.fill();
+      flame(s * 0.3, s * 0.62, flick * 0.55);
+      ctx.fillStyle = '#FFC914'; ctx.fill();
+      flame(s * 0.14, s * 0.34, flick * 0.3);
+      ctx.fillStyle = '#FFF2B0'; ctx.fill();
+      // face: dot eyes and a wide grin
+      ctx.fillStyle = INK;
+      for (const d of [-1, 1]) { ctx.beginPath(); ctx.arc(d * s * 0.2, -s * 0.5, s * 0.07, 0, Math.PI * 2); ctx.fill(); }
+      ctx.beginPath(); ctx.arc(0, -s * 0.42, s * 0.22, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.lineWidth = s * 0.07; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.restore();
+    },
+  };
+}
+
+// Shadow peeker: a flat black rounded silhouette with two small pale round
+// eyes that rises out of the floor to half its height, glances left and right,
+// and sinks back. Clipped at the floor line so it really comes out of the
+// ground. Our own shape: no mouth, no limbs, just a rounded shade and eyes.
+export function shadowPeeker({ x, y, size = 52, life = 3400, delay = 0, seed = Math.random() * 1000 }) {
+  const ph = seed % 6.283, first = seed % 2 < 1 ? 1 : -1;
+  return {
+    max: life, delay,
+    draw(ctx, k, t) {
+      const up = k < 0.3 ? ease(k / 0.3) : k > 0.72 ? ease(Math.max(0, 1 - (k - 0.72) / 0.28)) : 1;
+      if (up <= 0) return;
+      const h = size * 1.4, w = size * 0.5;
+      const rise = h * 0.5 * up; // only ever shows its top half
+      // glance: look one way, then the other, while it's up
+      const g = k < 0.3 ? 0 : k > 0.72 ? 0 : Math.sin(((k - 0.3) / 0.42) * Math.PI * 2 + ph * 0.1);
+      const look = first * (g > 0 ? Math.min(1, g * 1.6) : Math.max(-1, g * 1.6)) * w * 0.3;
+      const wobble = Math.sin(t / 420 + ph) * w * 0.08;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x - w * 3, y - h * 2, w * 6, h * 2); ctx.clip(); // nothing below the floor line
+      ctx.translate(x + wobble, y - rise + h);
+      ctx.beginPath();
+      ctx.moveTo(-w, 0);
+      ctx.lineTo(-w, -h + w * 1.1);
+      ctx.quadraticCurveTo(-w, -h, -w * 0.15, -h);
+      ctx.quadraticCurveTo(w, -h, w, -h + w * 1.1);
+      ctx.lineTo(w, 0);
+      ctx.closePath();
+      ctx.fillStyle = INK; ctx.fill();
+      // pale round eyes, shifting with the glance; blink near the top of the rise
+      const blink = Math.abs(Math.sin(t / 900 + ph)) > 0.97 ? 0.15 : 1;
+      ctx.fillStyle = '#E6D8FF';
+      for (const d of [-1, 1]) {
+        ctx.beginPath(); ctx.ellipse(d * w * 0.42 + look, -h + w * 0.85, w * 0.17, w * 0.17 * blink, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    },
+  };
+}

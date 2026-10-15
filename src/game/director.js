@@ -29,11 +29,14 @@ export class Director {
       const glow = FXM.underglow({ width: () => this.stage.W, y: VH, h: 170 });
       this.fx.addUnder(glow);
       this.clock.to(glow, { on: 1 }, 1400);
-      this.storm = { bolt: 2500 + Math.random() * 3000, ember: 0, wisp: 900, glow };
+      // night crew: fire dancers hop beside him (2–4 alive), shadow peekers
+      // rise from his third of the floor. All timers live here and clear below.
+      this.storm = { bolt: 2500 + Math.random() * 3000, ember: 0, wisp: 900, glow, dancer: 1200, dancers: [], peek: 2600, peekers: [], wisps: [] };
       this.clock.to(this.stage, { vignette: 0.6 }, 1200);
     } else {
       const st = this.storm;
       this.storm = null;
+      if (st) for (const e of [...(st.dancers || []), ...(st.peekers || []), ...(st.wisps || [])]) e.max = 0; // dropped on the next fx tick
       if (st?.glow) {
         const glow = st.glow;
         this.clock.killTweensOf(glow);
@@ -67,8 +70,45 @@ export class Director {
         if (cz) {
           const n = Math.random() < 0.35 ? 2 : 1;
           for (let i = 0; i < n; i++) {
-            this.fx.add(FXM.wisp({ x: cz.x + (Math.random() - 0.5) * 240, y: cz.y + 6, rise: 260 + Math.random() * 120, size: 11 + Math.random() * 7, color: Math.random() < 0.5 ? '#E6D8FF' : '#CFC2FF', life: 2000 + Math.random() * 800, delay: i * 350, spin: Math.random() < 0.5 ? 1 : -1 }));
+            st.wisps = st.wisps.filter((e) => e.life < e.max);
+            const w = FXM.wisp({ x: cz.x + (Math.random() - 0.5) * 240, y: cz.y + 6, rise: 260 + Math.random() * 120, size: 11 + Math.random() * 7, color: Math.random() < 0.5 ? '#E6D8FF' : '#CFC2FF', life: 2000 + Math.random() * 800, delay: i * 350, spin: Math.random() < 0.5 ? 1 : -1 });
+            st.wisps.push(w);
+            this.fx.add(w);
           }
+        }
+      }
+      // night crew (fire dancers and shadow peekers), only while the toys are on stage
+      const czn = [this.foe, this.hero].find((f) => f?.def?.id === 'nightwing');
+      if (czn) {
+        const W = this.stage.W;
+        st.dancers = st.dancers.filter((d) => d.life < d.max && this.fx.ents.includes(d));
+        st.dancer -= real;
+        if (st.dancer <= 0) {
+          st.dancer = 1700 + Math.random() * 900;
+          const want = st.dancers.length < 2 ? 2 : 4; // keep at least two, never more than four
+          if (st.dancers.length < want) {
+            // on his outer side (the move buttons sit between the toys): four
+            // evenly spread spots from just past his feet to the edge of the
+            // stage, taking the first one no dancer is standing on
+            const outer = czn.flip < 0 ? 1 : -1;
+            const edge = outer > 0 ? W - 45 : 45;
+            const slots = [0, 1, 2, 3].map((i) => czn.x + outer * 70 + (edge - (czn.x + outer * 70)) * (i / 3));
+            const free = slots.filter((sx) => !st.dancers.some((e) => Math.abs(e.x0 - sx) < 30));
+            const x = free.length ? free[Math.floor(Math.random() * free.length)] : slots[0];
+            const d = FXM.fireDancer({ x, y: czn.y + 2, size: 36 + Math.random() * 12, life: 5000 + Math.random() * 3000 });
+            st.dancers.push(d);
+            this.fx.add(d);
+          }
+        }
+        st.peek -= real;
+        if (st.peek <= 0) {
+          st.peek = 3400 + Math.random() * 1400;
+          const third = W / 3, cx = czn.flip < 0 ? W - third / 2 : third / 2;
+          const x = Math.max(40, Math.min(W - 40, cx + (Math.random() - 0.5) * third * 0.9));
+          st.peekers = st.peekers.filter((e) => e.life < e.max && this.fx.ents.includes(e));
+          const pk = FXM.shadowPeeker({ x, y: czn.y + 2, size: 46 + Math.random() * 14, life: 3000 + Math.random() * 1200 });
+          st.peekers.push(pk);
+          this.fx.add(pk);
         }
       }
       st.bolt -= real;
