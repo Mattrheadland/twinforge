@@ -14,7 +14,21 @@ export class Director {
     this.clock = stage.clock;
     this.fx = stage.fx;
     this.zzzTimer = 0;
+    this.storm = null; // Czernobog's fight: lightning, thunder, embers (see setStorm)
     stage.onFrame = (real) => this.tick(real);
+  }
+
+  // The ultimate villain gets weather. on: purple vignette closes in, embers
+  // drift up from the floor, lightning flashes with a thunder rumble every
+  // few seconds. off: everything clears.
+  setStorm(on) {
+    if (on) {
+      this.storm = { bolt: 2500 + Math.random() * 3000, ember: 0 };
+      this.clock.to(this.stage, { vignette: 0.6 }, 1200);
+    } else {
+      this.storm = null;
+      this.clock.to(this.stage, { vignette: 0 }, 600);
+    }
   }
   get hero() { return this.stage.fighters.hero; }
   get foe() { return this.stage.fighters.foe; }
@@ -25,6 +39,23 @@ export class Director {
   tick(real) {
     const t = this.clock.time;
     this.zzzTimer += real;
+    if (this.storm) {
+      const st = this.storm;
+      st.ember -= real;
+      if (st.ember <= 0) {
+        st.ember = 90 + Math.random() * 120;
+        const W = this.stage.W;
+        this.fx.burst(Math.random() * W, 420 + Math.random() * 40, { count: 1, kind: 'spark', colors: ['#FF7A1A', '#FFC914', '#C07CFF'], speed: 40 + Math.random() * 50, gravity: -140, drag: 1.2, life: 1600 + Math.random() * 900, size: 4 + Math.random() * 4, spread: 0.6, dir: -Math.PI / 2 });
+      }
+      st.bolt -= real;
+      if (st.bolt <= 0) {
+        st.bolt = 3500 + Math.random() * 4500;
+        this.stage.flash(0.42, '#D8C8FF');
+        setTimeout(() => this.stage.flash(0.28, '#D8C8FF'), 90);
+        this.stage.shake(0.18);
+        this.audio.sfx('thunder');
+      }
+    }
     for (const f of [this.hero, this.foe]) {
       if (!f) continue;
       if (f.cheer) f.oy = -Math.abs(Math.sin(t / 190)) * 28;

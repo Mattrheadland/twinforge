@@ -447,6 +447,11 @@ export const SFX = {
     a.tone(1200, 0.8, { type: 'sawtooth', slide: 90, slideTime: 0.7, gain: 0.12, lp: 2500, delay: 0.95 });
     a.tone(55, 0.9, { type: 'sine', slide: 30, slideTime: 0.8, gain: 0.7, delay: 1.1 });
   },
+  thunder: (a) => { // distant rumble after the flash
+    a.noise(1.6, { filter: 'lowpass', freq: 900, sweep: 120, gain: 0.5, attack: 0.08, delay: 0.12 });
+    a.tone(48, 1.4, { type: 'sine', slide: 30, slideTime: 1.2, gain: 0.5, attack: 0.1, delay: 0.12 });
+    a.noise(0.25, { filter: 'bandpass', freq: 3000, q: 0.5, gain: 0.25, attack: 0.005 });
+  },
   servoStep: (a) => {
     a.tone(900, 0.06, { type: 'sawtooth', slide: 500, slideTime: 0.05, gain: 0.05, lp: 1600 });
     a.tone(95, 0.18, { type: 'sine', slide: 45, gain: 0.5, delay: 0.05 });

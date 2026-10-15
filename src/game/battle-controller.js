@@ -2,6 +2,7 @@
 // Director, questions from ChallengeUI. Input is only accepted in CHOOSE, and the
 // first accepted tap locks it until the whole turn has resolved.
 import { arenaFor } from '../data/arenas.js';
+import { battleTrackFor } from '../audio/music.js';
 import { BOSS_SCALE } from './modes.js';
 import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor, moveFor, learningFor } from '../logic/battle.js';
 import { pickQuestion } from '../logic/question-picker.js';
@@ -62,7 +63,9 @@ export class BattleController {
     this.hud.setHP('foe', s.foe.hp, s.foe.maxHp, true);
     this.hud.setEnergy(s.hero.energy);
     this.syncStatus();
-    this.audio.play(this.state.boss ? 'boss' : 'battle');
+    const vsCzernobog = this.state.foeId === 'nightwing';
+    this.audio.play(vsCzernobog ? 'czernobog' : battleTrackFor(this.state.arenaId || arenaFor(this.state.foeId), this.state.boss));
+    this.director.setStorm(vsCzernobog);
     this.app.wakeLock(true);
     const tok = ++this.token;
     this.setPhase(PHASE.INTRO);
@@ -343,6 +346,8 @@ export class BattleController {
     this.hud && this.hud.destroy();
     this.app.ui.layer.querySelectorAll('.challenge').forEach((n) => n.remove());
     this.stage.dim = 0;
+    this.stage.vignette = 0;
+    this.director.storm = null;
     this.stage.fx.clear();
     this.app.wakeLock(false);
   }

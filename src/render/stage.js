@@ -23,6 +23,7 @@ export class Stage {
     this.cam = { x: 0, y: 0, zoom: 1, trauma: 0, fx: 0.5, fy: 0.55, drift: 0 };
     this.fighters = { hero: null, foe: null };
     this.dim = 0;
+    this.vignette = 0;
     this.flashA = 0;
     this.flashColor = '#ffffff';
     this.reduced = false;
@@ -219,6 +220,14 @@ export class Stage {
     ctx.setTransform(this.full, 0, 0, this.full, 0, 0);
     if (this.dim > 0) {
       ctx.fillStyle = `rgba(10,8,30,${this.dim})`;
+      ctx.fillRect(0, 0, W, VH);
+    }
+    if (this.vignette > 0) {
+      // Czernobog's storm: dark purple closing in from the edges
+      const g = ctx.createRadialGradient(W / 2, VH * 0.45, VH * 0.35, W / 2, VH * 0.45, W * 0.72);
+      g.addColorStop(0, 'rgba(30,10,50,0)');
+      g.addColorStop(1, `rgba(30,10,50,${this.vignette})`);
+      ctx.fillStyle = g;
       ctx.fillRect(0, 0, W, VH);
     }
     if (this.flashA > 0) {

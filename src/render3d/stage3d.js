@@ -343,6 +343,14 @@ export class Stage3D extends Stage {
       ctx.fillStyle = `rgba(10,8,30,${this.dim})`;
       ctx.fillRect(0, 0, W, VH);
     }
+    if (this.vignette > 0) {
+      // Czernobog's storm: dark purple closing in from the edges
+      const g = ctx.createRadialGradient(W / 2, VH * 0.45, VH * 0.35, W / 2, VH * 0.45, W * 0.72);
+      g.addColorStop(0, 'rgba(30,10,50,0)');
+      g.addColorStop(1, `rgba(30,10,50,${this.vignette})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, VH);
+    }
     if (this.flashA > 0) {
       ctx.globalAlpha = this.flashA;
       ctx.fillStyle = this.flashColor;
