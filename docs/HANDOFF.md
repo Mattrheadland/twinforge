@@ -1,6 +1,6 @@
 # TwinForge master handoff (start here)
 
-Last updated 2026-10-14 (late evening). This replaces the handoffs from the two parallel chats (modes/campaign and learning report) and the new-four handoff zip; everything is merged on `main`.
+Last updated 2026-10-15 (midday). Everything is merged on `main` and deployed.
 
 ## How to start a new chat
 Paste this:
@@ -31,41 +31,40 @@ Paste this:
 | Code-built toys | `src/render3d/roster-rigs.js`, `family-rigs.js`, `minion-rigs.js`, `villain-rigs.js` (the new four) |
 | Lore for the new four | `docs/lore/<id>.md` (story, personality, moves, taunts, sound notes) |
 | Imported models | `src/render3d/models.js` (GLB loader, toy joints), `model-face.js` (painted eyes) |
-| Learning questions (22 types) | `src/logic/challenges.js`; word banks in `src/logic/words.js`; card UI in `src/ui/challenge.js` |
+| Learning questions (22 types) | `src/logic/challenges.js` (spelling ladder: `SPELL_MODE`, `spellBank`); word banks in `public/words.json` via `src/logic/words.js`; card UI in `src/ui/challenge.js` |
 | No repeats + second tries | `src/logic/question-picker.js` (memory kept in `save.data.learning.mem`) |
 | Read aloud | `src/audio/speech.js` (phone's built-in voice; setting `readAloud`) |
 | Learning log + report | `src/logic/learning-log.js`, `src/ui/learning-report.js` |
 | Save + migration | `src/save.js` |
+| Sounds | `src/audio/audio.js` (`SFX` table; a move's `sfx` / `sfxHit`, a toy's `winSfx`) |
+| Build | `build.mjs`: index.html (app) + `three-<hash>.js` (three.js, generated from what src/ uses) |
 | Audit, checklist, perf results | `docs/AUDIT.md` |
 | Art requests for Astra | `docs/ASTRA_REQUESTS.md` |
 
-Commands: `npm test` (unit), `npm run build`, `npm run e2e` (Puppeteer, ~5 min), `npm run perf`, `npm run model:import <id> <file.glb>`, `npm run model:check` (CHAR=<id>, FOE=<id>), `npm run deploy` (set GIT_AUTHOR_/GIT_COMMITTER_ name+email to Matt).
+Commands: `npm test` (unit, 68), `npm run build`, `npm run e2e` (Puppeteer, ~5 min), `npm run perf`, `npm run model:import <id> <file.glb>`, `npm run model:check` (CHAR=<id>, FOE=<id>), `npm run deploy` (set GIT_AUTHOR_/GIT_COMMITTER_ name+email to Matt).
 
-## State as of this handoff (2026-10-14, 10 PM)
-- **Roster (12)**: Battle Rex, Spooky Tree, Ragin' Rockfish, Young Arthur, Wanda Wickwhistle, Czernobog, Remy Roo (family dog; special Power Paws), Billy Bass (wall fish; power Take Me to the River), plus **the new four** (added tonight, `arcadeOnly: true`): Capt'n Crookhook (pirate, special Cannon Broadside), Jack-Knife (pumpkin-headed skeleton, Pumpkin Bomb Barrage), Big Bad Wolfgang (storybook wolf, Huff & Puff) and Commander Payne (armored star commander, Orbital Strike). They play in Arcade, Tournament and Toy Box, not on the campaign board (no world, no wild creature), and fight in the Bedroom until their arenas are painted. All four are code-built toys for now (`villain-rigs.js`); their concept sheets, views, palettes and move sheets are in `assets/characters/<id>/`, their arena specs and mockups in `assets/arenas/<id>/`, and the paste-ready Astra prompts in `docs/ASTRA_REQUESTS_NEW_FOUR.md`.
-- **Tournament** stays 7 fights: six challengers drawn from the other eleven (`TOURNAMENT_STOPS` in `src/game/modes.js`), toughest last, then the giant. Eleven fights would overflow the ladder and run far too long for Luca.
-- **Select screen**: more than 8 toys switches the grid to two rows of six, scaled to fit between the home corner and GO (`showSelect` in `src/ui/screens.js`); checked at the iPhone and six laptop sizes. New move icons: pumpkin (Jack-Knife) and gust (Wolfgang).
-- **3D models (8 of 8 in game)**: every toy is a real Hunyuan model (6k triangles, 365–572 KB) with toy joints in `characters.js`. Hunyuan's asset list API (`POST /api/3d/creations/list`, page/pageSize) returns signed GLB links, so a model can be fetched without the viewer; the viewer and Download button only work while the Chrome window is visible.
-- **Modes**: Campaign (board over five worlds, giant Czernobog at the end), Tournament, Arcade, Toy Box. Each mode keeps its own saved run now.
-- **Wild creatures (9)**: Rexlet, Spooky Sprout, Rock Minnow, Little Squire, Bog Frog, Sneaky Squirrel, Bubble Crab, Shadow Imp, Jitterbones (the last two are lanky dancing silhouettes).
-- **Learning**: 22 question types (13 math, 9 reading incl. spelling and sight words) over 5 auto levels; word banks now live in `public/words.json` (fetched lazily) to keep the bundle at 974 KB. The last 25 questions per subject never repeat; a missed skill comes back later in a new form; the phone reads each question aloud.
-- **Laptop support (new today)**: rotate-phone overlay only on touch phones; screens fit from 4:3 to 21:9; portraits cached so the select screen doesn't stutter; keyboard (Enter/Space/arrows/Escape); a battle step that throws recovers instead of freezing; WebGL context loss handled; save reset/backup bugs fixed.
-- **Full-campaign test**: `node test/campaign-run.mjs tree@desktop nightwing@iphone` plays a whole campaign through the real UI and counts sounds. Measured run: 15 battles, 61 turns, 48 questions, 18 rolls, 4.5 min of animation. For a 4-year-old that's about 25–45 minutes per campaign, usually 2–3 sittings.
-- **Tests**: 65 unit, ~80 e2e. Bundle is 995 KB against the 1 MB budget (the new rigs added 21 KB). e2e runs that overlap with other headless runs on the same box fail spuriously (load avg 20+); run them alone.
+## State as of this handoff (2026-10-15, midday)
+- **Laptop playtest (FastWillie, Chrome, Iris Xe, DPR 1.5)**: measured with a frame sampler in the live page. Title, mode cards, select (12 toys), a Fishing Pier battle with real models, learning cards and a full Crookhook battle (quick, power with math card, Cannon Broadside with reading card, win) all hold a locked 60 fps with 0–2 dropped frames per scene; no JS errors. The one stall was the first entry to the select screen (750 ms rendering 12 portraits), now pre-warmed on the title screen. Screens fit at 1280×495, 729×488 and 510×494. Not yet timed on the laptop: Jack-Knife, Wolfgang and Payne battles, the mouse campaign. The iPhone "Add to Home Screen" tip now only shows on iPhone/iPad.
+- **Spelling ladder (new today, Matt's ask)**: spelling joins reading at level 2 and climbs. Levels 2–3 **copy**: the word is printed above the slots, he builds it letter by letter with the current letter lit in the word (3 letters at L2, 3–4 at L3). Level 4 **peek**: the word shows for ~3 s then hides; a wrong tap shows it again. Level 5 **sound**: picture only, phone says the word and its letters, 3–5 letter words (truck, train, plant, snake, apple…). Vowel spots offer vowels, consonant spots consonants. Banks: `SPELL` (3), `SPELL_LONG` (4), `SPELL_LONGER` (5) in `public/words.json`. Level descriptions in settings updated; report lines say Copy / Peek and spell / Spell.
+- **Bundle**: three.js moved out of index.html into `dist/three-<hash>.js` (627 KB, precached by the service worker, entry generated by `build.mjs` from the `THREE.X` names src/ uses so it stays tree-shaken). index.html is 383 KB against the 1 MB budget. The claude.ai preview file still inlines everything.
+- **Sounds for the new four**: 20 synthesized effects following each lore file's sound notes, wired through `move.sfx` (wind-up), `move.sfxHit` (impact) and `def.winSfx`. Matt has an mp3 of all 20 to review; retune on his notes.
+- **Roster (12)**: Battle Rex, Spooky Tree, Ragin' Rockfish, Young Arthur, Wanda Wickwhistle, Czernobog, Remy Roo, Billy Bass, plus the new four (`arcadeOnly: true`): Capt'n Crookhook, Jack-Knife, Big Bad Wolfgang, Commander Payne. The new four are code-built toys (`villain-rigs.js`) with generic special animations (`spGeneric`); their arenas are specs only and they fight in the Bedroom. Astra packs in `docs/ASTRA_REQUESTS_NEW_FOUR.md`.
+- **Tournament** stays 7 fights; **select screen** two rows of six past 8 toys; **3D models** 8 of 8 original roster from Hunyuan; **modes** Campaign / Tournament / Arcade / Toy Box, each with its own saved run; **wild creatures** 9; **learning** 22 types over 5 levels, no repeats in the last 25, second tries, read-aloud.
+- **Tests**: 68 unit, 89 e2e (run e2e alone; overlapping headless runs fail spuriously).
+- Matt's save on the laptop gained 3 stars from Claude's Crookhook test win and one "after a hint" quick-look entry (Claude, not Luca).
 
 ## Next up
-1. Laptop playtest in Matt's Chrome (frame times per scene, a full campaign with the mouse, and a battle with each of the new four). Fix anything not smooth.
-2. Matt and Luca play; tune from the learning report. Luca's verdict on the new four and their names.
-3. Send Astra the new-four packs (`docs/ASTRA_REQUESTS_NEW_FOUR.md`, 4 characters + 4 arenas + 1 effects sheet), then Hunyuan for each toy as the painted sheets come back; arenas go in through `scripts/build-arenas.py` and `src/data/arenas-new-four.js`.
-4. Bog Shack floor from Astra is in the ChatGPT TwinForge project ("Bog Shack Floor Texture" chat); download it to `assets/arenas/bog-shack/arena-bog-shack-floor.png` and run `scripts/build-arenas.py`.
-5. Bundle budget: the next sizable feature should move the rigs or word banks out of the main bundle (995 KB of 1 MB).
-6. Sounds for the new four's moves (each `docs/lore/<id>.md` has sound notes).
+1. Matt listens to the new-four sounds mp3 and says which miss; retune. Matt and Luca play; tune from the learning report, especially the new spelling ladder (too easy / too hard per level, whether "copy" holds his attention). Luca's verdict on the new four and their names.
+2. Finish the laptop pass when Chrome is open and in front: Jack-Knife, Wolfgang, Payne battles (frame times) and a mouse campaign.
+3. Signature special animations for the new four (today they use `spGeneric`: charge + lunge). Cannon Broadside should fire four shots, Pumpkin Bomb Barrage lob five pumpkins, Huff & Puff blow a gale, Orbital Strike drop a beam. Data already carries `hits`; add `spCannonBroadside` etc. in `src/game/director.js` next to `spRexCannon`.
+4. Send Astra the new-four packs (`docs/ASTRA_REQUESTS_NEW_FOUR.md`), then Hunyuan for each toy as painted sheets come back; arenas through `scripts/build-arenas.py` and `src/data/arenas-new-four.js`.
+5. Bog Shack floor from Astra (ChatGPT TwinForge project, "Bog Shack Floor Texture" chat) → `assets/arenas/bog-shack/arena-bog-shack-floor.png`, then `scripts/build-arenas.py`.
 
 ## Known gaps
 - Read-aloud can't be tested headless; it uses the iPhone's built-in voice (Web Speech API) and needs a real-device check.
 - Level 1 is small on purpose (about 30 math and 26 letter questions); three right in a row moves him up.
-- index.html is 995 KB against a 1 MB budget; the next big feature should move the word banks or rigs out of the main bundle if it grows.
 - Rex's model cannon doesn't swing forward like the code rig's (the beam still starts at the muzzle).
 - Without WebGL, minions draw as the generic 2D toy and arenas fall back to the bedroom.
 - The Bog Shack floor borrows the pier texture until Astra's floor comes back.
-- The new four have no home arenas yet (Skull Cove, Midnight Pumpkin Patch, Grandma's Woods, Star Fortress Bridge are specs only), no sounds of their own, and no sitrep coverage (tonight's `docs/SITREP_2026-10-14.pdf` predates them).
+- The new four have no home arenas yet (Skull Cove, Midnight Pumpkin Patch, Grandma's Woods, Star Fortress Bridge are specs only), generic special animations, and no sitrep coverage (`docs/SITREP_2026-10-14.pdf` predates them).
+- Resizing the laptop window invalidates the select-card portrait cache (the card pixel size is part of the key), so the next visit re-renders them (~430 ms). Harmless on the phone.

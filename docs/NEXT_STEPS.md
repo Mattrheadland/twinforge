@@ -45,7 +45,15 @@
 - **Select screen** fits 12 (two rows of six, scaled). New pumpkin and gust move icons.
 - Concept sheets, views, palettes, move sheets, arena specs and mockups are in `assets/`; Astra prompts in `docs/ASTRA_REQUESTS_NEW_FOUR.md`.
 
+## Shipped 2026-10-15
+- **Spelling ladder** (Matt's ask: real 3–5 letter words, not letter matching): copy a printed word letter by letter (L2: 3 letters, L3: 3–4), peek then spell (L4), spell from sound (L5: 3–5 letters). Vowel spots offer vowels. Word banks `SPELL` / `SPELL_LONG` / `SPELL_LONGER` in `public/words.json`.
+- **Laptop pass** on FastWillie: 60 fps everywhere measured; install tip hidden off-iOS; select portraits pre-warmed on the title screen.
+- **Bundle**: three.js split into its own cached file; index.html 383 KB.
+- **Sounds** for all 16 new-four moves plus win stings (`move.sfx`, `move.sfxHit`, `def.winSfx`).
+
 ## Next
-1. Send Astra the new-four packs; Hunyuan for each toy as the painted sheets come back. Wanda and Czernobog too (ASTRA_REQUESTS.md).
+1. Matt reviews the sounds mp3; Luca plays the spelling ladder; tune both.
+2. Signature special animations for the new four (replace `spGeneric`).
+3. Send Astra the new-four packs; Hunyuan for each toy as the painted sheets come back. Wanda and Czernobog too (ASTRA_REQUESTS.md).
 2. Arenas for the new four once painted (`scripts/build-arenas.py`, merge `src/data/arenas-new-four.js`).
 3. Matt plays the new modes with Luca, then sends the learning report ("Copy as text") plus what felt too hard, too long or confusing, and any moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Czernobog.
