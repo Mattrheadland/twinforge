@@ -14,7 +14,7 @@
 // Both scale over 5 levels (logic/difficulty.js moves the level automatically).
 // Word lists live in logic/words.js.
 import {
-  PICS, wordLabel, STARTS, SAME_SOUND, EASY_STARTS, ENDS, RHYMES, CVC, LONG_WORDS, SPELL, SIGHT,
+  PICS, wordLabel, STARTS, SAME_SOUND, EASY_STARTS, ENDS, RHYMES, CVC, LONG_WORDS, SPELL, SPELL_LONG, SPELL_LONGER, SIGHT,
   VOWELS, CONSONANTS, ALL_WORDS, STORY_NAMES, wordsReady,
 } from './words.js';
 
@@ -253,10 +253,10 @@ Object.assign(MATH_MAKERS, {
 // ---------------- reading ----------------
 export const READ_KINDS = {
   1: ['letter'],
-  2: ['letter', 'letter', 'starts', 'pickStart'],
-  3: ['letter', 'starts', 'pickStart', 'rhyme', 'missing'],
-  4: ['letter', 'starts', 'rhyme', 'word', 'ends', 'missing', 'sight'],
-  5: ['letter', 'rhyme', 'word', 'ends', 'missing', 'sight', 'spell'],
+  2: ['letter', 'starts', 'pickStart', 'spell', 'spell'],
+  3: ['letter', 'starts', 'pickStart', 'rhyme', 'missing', 'spell', 'spell'],
+  4: ['letter', 'starts', 'rhyme', 'word', 'ends', 'missing', 'sight', 'spell', 'spell'],
+  5: ['letter', 'rhyme', 'word', 'ends', 'missing', 'sight', 'spell', 'spell'],
 };
 
 const READ_MAKERS = {};
@@ -392,10 +392,11 @@ function makeMissing(lv, rng) {
 }
 
 // Three letters for one spot in a word: the right one plus two that don't make
-// another real word and don't sound the same (c/k).
+// another real word and don't sound the same (c/k). A vowel spot offers vowels,
+// a consonant spot consonants, so the choice teaches the letter, not the slot.
 function letterChoices(word, pos, rng) {
   const answer = word[pos];
-  const pool = (pos === 1 ? VOWELS : CONSONANTS).filter((x) => {
+  const pool = (VOWELS.includes(answer) ? VOWELS : CONSONANTS).filter((x) => {
     if (x === answer || sameSound(x, answer)) return false;
     const made = word.slice(0, pos) + x + word.slice(pos + 1);
     return !ALL_WORDS.has(made);
@@ -403,13 +404,29 @@ function letterChoices(word, pos, rng) {
   return rng.shuffle([answer, ...rng.shuffle(pool).slice(0, 2)]);
 }
 
-// Spell the word one letter at a time (each step offers three letters).
+// Spell a word one letter at a time (each step offers three letters). A ladder:
+//   copy  (levels 2–3): the word is printed above the slots; he builds it letter
+//          by letter, the letter he's on lit up in the printed word
+//   peek  (level 4):    the word shows for a moment, then hides; a wrong tap
+//          shows it again briefly
+//   sound (level 5):    picture only; the phone says the word and its sounds
+// Words: 3 letters at level 2, 3–4 at levels 3–4, 3–5 at level 5.
+export const SPELL_MODE = { 1: 'copy', 2: 'copy', 3: 'copy', 4: 'peek', 5: 'sound' };
+export const spellBank = (lv) => (lv <= 2 ? SPELL : lv <= 4 ? [...SPELL, ...SPELL_LONG] : [...SPELL, ...SPELL_LONG, ...SPELL_LONGER]);
 function makeSpell(lv, rng) {
-  const word = rng.pick(SPELL);
+  const mode = SPELL_MODE[lv];
+  const word = rng.pick(spellBank(lv));
   const steps = [...word].map((_, i) => ({ answer: word[i], options: letterChoices(word, i, rng) }));
+  const letters = [...word].join(', ');
+  const text = {
+    copy: { prompt: 'Copy the word.', say: `${word}. Copy the word ${word}. Find each letter: ${letters}.` },
+    peek: { prompt: 'Look, then spell it.', say: `Look at the word ${word}. Now spell ${word}.` },
+    sound: { prompt: 'Listen, then spell it.', reveal: `Spell “${word}”`, say: `Spell ${word}. ${letters}... ${word}.` },
+  }[mode];
   return checked({
-    kind: 'spell', level: lv, prompt: `Spell ${word}.`, say: `Spell ${word}. ${[...word].join(', ')}... ${word}.`, optType: 'letter',
+    kind: 'spell', level: lv, mode, ...text, optType: 'letter',
     word, pic: PICS[word], answer: word, steps, options: steps[0].options,
+    ms: mode === 'peek' ? 1600 + 350 * word.length : 0, // how long the word stays up
   });
 }
 
@@ -439,7 +456,7 @@ const isNum = (o) => Number.isInteger(o);
 export function validate(ch) {
   if (!ch) return false;
   if (ch.kind === 'spell') {
-    return SPELL.includes(ch.word) && Array.isArray(ch.steps) && ch.steps.length === ch.word.length &&
+    return spellBank(5).includes(ch.word) && ['copy', 'peek', 'sound'].includes(ch.mode) && Array.isArray(ch.steps) && ch.steps.length === ch.word.length &&
       ch.steps.every((s, i) => s.answer === ch.word[i] && s.options.length === 3 && new Set(s.options).size === 3 && s.options.filter((o) => o === s.answer).length === 1) &&
       !!ch.pic;
   }

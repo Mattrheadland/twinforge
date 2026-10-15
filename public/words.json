@@ -270,6 +270,8 @@
   "can",
   "cap"
 ],
+"SPELL_LONG": ["frog", "drum", "nest", "tent", "crab", "milk", "hand", "gift", "fish", "ship", "star", "ring", "king", "bell", "ball", "book", "duck", "lock", "corn", "horn", "moon", "leaf"],
+"SPELL_LONGER": ["truck", "train", "plant", "snake", "clock", "snail", "robot", "tiger", "lemon", "apple", "shell"],
 "SIGHT": {
   "easy": ["a","I","go","me","my","see","the","up","we","to","is","it","in","can","and","look","you","no","on","at"],
   "more": ["red","big","blue","come","down","here","help","jump","little","make","play","run","said","where","yellow","funny","find","away","not","one","two","three","for","like"]

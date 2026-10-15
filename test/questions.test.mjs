@@ -83,14 +83,38 @@ test('starts-with, pick-a-picture and missing letter never offer a second right 
   }
 });
 
-test('spelling goes one letter at a time with three choices each', () => {
+test('spelling goes one letter at a time with three choices each; vowel spots offer vowels', () => {
   const rng = new Rng(9);
-  for (let i = 0; i < 500; i++) {
-    const ch = makeReading(5, rng, 'spell');
+  for (const lv of [2, 3, 4, 5]) for (let i = 0; i < 300; i++) {
+    const ch = makeReading(lv, rng, 'spell');
     assert.equal(ch.steps.length, ch.word.length);
-    ch.steps.forEach((s, k) => { assert.equal(s.answer, ch.word[k]); assert.equal(new Set(s.options).size, 3); });
-    assert.ok('aeiou'.includes(ch.steps[1].answer) && ch.steps[1].options.every((o) => 'aeiou'.includes(o)), 'middle step offers vowels');
+    ch.steps.forEach((s, k) => {
+      assert.equal(s.answer, ch.word[k]);
+      assert.equal(new Set(s.options).size, 3);
+      const vowel = 'aeiou'.includes(s.answer);
+      assert.ok(s.options.every((o) => 'aeiou'.includes(o) === vowel), `${ch.word}[${k}] offers ${s.options}`);
+    });
   }
+});
+
+test('spelling ladder: copy 3-letter words first, then longer; peek at 4; from sound at 5', () => {
+  const rng = new Rng(11);
+  const seen = {};
+  for (const lv of [2, 3, 4, 5]) {
+    seen[lv] = new Set();
+    for (let i = 0; i < 300; i++) {
+      const ch = makeReading(lv, rng, 'spell');
+      seen[lv].add(ch.word.length);
+      assert.equal(ch.mode, lv <= 3 ? 'copy' : lv === 4 ? 'peek' : 'sound');
+      if (ch.mode === 'peek') assert.ok(ch.ms >= 1600, 'the peeked word stays up long enough');
+      else assert.equal(ch.ms, 0);
+      assert.ok(ch.pic, 'every spelling word has a picture');
+    }
+  }
+  assert.deepEqual([...seen[2]], [3]);
+  assert.deepEqual([...seen[3]].sort(), [3, 4]);
+  assert.deepEqual([...seen[4]].sort(), [3, 4]);
+  assert.deepEqual([...seen[5]].sort(), [3, 4, 5]);
 });
 
 test('sight words: the prompt never prints the word (it is said aloud); reveal is the no-sound fallback', () => {
@@ -102,9 +126,9 @@ test('sight words: the prompt never prints the word (it is said aloud); reveal i
   }
 });
 
-test('levels: reading starts with letters only; spelling and teen numbers wait for level 5', () => {
+test('levels: reading starts with letters only; spelling joins at 2, teen numbers wait for level 5', () => {
   assert.deepEqual([...new Set(READ_KINDS[1])], ['letter']);
-  assert.equal(KINDS.spell.from, 5);
+  assert.equal(KINDS.spell.from, 2);
   assert.equal(KINDS.teen.from, 5);
   assert.equal(KINDS.flash.from, 1);
   assert.equal(KINDS.pickStart.from, 2);

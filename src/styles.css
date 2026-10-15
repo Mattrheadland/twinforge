@@ -674,6 +674,19 @@ html.reduced #tv::after { animation: none; }
 .slot.empty { background: #EFE8F8; border-style: dashed; }
 .slot.now { box-shadow: 3px 6px 0 var(--ink), 0 0 0 6px rgba(255, 201, 20, 0.85); }
 .slot.filled { background: var(--go); color: var(--ink); text-shadow: none; animation: pop-in 0.3s; }
+/* spelling ladder: the printed word (copy / peek) above the slots */
+.spell-body { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.spell-body .ltr-target { gap: 16px; }
+.spell-body .pic-card { min-width: 110px; height: 100px; }
+.spell-body .pic-card .emoji { font-size: 62px; }
+.spell-word { display: flex; gap: 2px; height: 100px; min-width: 0; font-size: 58px; letter-spacing: 0; padding: 6px 18px; }
+.spell-word .wl { display: inline-grid; place-items: center; min-width: 40px; padding: 0 2px; border-radius: 8px; transition: background 0.2s, color 0.2s, transform 0.2s; }
+.spell-word .wl.now { background: var(--gold, #FFC914); transform: scale(1.12); box-shadow: 0 0 0 4px var(--ink); }
+.spell-word .wl.done { color: #2E9E44; }
+.spell-word .word-cover { position: absolute; inset: -6px; display: grid; place-items: center; font: 900 64px var(--font); color: #fff; text-shadow: var(--outline); background: var(--purple); border: 6px solid var(--ink); border-radius: 14px; opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+.spell-word.covered .word-cover { opacity: 1; }
+.ch-spell .slots { gap: 6px; }
+.ch-spell .slot { width: 60px; height: 74px; font-size: 50px; }
 .ch-missing .pic-card, .ch-spell .pic-card { min-width: 110px; }
 .sound-pos { display: flex; gap: 6px; margin-left: 10px; }
 .sound-pos i { width: 18px; height: 18px; border-radius: 50%; background: #C9BFD8; border: 3px solid var(--ink); }

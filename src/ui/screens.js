@@ -335,10 +335,10 @@ export class UI {
     };
     const LET = {
       1: 'Match capitals (very different shapes)',
-      2: 'Match capitals · first sounds (easy letters) · which picture starts with…',
-      3: 'Match lowercase · first sounds · rhymes · missing first letter (_at)',
-      4: 'Capital → lowercase · all first sounds · last sounds · rhymes · read a word · sight words · missing letter',
-      5: 'Tricky lowercase (b d p q…) · last sounds · longer words · sight words · missing vowel · spell a word',
+      2: 'Match capitals · first sounds (easy letters) · which picture starts with… · copy a 3-letter word',
+      3: 'Match lowercase · first sounds · rhymes · missing first letter (_at) · copy a 3–4 letter word',
+      4: 'Capital → lowercase · all first sounds · last sounds · rhymes · read a word · sight words · missing letter · peek, then spell',
+      5: 'Tricky lowercase (b d p q…) · last sounds · longer words · sight words · missing vowel · spell 3–5 letter words from sound',
     };
     const reportBtn = h('button', { class: 'pbtn rp-open' }, 'Learning report');
     const previewBtn = h('button', { class: 'pbtn pv-open' }, 'Preview questions');

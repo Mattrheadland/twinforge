@@ -163,10 +163,22 @@ export class ChallengeUI {
       case 'spell': {
         const slots = [...ch.word].map((c, i) => h('span', { class: `slot ${ch.kind === 'missing' && i === ch.pos ? 'slot-q' : ''} ${ch.kind === 'spell' ? 'empty' : ''}` },
           ch.kind === 'spell' ? '' : i === ch.pos ? '?' : c));
-        body = h('div', { class: 'ltr-target' },
-          h('span', { class: 'pic-card' }, h('span', { class: 'emoji' }, ch.pic)),
-          target = h('div', { class: 'slots' }, ...slots));
         this.slots = slots;
+        this.wordLetters = null;
+        this.coverEl = null;
+        if (ch.kind === 'spell' && ch.mode !== 'sound') {
+          // copy: the word stays printed above the slots; peek: it hides after a moment
+          this.wordLetters = [...ch.word].map((c) => h('span', { class: 'wl' }, c));
+          const printed = h('span', { class: `word-card spell-word ${ch.mode}` }, ...this.wordLetters, h('span', { class: 'word-cover' }, '?'));
+          if (ch.mode === 'peek') this.coverEl = printed;
+          body = h('div', { class: 'spell-body' },
+            h('div', { class: 'ltr-target' }, h('span', { class: 'pic-card' }, h('span', { class: 'emoji' }, ch.pic)), printed),
+            target = h('div', { class: 'slots' }, ...slots));
+        } else {
+          body = h('div', { class: 'ltr-target' },
+            h('span', { class: 'pic-card' }, h('span', { class: 'emoji' }, ch.pic)),
+            target = h('div', { class: 'slots' }, ...slots));
+        }
         break;
       }
       case 'sight':
@@ -208,10 +220,14 @@ export class ChallengeUI {
       const wrongPicks = [];
       this.lastStats = null;
       this.slots = null;
+      this.wordLetters = null;
+      this.coverEl = null;
       const steps = ch.steps || [{ answer: ch.answer, options: ch.options }];
       let si = 0;
       const { body, items, target } = this.buildBody(ch);
-      const slots = this.slots;
+      const slots = this.slots, wordLetters = this.wordLetters;
+      // what hides after a moment: the quick-look dots, or the peeked word
+      const coverEl = ch.kind === 'flash' ? target : this.coverEl;
       const optsBox = h('div', { class: 'ch-opts' });
       let opts = [];
       const isMath = MATH_KINDS.has(ch.kind);
@@ -237,13 +253,14 @@ export class ChallengeUI {
       setTimeout(() => say(ch.say || ch.prompt), 250);
 
       const countable = ch.kind === 'count' || ch.kind === 'add' || ch.kind === 'sub' || ch.kind === 'story';
-      // quick look: the dots hide after a moment; a wrong tap shows them again briefly
+      // quick look / peek: the dots or the word hide after a moment; a wrong tap
+      // shows them again briefly
       let coverTimer = null;
       const flashFor = (ms) => {
-        if (ch.kind !== 'flash') return;
-        target.classList.remove('covered');
+        if (!coverEl) return;
+        coverEl.classList.remove('covered');
         clearTimeout(coverTimer);
-        coverTimer = setTimeout(() => { if (!card.classList.contains('support') && !card.classList.contains('solved')) target.classList.add('covered'); }, ms);
+        coverTimer = setTimeout(() => { if (!card.classList.contains('support') && !card.classList.contains('solved')) coverEl.classList.add('covered'); }, ms);
       };
       flashFor(ch.ms + 400);
 
@@ -262,6 +279,7 @@ export class ChallengeUI {
         });
         optsBox.replaceChildren(...opts);
         if (slots) slots.forEach((sl, k) => sl.classList.toggle('now', ch.kind === 'spell' && k === si));
+        if (wordLetters) wordLetters.forEach((wl, k) => { wl.classList.toggle('now', k === si); wl.classList.toggle('done', k < si); });
       };
 
       const finish = async (b) => {
@@ -272,7 +290,8 @@ export class ChallengeUI {
         b.classList.add('right');
         card.classList.remove('support');
         card.classList.add('solved');
-        if (ch.kind === 'flash') target.classList.remove('covered');
+        if (coverEl) coverEl.classList.remove('covered');
+        if (wordLetters) wordLetters.forEach((wl) => { wl.classList.remove('now'); wl.classList.add('done'); });
         this.audio.sfx(q === 'support' ? 'supportCorrect' : 'correct');
         this.buzz('light');
         card.classList.add(q === 'indep' ? 'win-big' : 'win');
@@ -317,17 +336,17 @@ export class ChallengeUI {
         b.classList.add('gone');
         if (stepWrongs === 1) {
           if (countable) await this.pulseItems(items);
-          else if (ch.kind === 'flash') flashFor(ch.ms);
+          else if (coverEl) flashFor(ch.ms);
           else if (target) {
             target.classList.remove('wiggle');
             void target.offsetWidth;
             target.classList.add('wiggle');
           }
-          if (ch.say && !countable && ch.kind !== 'flash') say(ch.say);
+          if (ch.say && !countable && ch.kind !== 'flash') say(ch.kind === 'spell' ? `${ch.word}. ${step.answer}.` : ch.say);
         } else {
           const right = opts.find((x) => x.dataset.value === String(step.answer));
           if (countable) await this.countAlong(items, 260, true);
-          if (ch.kind === 'flash') { clearTimeout(coverTimer); target.classList.remove('covered'); }
+          if (coverEl) { clearTimeout(coverTimer); coverEl.classList.remove('covered'); }
           right.classList.add('glow');
           card.classList.add('support');
         }

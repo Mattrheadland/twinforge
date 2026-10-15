@@ -121,7 +121,7 @@ export function describe(ch) {
     case 'ends': return `${wordLabel(ch.word)} ends with ${ch.answer} (from ${ch.options.join(' ')})`;
     case 'missing': return `${[...ch.word].map((c, i) => (i === ch.pos ? '_' : c)).join('')} (${ch.word})`;
     case 'sight': return `Find “${ch.word}”`;
-    case 'spell': return `Spell “${ch.word}”`;
+    case 'spell': return `${{ copy: 'Copy', peek: 'Peek and spell', sound: 'Spell' }[ch.mode] || 'Spell'} “${ch.word}”`;
     default: return ch.kind;
   }
 }

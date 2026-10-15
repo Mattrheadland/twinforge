@@ -14,6 +14,7 @@
 //   RHYMES      rhyme families; words in different families never rhyme
 //   CVC         short words to read; LONG_WORDS are the level-5 ones
 //   SPELL       spellable consonant-vowel-consonant words (plain sounds only)
+//   SPELL_LONG, SPELL_LONGER   4- and 5-letter words for the spelling ladder
 //   SIGHT       first sight words (Pre-K / K); level 4 uses `easy`
 
 export const PICS = {};
@@ -24,6 +25,8 @@ export const RHYMES = [];
 export const CVC = [];
 export const LONG_WORDS = [];
 export const SPELL = [];
+export const SPELL_LONG = []; // 4 letters (frog, drum, nest…), copy / peek / spell-from-sound
+export const SPELL_LONGER = []; // 5 letters (truck, train, plant…), level 5 only
 // every picture word, for checking a made-up spelling isn't a different real word
 export const ALL_WORDS = new Set();
 
@@ -35,7 +38,7 @@ export function setWords(d) {
   Object.assign(STARTS, d.STARTS);
   Object.assign(ENDS, d.ENDS);
   Object.assign(SIGHT, d.SIGHT);
-  for (const [list, src] of [[RHYMES, d.RHYMES], [CVC, d.CVC], [LONG_WORDS, d.LONG_WORDS], [SPELL, d.SPELL]]) list.splice(0, list.length, ...src);
+  for (const [list, src] of [[RHYMES, d.RHYMES], [CVC, d.CVC], [LONG_WORDS, d.LONG_WORDS], [SPELL, d.SPELL], [SPELL_LONG, d.SPELL_LONG || []], [SPELL_LONGER, d.SPELL_LONGER || []]]) list.splice(0, list.length, ...src);
   ALL_WORDS.clear();
   for (const w of Object.keys(PICS)) ALL_WORDS.add(w);
 }
