@@ -42,7 +42,7 @@ Commands: `npm test` (unit), `npm run build`, `npm run e2e` (Puppeteer, ~5 min),
 
 ## State as of this handoff (2026-10-14, 8:30 PM)
 - **Roster (8)**: Battle Rex, Spooky Tree, Ragin' Rockfish, Young Arthur, Wanda Wickwhistle, Czernobog, Remy Roo (family dog; special Power Paws), Billy Bass (wall fish; power Take Me to the River).
-- **3D models (7 of 8 in game)**: Rex, Arthur, Rockfish, Tree, Remy, Billy and Czernobog are real Hunyuan models (6k triangles, 365–572 KB) with toy joints in `characters.js`. **Wanda's model is generated on Hunyuan but not downloaded** (see Next up). Her sheets and split views are in `assets/characters/wanda-wickwhistle/`.
+- **3D models (8 of 8 in game)**: every toy is a real Hunyuan model (6k triangles, 365–572 KB) with toy joints in `characters.js`. Hunyuan's asset list API (`POST /api/3d/creations/list`, page/pageSize) returns signed GLB links, so a model can be fetched without the viewer; the viewer and Download button only work while the Chrome window is visible.
 - **Modes**: Campaign (board over five worlds, giant Czernobog at the end), Tournament, Arcade, Toy Box. Each mode keeps its own saved run now.
 - **Wild creatures (9)**: Rexlet, Spooky Sprout, Rock Minnow, Little Squire, Bog Frog, Sneaky Squirrel, Bubble Crab, Shadow Imp, Jitterbones (the last two are lanky dancing silhouettes).
 - **Learning**: 22 question types (13 math, 9 reading incl. spelling and sight words) over 5 auto levels; word banks now live in `public/words.json` (fetched lazily) to keep the bundle at 974 KB. The last 25 questions per subject never repeat; a missed skill comes back later in a new form; the phone reads each question aloud.
@@ -51,11 +51,10 @@ Commands: `npm test` (unit), `npm run build`, `npm run e2e` (Puppeteer, ~5 min),
 - **Tests**: 65 unit, ~80 e2e. e2e runs that overlap with other headless runs on the same box fail spuriously (load avg 20+); run them alone.
 
 ## Next up
-1. **Wanda's model.** With Chrome in front on the laptop: hy3d.tencent.ai → Assets, newest card, Download GLB into `C:\Users\mattr\Downloads`, stage, `npm run model:import wanda-wickwhistle <file>`, then set `art.model: 'wanda-wickwhistle'`, joints (head incl. hat/hair, arms, maybe the broom as `tail`) and a face in `characters.js` the way the others are done; `node test/model-check.mjs witch scratch/model/witch`; deploy.
-2. Laptop playtest in Matt's Chrome (frame times per scene, a full campaign with the mouse). Fix anything not smooth.
-3. Sitrep PDF for Matt (status, bugs fixed, durations, risks).
-4. Matt and Luca play; tune from the learning report.
-5. Bog Shack floor from Astra is in the ChatGPT TwinForge project ("Bog Shack Floor Texture" chat); download it to `assets/arenas/bog-shack/arena-bog-shack-floor.png` and run `scripts/build-arenas.py`.
+1. Laptop playtest in Matt's Chrome (frame times per scene, a full campaign with the mouse). Fix anything not smooth.
+2. Sitrep PDF for Matt (status, bugs fixed, durations, risks).
+3. Matt and Luca play; tune from the learning report.
+4. Bog Shack floor from Astra is in the ChatGPT TwinForge project ("Bog Shack Floor Texture" chat); download it to `assets/arenas/bog-shack/arena-bog-shack-floor.png` and run `scripts/build-arenas.py`.
 
 ## Known gaps
 - Read-aloud can't be tested headless; it uses the iPhone's built-in voice (Web Speech API) and needs a real-device check.

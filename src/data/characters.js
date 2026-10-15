@@ -125,7 +125,6 @@ export const CHARACTERS = {
   witch: {
     id: 'witch',
     name: 'Wanda Wickwhistle',
-    pendingDesign: true,
     color: '#6A3FA0',
     accent: '#2E9E44',
     maxHp: 95,
@@ -137,7 +136,18 @@ export const CHARACTERS = {
       { slot: 'special', id: 'potionStorm', name: 'Potion Storm', icon: 'potion', color: '#5CE07A', power: 1, effect: 'dizzy', hits: 3 },
     ],
     foePattern: ['quick', 'power', 'charge', 'slam'],
-    art: { kind: 'procedural', draw: 'witch' },
+    art: {
+      kind: 'procedural', draw: 'witch', model: 'wanda-wickwhistle',
+      // imported model (Hunyuan 3D, static): head from the collar up (hair tower + hat), broom arm on the
+      // camera side, spark hand on the far side; the painted wicked face stays
+      anchors: { muzzle: [30, 150, 0] },
+      armScale: 0.5,
+      joints: {
+        head: { pivot: [2, 136, 0], box: [[-26, 138, -30], [34, 200, 30]] },
+        armF: { pivot: [6, 118, 18], box: [[-12, 20, 14], [50, 130, 48]] },
+        armB: { pivot: [-4, 118, -18], box: [[-24, 90, -48], [40, 128, -14]] },
+      },
+    },
   },
   nightwing: {
     id: 'nightwing',
