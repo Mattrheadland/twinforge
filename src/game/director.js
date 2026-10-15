@@ -436,6 +436,7 @@ export class Director {
       rexCannon: this.spRexCannon, hauntedForest: this.spHauntedForest, tidalRage: this.spTidalRage,
       swordInStone: this.spSwordInStone, potionStorm: this.spPotionStorm, midnightStorm: this.spMidnightStorm,
       powerPaws: this.spPowerPaws, encore: this.spEncore,
+      cannonBroadside: this.spCannonBroadside, pumpkinBarrage: this.spPumpkinBarrage, huffAndPuff: this.spHuffAndPuff, orbitalStrike: this.spOrbitalStrike,
     }[move.id] || this.spGeneric;
     await fn.call(this, att, def, move, quality, ev, applyHit);
   }
@@ -623,6 +624,144 @@ export class Director {
     await this.finishSpecial(att, def, ev, move.color, 'TA-DAAA!', applyHit);
     await sw;
     this.stage.dim = 0;
+  }
+
+  // Capt'n Crookhook: braces, then four cannonballs arc across (the fourth is
+  // the big one) and the foe gets a splash. Sound: 'broadside' (four booms
+  // 220 ms apart, then a splash tail).
+  async spCannonBroadside(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    att.eyes = 'angry';
+    att.mouth = 'grit';
+    // brace: lean back, hook arm up
+    await this.to(att, { rot: -0.18, armF: -2.2, sx: 1.08, sy: 0.94 }, 260, Ease.outBack);
+    this.fx.word('BROADSIDE!', this.stage.W / 2, 120, { size: 52, color: move.color, life: 1300 });
+    const m = this.pt(att, 'muzzle');
+    const c = def.center();
+    const shots = q === 'indep' ? 4 : 3;
+    this.audio.sfx(move.sfx);
+    let last;
+    for (let i = 0; i < shots; i++) {
+      const big = i === shots - 1;
+      this.fx.sprite('muzzle', m.x, m.y, { size: big ? 150 : 100, rot: Math.atan2(c.y - m.y, c.x - m.x), life: 240, delay: i * 220 });
+      // recoil on each shot
+      this.wait(i * 220).then(() => { this.stage.shake(big ? 0.5 : 0.25); this.to(att, { ox: -34 * att.flip }, 70).then(() => this.to(att, { ox: 0 }, 180, Ease.outCubic)); });
+      last = this.fx.add(FXM.cannonball({
+        x0: m.x, y0: m.y, x1: c.x + (i - (shots - 1) / 2) * 18, y1: c.y - 10 + (i % 2) * 16, size: big ? 30 : 21, arc: 60 + i * 25, life: 400, delay: i * 220,
+        onHit: big ? null : () => { this.tap(def, move.color); this.fx.burst(c.x, c.y, { count: 10, kind: 'puff', colors: ['#B9B4C4', '#ffffff'], speed: 200 }); },
+      }));
+    }
+    await last;
+    this.fx.sprite('splash', c.x, c.y - 20, { size: 240, life: 650 });
+    this.fx.burst(c.x, c.y, { count: 20, kind: 'puff', colors: ['#B9B4C4', '#ffffff', '#4EA8DE'], speed: 300 });
+    await this.finishSpecial(att, def, ev, move.color, 'KA-BOOM!', applyHit);
+    await this.to(att, { rot: 0, armF: -0.2, sx: 1, sy: 1 }, 300, Ease.outCubic);
+  }
+
+  // Jack-Knife: folds up with a giggle, springs open, and five pumpkin bombs
+  // lob in from high overhead. Sound: 'slideWhistle' on the lob, 'pumpkinThonk'
+  // on each landing.
+  async spPumpkinBarrage(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    att.eyes = 'happy';
+    att.mouth = 'open';
+    this.audio.sfx('giggle');
+    // fold up like a pocketknife, then spring open
+    await this.to(att, { sy: 0.45, sx: 1.25, rot: 0.3 }, 260, Ease.inQuad);
+    await this.wait(160);
+    this.audio.sfx('snikt');
+    await this.to(att, { sy: 1.15, sx: 0.9, rot: -0.1, oy: -40 }, 180, Ease.outBack);
+    this.to(att, { sy: 1, sx: 1, rot: 0, oy: 0 }, 300, Ease.outBounce);
+    this.fx.word('PUMPKIN BOMBS!', this.stage.W / 2, 120, { size: 48, color: move.color, life: 1400 });
+    this.audio.sfx(move.sfx);
+    const h = this.pt(att, 'top');
+    const c = def.center();
+    const n = q === 'indep' ? 5 : 4;
+    let last;
+    for (let i = 0; i < n; i++) {
+      const big = i === n - 1;
+      last = this.fx.add(FXM.pumpkin({
+        x0: h.x + (Math.random() - 0.5) * 40, y0: h.y - 20, x1: c.x + (Math.random() - 0.5) * 90, y1: c.y + (Math.random() - 0.5) * 60,
+        size: big ? 30 : 20 + (i % 2) * 4, glow: move.color, arc: 240 + i * 25, life: 520, delay: i * 170,
+        onHit: () => {
+          this.audio.sfx('pumpkinThonk');
+          if (!big) this.tap(def, '#E8762B');
+          this.fx.burst(c.x, c.y - 10, { count: big ? 22 : 12, kind: 'puff', colors: ['#E8762B', '#F6A04A', move.color], speed: big ? 320 : 220 });
+          this.fx.sprite('magic', c.x + (Math.random() - 0.5) * 60, c.y + (Math.random() - 0.5) * 60, { size: big ? 190 : 110, life: 340, spin: 3 });
+        },
+      }));
+      // a little hop with each throw
+      this.wait(i * 170).then(() => this.to(att, { oy: -18, armF: -2.4 }, 80).then(() => this.to(att, { oy: 0, armF: -0.2 }, 120)));
+    }
+    await last;
+    await this.finishSpecial(att, def, ev, move.color, 'SPLAT-BOOM!', applyHit);
+    att.eyes = 'open';
+  }
+
+  // Big Bad Wolfgang: a huge inhale (he swells up), then a gale of wind, straw
+  // and sticks blows the foe off its feet. Sound: 'huffPuff' (inhale ~1.1 s,
+  // then the gale).
+  async spHuffAndPuff(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    att.eyes = 'angry';
+    att.mouth = 'o';
+    this.audio.sfx(move.sfx);
+    // inhale: swell up and lean back; little orbs get sucked toward his mouth
+    const m = this.pt(att, 'muzzle');
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * Math.PI * 2;
+      this.fx.orb(m.x + Math.cos(a) * 160 * att.flip, m.y + Math.sin(a) * 110, m.x, m.y, '#ffffff', i * 90);
+    }
+    await this.to(att, { sx: 1.28, sy: 1.22, rot: -0.2, oy: -10 }, 1050, Ease.inOutQuad);
+    this.fx.word('HUFF AND PUFF!', this.stage.W / 2, 120, { size: 50, color: move.color, life: 1300 });
+    // blow: snap forward, the gale tears across
+    att.mouth = 'open';
+    const m2 = this.pt(att, 'muzzle');
+    const c = def.center();
+    this.to(att, { sx: 0.92, sy: 0.96, rot: 0.22, oy: 0 }, 160, Ease.outQuad).then(() => this.to(att, { sx: 1, sy: 1, rot: 0.1 }, 500));
+    const g = this.fx.add(FXM.gust({ x0: m2.x, x1: c.x + 40 * att.flip, y: c.y - 10, height: 180, color: '#ffffff', life: 1150 }));
+    this.stage.shake(0.3);
+    // the foe gets shoved back and tumbles
+    await this.wait(260);
+    const push = this.to(def, { ox: 70 * def.flip * -1, rot: -0.55 * def.flip }, 420, Ease.outQuad);
+    const n = q === 'indep' ? 3 : 2;
+    for (let i = 0; i < n; i++) { this.tap(def, move.color); await this.wait(190); }
+    await push;
+    await this.finishSpecial(att, def, ev, move.color, 'WHOOOSH!', applyHit);
+    this.to(def, { ox: 0, rot: 0 }, 360, Ease.outBack);
+    await this.to(att, { rot: 0 }, 240);
+    await g;
+    att.eyes = 'open';
+  }
+
+  // Commander Payne: halberd up, a reticle locks onto the foe through three
+  // countdown beeps, then the beam drops from orbit. Sound: 'orbitalStrike'
+  // (beeps at 0, 0.25, 0.5 s; beam at 0.95 s).
+  async spOrbitalStrike(att, def, move, q, ev, applyHit) {
+    await this.chargeUp(att, move.color);
+    att.eyes = 'angry';
+    att.mouth = 'grit';
+    this.stage.dim = 0.3;
+    await this.to(att, { armF: -2.6, sy: 1.04 }, 220, Ease.outBack);
+    const c = def.center();
+    this.audio.sfx(move.sfx);
+    const r = this.fx.add(FXM.reticle({ x: c.x, y: c.y - 10, r0: 170, r1: 75, color: move.color, life: 950 }));
+    await this.wait(950);
+    await r;
+    // the beam drops from the top of the screen
+    this.stage.flash(0.4, '#CFF7FF');
+    this.stage.shake(0.6);
+    this.fx.word('ORBITAL STRIKE!', this.stage.W / 2, 120, { size: 50, color: move.color, life: 1200 });
+    const b = this.fx.add(FXM.beam({ x0: c.x, y0: -80, x1: c.x, y1: def.y + 6, color: move.color, width: q === 'indep' ? 70 : 54, life: 820 }));
+    this.fx.burst(c.x, def.y, { count: 22, colors: [move.color, '#ffffff', '#FFC914'], kind: 'spark', speed: 420, gravity: -100 });
+    this.fx.sprite('dust', c.x, def.y - 10, { size: 150, life: 520, drift: { x: 0, y: -40 } });
+    const n = q === 'indep' ? 3 : 2;
+    for (let i = 0; i < n; i++) { await this.wait(150); this.tap(def, move.color); }
+    await this.finishSpecial(att, def, ev, move.color, 'KRA-KOOM!', applyHit);
+    await b;
+    this.stage.dim = 0;
+    await this.to(att, { armF: -0.2, sy: 1 }, 300);
+    att.eyes = 'open';
   }
 
   // A special that patches the hero up (Power Paws).

@@ -448,3 +448,130 @@ export function pawStamp({ x, y, size = 28, rot = 0, color = '#FFC914', life = 4
     },
   };
 }
+
+// ---------------- the new four ----------------
+
+// Cannonball with a fuse spark, lobbed from (x0,y0) to (x1,y1) (Cannon Broadside).
+export function cannonball({ x0, y0, x1, y1, size = 18, life = 420, delay = 0, arc = 90, onHit }) {
+  const pos = (k) => ({ x: lerp(x0, x1, k), y: lerp(y0, y1, k) - Math.sin(k * Math.PI) * arc });
+  return {
+    max: life, delay, onDone: onHit,
+    draw(ctx, k, t) {
+      // smoke trail
+      for (let i = 4; i >= 1; i--) {
+        const p = pos(Math.max(0, k - i * 0.07));
+        ctx.globalAlpha = 0.18 * (5 - i) / 4;
+        ctx.beginPath(); ctx.arc(p.x, p.y - i * 3, size * (0.6 + i * 0.12), 0, Math.PI * 2); ctx.fillStyle = '#B9B4C4'; ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      const p = pos(k);
+      inkCircle(ctx, p.x, p.y, size, '#2A2633');
+      ctx.beginPath(); ctx.arc(p.x - size * 0.3, p.y - size * 0.3, size * 0.3, 0, Math.PI * 2); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fill();
+      // fuse spark
+      const sx = p.x - size * 0.2, sy = p.y - size - 4;
+      ctx.beginPath(); ctx.arc(sx, sy, 4 + 2 * Math.sin(t / 25), 0, Math.PI * 2); ctx.fillStyle = '#FFC914'; ctx.fill();
+      ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+    },
+  };
+}
+
+// Carved pumpkin that lobs in spinning and lands on the target (Pumpkin Bomb Barrage).
+export function pumpkin({ x0, y0, x1, y1, size = 22, glow = '#5CF2A0', life = 560, delay = 0, arc = 220, onHit }) {
+  const pos = (k) => ({ x: lerp(x0, x1, k), y: lerp(y0, y1, k) - Math.sin(k * Math.PI) * arc });
+  return {
+    max: life, delay, onDone: onHit,
+    draw(ctx, k, t) {
+      const p = pos(k);
+      ctx.save();
+      ctx.globalAlpha = k < 0.08 ? k / 0.08 : 1;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(k * 7 + (x0 < x1 ? 0 : Math.PI));
+      // glow
+      ctx.beginPath(); ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2); ctx.fillStyle = rgba(glow, 0.22 + 0.1 * Math.sin(t / 40)); ctx.fill();
+      // stem
+      ctx.lineCap = 'round';
+      for (const [lw, c] of [[9, INK], [5, '#3E8F3B']]) { ctx.beginPath(); ctx.moveTo(0, -size * 0.8); ctx.lineTo(size * 0.25, -size * 1.25); ctx.lineWidth = lw; ctx.strokeStyle = c; ctx.stroke(); }
+      // body: three ridged lobes
+      for (const [g, c] of [[3, INK], [0, '#E8762B']]) {
+        for (const dx of [-size * 0.45, 0, size * 0.45]) {
+          ctx.beginPath(); ctx.ellipse(dx, 0, size * 0.55 + g, size * 0.85 + g, 0, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill();
+        }
+      }
+      ctx.fillStyle = '#F6A04A'; ctx.beginPath(); ctx.ellipse(-size * 0.3, -size * 0.35, size * 0.22, size * 0.3, -0.3, 0, Math.PI * 2); ctx.fill();
+      // carved face, glowing
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.moveTo(-size * 0.42, -size * 0.1); ctx.lineTo(-size * 0.14, -size * 0.1); ctx.lineTo(-size * 0.28, -size * 0.42); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(size * 0.14, -size * 0.1); ctx.lineTo(size * 0.42, -size * 0.1); ctx.lineTo(size * 0.28, -size * 0.42); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-size * 0.5, size * 0.22); ctx.lineTo(size * 0.5, size * 0.22); ctx.lineTo(size * 0.38, size * 0.5); ctx.lineTo(size * 0.2, size * 0.35); ctx.lineTo(0, size * 0.52); ctx.lineTo(-size * 0.2, size * 0.35); ctx.lineTo(-size * 0.38, size * 0.5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
+// A gale blowing from (x0,y) toward x1: wind streaks plus tumbling straw and
+// sticks (Huff & Puff). Streaks fade in at the mouth and race across.
+export function gust({ x0, x1, y, height = 170, color = '#FFFFFF', life = 1100, delay = 0, seed = 3 }) {
+  let s = seed;
+  const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  const streaks = Array.from({ length: 14 }, (_, i) => ({ dy: (rnd() - 0.5) * height, len: 60 + rnd() * 90, off: rnd() * 0.5, w: 3 + rnd() * 4, i }));
+  const bits = Array.from({ length: 10 }, () => ({ dy: (rnd() - 0.5) * height, off: rnd() * 0.55, rot: rnd() * 6, spin: 6 + rnd() * 8, stick: rnd() > 0.5, len: 10 + rnd() * 14 }));
+  const dir = Math.sign(x1 - x0) || 1;
+  return {
+    max: life, delay,
+    draw(ctx, k, t) {
+      const fade = k > 0.8 ? (1 - k) / 0.2 : 1;
+      ctx.lineCap = 'round';
+      for (const st of streaks) {
+        const kk = ((k * 1.6 + st.off) % 1);
+        const x = lerp(x0, x1 + dir * 120, kk);
+        const wob = Math.sin(t / 60 + st.i) * 6;
+        ctx.globalAlpha = fade * (kk < 0.15 ? kk / 0.15 : kk > 0.85 ? (1 - kk) / 0.15 : 1) * 0.9;
+        for (const [lw, c] of [[st.w + 4, INK], [st.w, color]]) {
+          ctx.beginPath(); ctx.moveTo(x - dir * st.len, y + st.dy + wob); ctx.quadraticCurveTo(x - dir * st.len * 0.5, y + st.dy + wob - 8, x, y + st.dy + wob); ctx.lineWidth = lw; ctx.strokeStyle = c; ctx.stroke();
+        }
+      }
+      for (const b of bits) {
+        const kk = ((k * 1.3 + b.off) % 1);
+        const x = lerp(x0, x1 + dir * 140, kk), yy = y + b.dy - Math.sin(kk * Math.PI) * 50;
+        ctx.globalAlpha = fade * (kk < 0.1 ? kk / 0.1 : kk > 0.9 ? (1 - kk) / 0.1 : 1);
+        ctx.save(); ctx.translate(x, yy); ctx.rotate(b.rot + kk * b.spin);
+        for (const [lw, c] of [[7, INK], [3.5, b.stick ? '#8A5A3C' : '#F2D16B']]) { ctx.beginPath(); ctx.moveTo(-b.len / 2, 0); ctx.lineTo(b.len / 2, 0); ctx.lineWidth = lw; ctx.strokeStyle = c; ctx.stroke(); }
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
+// Targeting reticle that spins and tightens onto the target (Orbital Strike).
+export function reticle({ x, y, r0 = 150, r1 = 70, color = '#4EE8FF', life = 900, delay = 0 }) {
+  return {
+    max: life, delay,
+    draw(ctx, k, t) {
+      const r = lerp(r0, r1, ease(Math.min(1, k * 1.2)));
+      const a = t / 400;
+      const blink = k > 0.85 ? (Math.sin(t / 30) > 0 ? 1 : 0.3) : 1;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      ctx.globalAlpha = (k < 0.1 ? k / 0.1 : 1) * blink;
+      ctx.lineCap = 'round';
+      for (const [lw, c] of [[9, INK], [5, color]]) {
+        ctx.lineWidth = lw; ctx.strokeStyle = c;
+        for (let i = 0; i < 4; i++) {
+          const b = (i / 4) * Math.PI * 2;
+          ctx.beginPath(); ctx.arc(0, 0, r, b + 0.25, b + Math.PI / 2 - 0.25); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(Math.cos(b) * (r - 22), Math.sin(b) * (r - 22)); ctx.lineTo(Math.cos(b) * (r + 14), Math.sin(b) * (r + 14)); ctx.stroke();
+        }
+      }
+      ctx.rotate(-a * 2);
+      for (const [lw, c] of [[7, INK], [3.5, '#ffffff']]) {
+        ctx.lineWidth = lw; ctx.strokeStyle = c;
+        ctx.beginPath(); ctx.moveTo(-14, 0); ctx.lineTo(14, 0); ctx.moveTo(0, -14); ctx.lineTo(0, 14); ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    },
+  };
+}
