@@ -12,7 +12,9 @@
 // art.model: imported GLB at assets/models/<model>/<model>.glb; used instead of
 //   the code-built rig when present (render3d/models.js lists the other art options).
 
+import { NEW_FOUR } from './characters-new-four.js';
 export const CHARACTERS = {
+  ...NEW_FOUR,
   rex: {
     id: 'rex',
     name: 'Battle Rex',
@@ -239,7 +241,7 @@ export const CHARACTERS = {
   },
 };
 
-export const ROSTER = ['rex', 'tree', 'rockfish', 'arthur', 'witch', 'nightwing', 'roo', 'bass'];
+export const ROSTER = ['rex', 'tree', 'rockfish', 'arthur', 'witch', 'nightwing', 'roo', 'bass', 'crookhook', 'jackknife', 'wolfgang', 'payne'];
 
 // A different opponent each time (never the hero, avoids repeating the last foe).
 let lastFoe = null;

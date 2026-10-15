@@ -29,7 +29,7 @@
 - **Effects art**: Astra's effects sheet is in as painted sprites on hits, shots, splashes, heals, dizzy and power-ups.
 - **Game modes** (`src/game/modes.js`, `src/game/campaign.js`, `src/ui/modes-ui.js`, `src/ui/board-ui.js`, `src/render3d/board3d.js`): Play opens four cards.
   - **Campaign**: a board game across five island worlds (Bedroom → Castle → Fishing Pier → Bog Shack → Haunted Forest). Roll a 1–3 die, hop the spaces, fight wild creatures, grab stars, beat each world's boss (boss spaces are gates). Czernobog waits as a GIANT at the end, in front of his mountain. Play as a boss and that boss space becomes a giant of your own creature. The board is a 3D diorama with your real toy as the piece; a flat DOM board is the no-WebGL fallback.
-  - **Tournament**: beat every other toy on its home turf, then a GIANT boss. Trophy at the end.
+  - **Tournament**: beat six of the other toys on their home turf (a different six each time now that there are twelve), then a GIANT boss. Trophy at the end.
   - **Arcade**: pick your toy, the opponent (or SURPRISE) and the arena (or SURPRISE), then fight.
   - **Toy Box**: spin any toy and try its moves.
 - **Wild creatures** (minions, `src/data/characters.js` + `src/render3d/minion-rigs.js`): Rexlet (Rex), Spooky Sprout (Tree), Rock Minnow (Rockfish), Little Squire (Arthur), Bog Frog (Wanda), Sneaky Squirrel (Remy), Bubble Crab (Billy), and Czernobog's night crew: Shadow Imp and Jitterbones. Each is a cheap code-built toy (a couple dozen boxes and cones), not playable.
@@ -40,7 +40,12 @@
   - Billy Bass: Tail Flop · Take Me to the River (a river surge, math) · Wall Mount (block) · Encore! (music notes spin the foe dizzy). 104 HP, +2 attack.
   - The select screen is now 4 × 2.
 
+## Shipped later on 2026-10-14: the new four
+- **Four original toys**, playable in Arcade, Tournament and Toy Box (not the campaign board): Capt'n Crookhook (110 HP, +2; Hook Swipe · Squawks Attack · Barrel Roll · Cannon Broadside), Jack-Knife (98 HP, +3; Rattle Kick · Pumpkin Toss · Fold Up · Pumpkin Bomb Barrage), Big Bad Wolfgang (115 HP, +1; Paw Swat · Howl · Sheep's Disguise · Huff & Puff) and Commander Payne (118 HP, +1; Halberd Sweep · Gravity Grip · Deflector Shield · Orbital Strike). Code-built 3D toys (`src/render3d/villain-rigs.js`), data in `src/data/characters-new-four.js`, lore in `docs/lore/`.
+- **Select screen** fits 12 (two rows of six, scaled). New pumpkin and gust move icons.
+- Concept sheets, views, palettes, move sheets, arena specs and mockups are in `assets/`; Astra prompts in `docs/ASTRA_REQUESTS_NEW_FOUR.md`.
+
 ## Next
-1. Import Remy Roo and Billy Bass when their Hunyuan jobs finish.
-2. Send Astra the three requests in ASTRA_REQUESTS.md; then Wanda and Czernobog go through Hunyuan too.
+1. Send Astra the new-four packs; Hunyuan for each toy as the painted sheets come back. Wanda and Czernobog too (ASTRA_REQUESTS.md).
+2. Arenas for the new four once painted (`scripts/build-arenas.py`, merge `src/data/arenas-new-four.js`).
 3. Matt plays the new modes with Luca, then sends the learning report ("Copy as text") plus what felt too hard, too long or confusing, and any moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Czernobog.

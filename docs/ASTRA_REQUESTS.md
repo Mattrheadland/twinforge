@@ -2,6 +2,8 @@
 
 Paste each block as one message. When the art comes back, drop it in `assets/` with the names in ASSETS.md and tell Claude.
 
+The four new toys (Capt'n Crookhook, Jack-Knife, Big Bad Wolfgang, Commander Payne), their four arenas and a new effects sheet have their own file: `ASTRA_REQUESTS_NEW_FOUR.md` (attach the concept turnaround from `assets/characters/<id>/` with each character block).
+
 ## 1. Bog Shack floor (one image)
 Save as `assets/arenas/bog-shack/arena-bog-shack-floor.png`.
 ```

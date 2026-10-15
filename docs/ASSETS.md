@@ -15,6 +15,12 @@ Each has `<id>-turnaround.png` (1536×1024: front, side, back, 3/4) and `<id>-fa
 | young-arthur | Young Arthur | same order |
 | remy-roo | Remy Roo (the family dog) | same order |
 | billy-bass | Billy Bass (the talking wall fish) | same order |
+| capn-crookhook | Capt'n Crookhook (original pirate captain) | same order; concept renders, plus `-moves.png`, `-palette.png` |
+| jack-knife | Jack-Knife (original pumpkin-headed toy skeleton) | same order; concept renders |
+| big-bad-wolfgang | Big Bad Wolfgang (original storybook wolf) | same order; concept renders |
+| commander-payne | Commander Payne (original armored star commander) | same order; concept renders |
+
+The four newest (2026-10-14) are original designs with no toy behind them. Their sheets are concept renders made in the game's own toon shader (so they match the rest of the roster in scale and color; `roster-lineup.png` shows all twelve side by side); Astra's painted packs replace them (`ASTRA_REQUESTS_NEW_FOUR.md`). Each has the usual `views/` for Hunyuan. In the game they are code-built toys (`src/render3d/villain-rigs.js`) until their models land. Their lore (read-aloud story, personality, moves, taunts, sound notes) is in `docs/lore/<id>.md`.
 
 Not in the repo: the Hocus Pocus and Chernabog sheets (Disney characters). Their roster spots use original stand-ins, Wanda Wickwhistle and Czernobog (the Slavic night god's name, spelled as in Polish and in American Gods; the look is our own chubby night creature), which are built in code and have no sheets yet.
 
@@ -27,6 +33,12 @@ Not in the repo: the Hocus Pocus and Chernabog sheets (Disney characters). Their
 | castle | courtyard wall with banners | blue stone blocks | tower, banner pole, chest, bench, barrel, shield |
 | fishing-pier | sunny bay, lighthouse | honey-brown planks | piling, cooler, life ring, bucket, crate, lantern |
 | haunted-forest | moonlit forest | purple earth | tree, lamp post, mossy rock, stump, mushroom, log |
+| skull-cove | **not made yet**: moonlit pirate cove (Crookhook's home) | | `ARENA.md` + two mockups are the spec |
+| pumpkin-patch | **not made yet**: Midnight Pumpkin Patch (Jack-Knife's home) | | same |
+| grandmas-woods | **not made yet**: Grandma's Woods (Wolfgang's home) | | same |
+| star-bridge | **not made yet**: Star Fortress Bridge (Payne's home) | | same |
+
+The four new arenas each have `ARENA.md` (lore, backdrop / floor / prop spec, ambient sound) and `arena-<id>-mockup-empty.png` / `-mockup-fighters.png` (layout references for Astra, not game art). Their `src/data/arenas.js` entries are drafted in `src/data/arenas-new-four.js`; merge `NEW_ARENAS` and `NEW_HOME` once Astra's packs are built with `scripts/build-arenas.py`. Until then the new toys fight in the Bedroom.
 
 The Bedroom Block Fortress arena is built in code (`src/render3d/room.js`). The other four are in the game: `python3 scripts/build-arenas.py` turns these sheets into `public/arenas/<id>/` (backdrop.jpg, floor.jpg, prop-1..6.png cut-outs); `src/data/arenas.js` sets each arena's horizon, floor tile size and prop layout, and which opponent fights where (each foe's home turf). Bog Shack's floor is the Fishing Pier planks, tinted darker, until Astra makes its own.
 

@@ -7,10 +7,14 @@ import { createBattle, heroAct, foeAct, canAct, foeIntent } from '../src/logic/b
 import { Rng } from '../src/logic/rng.js';
 import { ICON } from '../src/ui/icons.js';
 
+// The campaign board's worlds belong to the original eight; arcade-only toys
+// (Capt'n Crookhook, Jack-Knife, Wolfgang, Commander Payne) have no world or creature.
+const BOARD = ROSTER.filter((id) => !C[id].arcadeOnly);
+
 test('every main character has at least one wild creature, with 4 moves and icons', () => {
-  assert.ok(Object.keys(MINIONS).length >= ROSTER.length);
-  for (const m of Object.values(MINIONS)) assert.ok(ROSTER.includes(m.boss), m.id);
-  for (const id of ROSTER) {
+  assert.ok(Object.keys(MINIONS).length >= BOARD.length);
+  for (const m of Object.values(MINIONS)) assert.ok(BOARD.includes(m.boss), m.id);
+  for (const id of BOARD) {
     const m = C[MINION_OF[id]];
     assert.ok(m && m.minion && m.boss === id, id);
     assert.deepEqual(m.moves.map((x) => x.slot).sort(), ['guard', 'power', 'quick', 'special']);
@@ -33,7 +37,7 @@ test('the board: worlds in order, every boss once, Czernobog giant at the end', 
     assert.equal(bosses.length, 8, hero);
     // never fight yourself: your boss slot is a giant of your own wild creature
     for (const s of b) if (s.foeId) assert.notEqual(s.foeId, hero, `${hero} fights itself`);
-    assert.ok(b.some((s) => s.foeId === MINION_OF[hero] && s.giant), `${hero}: giant own minion`);
+    if (MINION_OF[hero]) assert.ok(b.some((s) => s.foeId === MINION_OF[hero] && s.giant), `${hero}: giant own minion`);
     for (const s of b) { assert.ok(ARENAS[s.arena]); if (s.foeId) assert.ok(C[s.foeId], s.foeId); }
     // each world's fights use that world's creatures
     for (const s of b.filter((x) => x.type === 'fight')) assert.ok(WORLDS[s.world].minions.includes(s.foeId));

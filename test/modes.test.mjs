@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CHARACTERS as C, ROSTER } from '../src/data/characters.js';
 import { ARENAS, arenaFor } from '../src/data/arenas.js';
-import { newRun, winStop, current, recordRun, defaultRecords, isValidRun } from '../src/game/modes.js';
+import { newRun, winStop, current, recordRun, defaultRecords, isValidRun, TOURNAMENT_STOPS } from '../src/game/modes.js';
 import { createBattle, heroAct, foeAct, canAct, foeIntent } from '../src/logic/battle.js';
 import { Rng } from '../src/logic/rng.js';
 
 const ctx = (seed = 1) => { const r = new Rng(seed); return { chars: C, roster: ROSTER, rnd: () => r.next() }; };
 
-test('tournament: every other toy once, on its home turf, toughest last as a giant', () => {
+test('tournament: seven stops from the other toys, each on its home turf, toughest last as a giant', () => {
   for (const hero of ROSTER) {
     const run = newRun('tournament', hero, ctx());
     const foes = run.path.map((s) => s.foeId);
-    assert.equal(foes.length, ROSTER.length - 1, hero);
+    assert.equal(foes.length, TOURNAMENT_STOPS, hero);
     assert.ok(!foes.includes(hero));
     assert.equal(new Set(foes).size, foes.length);
     assert.ok(run.path.at(-1).boss && run.path.filter((s) => s.boss).length === 1);
@@ -22,8 +22,15 @@ test('tournament: every other toy once, on its home turf, toughest last as a gia
     assert.ok(isValidRun(run, C));
     let r = run;
     while (!r.done) r = winStop(r, 2);
-    assert.equal(r.wins, ROSTER.length - 1);
+    assert.equal(r.wins, TOURNAMENT_STOPS);
+    // challengers climb in difficulty up to the giant
+    const d = (id) => C[id].maxHp + (C[id].attackBonus || 0) * 6;
+    for (let i = 1; i < run.path.length - 1; i++) assert.ok(d(run.path[i].foeId) >= d(run.path[i - 1].foeId));
   }
+  // different seeds draw a different six
+  const a = newRun('tournament', 'rex', ctx(1)).path.map((s) => s.foeId).join();
+  const b = newRun('tournament', 'rex', ctx(7)).path.map((s) => s.foeId).join();
+  assert.notEqual(a, b);
 });
 
 test('arcade: the picked opponent and arena, or a surprise; never yourself', () => {

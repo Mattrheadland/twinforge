@@ -55,8 +55,8 @@ If you can only make one image per reply, make IMAGE 1 now, then IMAGE 2 and IMA
 ## Status (2026-10-14)
 - Battle Rex: imported (6k triangles, 469 KB), toy joints and side-eye decals set.
 - Young Arthur, Ragin' Rockfish, Spooky Tree: imported and in game (443 / 559 / 365 KB). Arthur has swappable eyes; Rockfish has side eyes, a jaw and a tail, and keeps his arm swings small (armScale 0.35) because his forearms are fused to his hips in the mesh; Tree has branch arms only (a head cut would split his carved face).
-- Remy Roo and Billy Bass: generating on Hunyuan (queued 2026-10-14 afternoon). Remy has two jobs: the first went in with his sides flipped; use the second (Left = his mirrored side).
-- Wanda Wickwhistle, Czernobog: waiting on Astra's sheets (`ASTRA_REQUESTS.md`).
+- Remy Roo, Billy Bass, Wanda Wickwhistle, Czernobog: imported and in game (all 8 of the original roster are Hunyuan models now; see HANDOFF.md).
+- Capt'n Crookhook, Jack-Knife, Big Bad Wolfgang, Commander Payne (added 2026-10-14): code-built stand-ins in game; concept turnarounds and views in `assets/characters/<id>/`. Astra packs first (`ASTRA_REQUESTS_NEW_FOUR.md`), then Hunyuan. Their views face right, so: side → Left, side-mirrored → Right, three-quarter → Left45.
 - Wild creatures (campaign minions) don't go through this pipeline; they're code-built on purpose (STYLE_GUIDE → Wild creatures).
 
 ## 3. Effects & menu pack

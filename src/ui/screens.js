@@ -134,8 +134,29 @@ export class UI {
     onTap(go, () => { if (!chosen) return; this.app.audio.sfx('select'); onPick(chosen === '?' ? null : chosen); }, 800);
     const home = h('button', { class: 'corner-btn home-btn', 'aria-label': 'Home', html: ICON.home });
     onTap(home, onHome, 500);
-    const scr = h('div', { class: 'screen select-screen' }, h('div', { class: 'pick-grid' }, ...cards), go, home);
+    const grid = h('div', { class: 'pick-grid' }, ...cards);
+    const scr = h('div', { class: 'screen select-screen' }, grid, go, home);
     this.layer.appendChild(scr);
+    // More than 8 toys: two rows, as many across as it takes, shrunk to fit
+    // between the home corner and the GO button (the 4 x 2 grid is never touched).
+    if (cards.length > 8) {
+      const cols = Math.ceil(cards.length / 2);
+      grid.classList.add('wide');
+      grid.style.gridTemplateColumns = `repeat(${cols}, 170px)`;
+      const fit = () => {
+        if (!scr.isConnected) return removeEventListener('resize', fit);
+        const cs = getComputedStyle(this.layer);
+        const sl = parseFloat(cs.getPropertyValue('--sl')) || 10, sr = parseFloat(cs.getPropertyValue('--sr')) || 10;
+        const gw = cols * 170 + (cols - 1) * 12, gh = 2 * 194 + 14;
+        const left = sl + 12, right = sr + 136; // GO button + its pulse
+        const availW = (this.app.W || 976) - left - right, availH = (this.app.H || 450) - 28;
+        const k = Math.min(1, availW / gw, availH / gh);
+        grid.style.left = left + availW / 2 + 'px';
+        grid.style.transform = `translate(-50%, -50%) scale(${k.toFixed(3)})`;
+      };
+      fit();
+      addEventListener('resize', fit);
+    }
     // an imported model finished loading: redraw the cards with it
     const off = onModelsChanged((mid) => {
       if (!scr.isConnected) return off();

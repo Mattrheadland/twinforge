@@ -16,6 +16,11 @@ export const BOSS_SCALE = 1.22;
 // The tournament's final boss: the first of these that isn't the hero.
 const BOSSES = ['nightwing', 'tree', 'rockfish', 'rex'];
 
+// A tournament is 6 challengers and the giant: 7 fights is a sitting or two for
+// a 4-year-old, and the ladder fits the screen. With more toys than that in the
+// roster, each tournament draws a different six.
+export const TOURNAMENT_STOPS = 7;
+
 // Tournament order: easier toys first (less health and punch), toughest last.
 function difficulty(def) {
   return def.maxHp + (def.attackBonus || 0) * 6;
@@ -42,7 +47,8 @@ export function newRun(mode, heroId, { chars, roster, rnd = Math.random, arenaId
   const run = { mode, heroId, step: 0, wins: 0, stars: 0, path: [], done: false };
   if (mode === 'tournament') {
     const boss = BOSSES.find((id) => others.includes(id)) || others[others.length - 1];
-    const order = others.filter((id) => id !== boss).sort((a, b) => difficulty(chars[a]) - difficulty(chars[b]) || a.localeCompare(b));
+    const field = shuffle(others.filter((id) => id !== boss), rnd).slice(0, TOURNAMENT_STOPS - 1);
+    const order = field.sort((a, b) => difficulty(chars[a]) - difficulty(chars[b]) || a.localeCompare(b));
     run.path = order.map((id) => stop(id, arenaFor(id)));
     run.path.push(stop(boss, arenaFor(boss) === 'bedroom' ? 'haunted-forest' : arenaFor(boss), true));
   } else {

@@ -59,6 +59,14 @@ export const ICON = {
   flames: S(`<path d="M26 86 C10 86 8 66 18 56 C20 64 24 66 26 62 C24 50 30 40 36 34 C36 48 46 56 44 70 C44 80 36 86 26 86 Z" fill="#FF7A1A"/><path d="M68 86 C52 86 50 64 62 52 C64 62 68 64 70 60 C68 44 76 32 82 26 C82 42 92 52 90 68 C88 80 80 86 68 86 Z" fill="#FFC914"/>`),
   wings: S(`<path d="M50 40 Q30 10 6 20 Q14 40 10 62 Q24 52 30 66 Q38 54 50 62 Z" fill="#6A3FA0"/><path d="M50 40 Q70 10 94 20 Q86 40 90 62 Q76 52 70 66 Q62 54 50 62 Z" fill="#6A3FA0"/>`),
   ghost: S(`<path d="M22 88 L22 44 Q22 14 50 14 Q78 14 78 44 L78 88 L68 78 L58 88 L50 78 L42 88 L32 78 Z" fill="#E6D8FF"/><circle cx="40" cy="44" r="6" fill="#14111A" stroke-width="0"/><circle cx="60" cy="44" r="6" fill="#14111A" stroke-width="0"/>`),
+  // Jack-Knife's pumpkins: a carved jack-o'-lantern with a green glow in the eyes
+  pumpkin: S(`<path d="M50 26 Q48 14 56 8" fill="none" stroke-width="7"/><path d="M48 26 Q60 14 70 22 Q60 24 56 30 Z" fill="#2E9E44" stroke-width="5"/>
+    <path d="M50 30 Q20 24 12 50 Q10 72 30 88 Q42 94 50 88 Q58 94 70 88 Q90 72 88 50 Q80 24 50 30 Z" fill="#E8762B"/>
+    <path d="M24 60 L44 50 L42 64 Z M76 60 L56 50 L58 64 Z" fill="#5CF2A0" stroke-width="4"/>
+    <path d="M26 70 L38 76 L46 70 L54 76 L62 70 L74 70 L64 84 L36 84 Z" fill="#5CF2A0" stroke-width="4"/>`),
+  // Wolfgang's huff and puff: a curling gust of wind
+  gust: S(`<path d="M10 42 L52 42 Q70 42 70 28 Q70 16 58 16 Q50 16 48 24 M14 62 L66 62 Q88 62 88 78 Q88 90 74 90 Q66 90 64 82" fill="none" stroke="#14111A" stroke-width="13"/>
+    <path d="M10 42 L52 42 Q70 42 70 28 Q70 16 58 16 Q50 16 48 24 M14 62 L66 62 Q88 62 88 78 Q88 90 74 90 Q66 90 64 82" fill="none" stroke="#fff" stroke-width="6"/>`),
   // game modes
   map: S(`<path d="M10 22 L36 12 L64 22 L90 12 L90 78 L64 88 L36 78 L10 88 Z" fill="#F2DCA8"/><path d="M36 12 L36 78 M64 22 L64 88" fill="none" stroke-width="5"/>
     <path d="M20 66 Q34 48 48 58 T76 36" fill="none" stroke="#D7263D" stroke-width="5" stroke-dasharray="7 6"/><path d="M70 28 L82 40 M82 28 L70 40" stroke="#D7263D" stroke-width="6"/>`),
