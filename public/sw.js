@@ -1,7 +1,7 @@
 // Offline support. The page itself is network-first (so updates arrive when
 // online); everything else is cache-first. CACHE changes on every build.
 const CACHE = 'tbb-__BUILD__';
-const CORE = ['./', './index.html', './manifest.webmanifest', './words.json', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
+const CORE = ['./', './index.html', './__VENDOR__', './manifest.webmanifest', './words.json', './icons/apple-touch-icon.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
