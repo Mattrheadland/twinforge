@@ -249,9 +249,17 @@ test('music: every part matches its track length and every note parses', async (
   const { TRACKS } = await import('../src/audio/music.js');
   const { midiFreq } = await import('../src/audio/audio.js');
   for (const [name, tr] of Object.entries(TRACKS)) {
+    const drumTokens = tr.kit === 'modern' ? 'kschortr' : 'ksho';
     for (const p of tr.parts) {
       assert.equal(p.notes.length, tr.length, `${name} part length`);
-      if (p.kind === 'drum') continue;
+      if (p.kind === 'riser') {
+        for (const n of p.notes) assert.ok(n === 'r' || n === '-' || n === '.', `${name} riser: ${n}`);
+        continue;
+      }
+      if (p.kind === 'drum') {
+        for (const n of p.notes) if (n !== '-' && n !== '.') for (const ch of n) assert.ok(drumTokens.includes(ch), `${name} drum token: ${n}`);
+        continue;
+      }
       for (const n of p.notes) {
         if (n === '-' || n === '.') continue;
         for (const x of n.split('+')) assert.ok(midiFreq(x) > 20, `${name}: ${x}`);
