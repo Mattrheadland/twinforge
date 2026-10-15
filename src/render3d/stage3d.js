@@ -201,6 +201,7 @@ export class Stage3D extends Stage {
     });
     gl.addEventListener('webglcontextrestored', () => {
       this.lost = false;
+      this.onContextRestored && this.onContextRestored();
     });
     overlay.classList.add('overlay2d');
     this.scene = new THREE.Scene();

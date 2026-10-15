@@ -106,6 +106,20 @@ class App {
         }
       }, 2000);
     };
+    // back from a GPU reset: textures and canvases drawn before the loss are gone,
+    // so rebuild whatever is on screen (the board goes black otherwise)
+    st.onContextRestored = () => {
+      console.warn('[twinforge] GPU context restored');
+      clearInterval(this._lostT);
+      try {
+        if (this.battle) {
+          const id = st.arenaId; st.arenaId = null; st.setArena(id);
+          const b = this.battle;
+          st.setFighters(b.chars[b.state.heroId], b.chars[b.state.foeId], { foeBig: st.fighters.foe?.big || 1 });
+        } else if (this.boardView && this.ui.layer.querySelector('.board-screen')) this.goBoard();
+        else if (this.ui.layer.querySelector('.title-screen')) this.goTitle();
+      } catch (e) { console.error('[twinforge] rebuild after restore failed', e); }
+    };
   }
 
   // Laptop keys: arrows move between the buttons on screen, Enter/Space presses
