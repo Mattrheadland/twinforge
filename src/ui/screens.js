@@ -8,12 +8,46 @@ import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
 import { noteLevel } from '../logic/learning-log.js';
 import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
 import { get3D } from '../render3d/stage3d.js';
-import { onModelsChanged, modelId, modelReady } from '../render3d/models.js';
+import { onModelsChanged, modelId, modelReady, hasModel } from '../render3d/models.js';
 
 // Select-card portraits, rendered once per toy + pose + size (and whether its
 // imported model had loaded), then copied. Building a 3D toy and reading the
 // pixels back is the slow part, so a tap only redraws the two cards that change.
 const shots = new Map();
+const CARD_W = 150, CARD_H = 128;
+
+function cardPx(app) {
+  return isPixel() ? getArtScale() : app.px * 1.1;
+}
+
+function cardKey(id, def, eyes, w, h, s3) {
+  return `${id}|${eyes}|${w}x${h}|${isPixel()}|${s3 ? +modelReady(modelId(def)) : '2d'}`;
+}
+
+// One select-card picture, from the cache when it's there. Rendering goes
+// through the 3D stage (build the toy, read the pixels back), which is the
+// slow part; warmSelect() does it ahead of time so the select screen opens
+// without a stall.
+function cardShot(id, def, eyes, w, h, px) {
+  const s3 = get3D();
+  const key = cardKey(id, def, eyes, w, h, s3);
+  let src = shots.get(key);
+  if (src) return src;
+  const pose = { t: 1000, eyes, mouth: eyes === 'happy' ? 'open' : 'smile', armF: eyes === 'happy' ? -2.5 : -0.2, armB: eyes === 'happy' ? 2.5 : 0.25 };
+  if (s3) {
+    src = s3.snapshot(def, { w, h, framing: 'full', pose });
+  } else {
+    src = document.createElement('canvas');
+    src.width = w; src.height = h;
+    const c = src.getContext('2d');
+    c.setTransform(px * 0.78, 0, 0, px * 0.78, (CARD_W / 2 + (id === 'stompy' ? 14 : 0)) * px, (CARD_H - 6) * px);
+    drawToy(c, def, pose);
+    if (isPixel()) pixelize(c, w, h);
+  }
+  if (shots.size > 48) shots.clear();
+  if (!(s3 && s3.lost)) shots.set(key, src); // never keep a blank frame from a lost GPU
+  return src;
+}
 
 
 export class UI {
@@ -30,6 +64,35 @@ export class UI {
 
   clear() {
     this.layer.querySelectorAll('.screen, .overlay').forEach((n) => n.remove());
+  }
+
+  // Pre-render the select cards one toy per idle slice, so the first trip to
+  // the select screen doesn't stall (measured 750 ms for 12 toys on the
+  // laptop). Safe to call often: cached pictures are skipped, and it stops
+  // the moment a battle or another heavy screen takes over.
+  warmSelect(chars, roster) {
+    if (this._warm) return;
+    if (!this._warmHook) {
+      // a model that lands later changes its card's cache key: warm that toy again
+      this._warmHook = onModelsChanged(() => this.warmSelect(chars, roster));
+    }
+    // toys whose imported model is still on its way are left for the next round
+    const queue = roster.filter((id) => { const m = modelId(chars[id]); return !m || !hasModel(m) || modelReady(m); });
+    // idle time when the page has any, otherwise within 400 ms (a software-rendered
+    // tab never reports idle time, and it needs the warm-up most)
+    const idle = window.requestIdleCallback ? (fn) => requestIdleCallback(fn, { timeout: 400 }) : (fn) => setTimeout(fn, 120);
+    const step = () => {
+      this._warm = null;
+      if (!queue.length || this.app.battle) return;
+      const id = queue.shift();
+      const def = chars[id];
+      if (def) {
+        const px = cardPx(this.app);
+        try { cardShot(id, def, 'open', CARD_W * px, CARD_H * px, px); } catch (e) { /* a lost GPU: leave it for the select screen */ }
+      }
+      this._warm = idle(step);
+    };
+    this._warm = idle(step);
   }
 
   // ---------------- title ----------------
@@ -67,30 +130,12 @@ export class UI {
     const cards = roster.map((id, i) => {
       const def = chars[id];
       const cv = document.createElement('canvas');
-      const W = 150, H = 128, px = isPixel() ? getArtScale() : this.app.px * 1.1;
+      const W = CARD_W, H = CARD_H, px = cardPx(this.app);
       cv.width = W * px; cv.height = H * px;
       if (isPixel()) cv.classList.add('pxl');
       cv.style.width = W + 'px'; cv.style.height = H + 'px';
-      const render = (eyes, s3) => {
-        const pose = { t: 1000, eyes, mouth: eyes === 'happy' ? 'open' : 'smile', armF: eyes === 'happy' ? -2.5 : -0.2, armB: eyes === 'happy' ? 2.5 : 0.25 };
-        if (s3) return s3.snapshot(def, { w: cv.width, h: cv.height, framing: 'full', pose });
-        const src = document.createElement('canvas');
-        src.width = cv.width; src.height = cv.height;
-        const c = src.getContext('2d');
-        c.setTransform(px * 0.78, 0, 0, px * 0.78, (W / 2 + (id === 'stompy' ? 14 : 0)) * px, (H - 6) * px);
-        drawToy(c, def, pose);
-        if (isPixel()) pixelize(c, cv.width, cv.height);
-        return src;
-      };
       const draw = (eyes) => {
-        const s3 = get3D();
-        const key = `${id}|${eyes}|${cv.width}x${cv.height}|${isPixel()}|${s3 ? +modelReady(modelId(def)) : '2d'}`;
-        let src = shots.get(key);
-        if (!src) {
-          src = render(eyes, s3);
-          if (shots.size > 48) shots.clear();
-          if (!(s3 && s3.lost)) shots.set(key, src); // never keep a blank frame from a lost GPU
-        }
+        const src = cardShot(id, def, eyes, cv.width, cv.height, px);
         const c = cv.getContext('2d');
         c.setTransform(1, 0, 0, 1, 0, 0);
         c.clearRect(0, 0, cv.width, cv.height);

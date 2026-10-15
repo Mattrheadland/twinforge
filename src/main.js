@@ -168,6 +168,13 @@ class App {
     return navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
   }
 
+  // iPhone / iPad (iPadOS reports itself as a Mac with a touch screen). The
+  // "Add to Home Screen" tip only makes sense there; laptops never see it.
+  get isIOS() {
+    const ua = navigator.userAgent || '';
+    return /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
   layout() {
     const vw = window.innerWidth, vh = window.innerHeight;
     // The 3D stage is always 450 units tall. The UI layer is too, unless the
@@ -296,7 +303,7 @@ class App {
     this.ui.showTitle({
       stars: d.progress.stars,
       hasBattle: !!d.battle,
-      showInstallTip: !this.standalone && !this.debug,
+      showInstallTip: this.isIOS && !this.standalone && !this.debug,
       onPlay: () => {
         this.audio.sfx('select');
         buzz('light');
@@ -305,6 +312,7 @@ class App {
       },
       onParent: () => this.openParent(),
     });
+    this.ui.warmSelect(CHARACTERS, ROSTER);
   }
 
   // ---------------- game modes (game/modes.js, game/campaign.js) ----------------
