@@ -373,7 +373,7 @@ export class Board3D {
     const maxX = this.pts.at(-1).x + 300;
     this.look.tx = Math.max(-this.token.position.x - 200, Math.min(maxX - this.token.position.x, this.look.tx - dx * k));
     // dragging down tilts the camera up (to see the mountain top); dragging up looks down the path
-    this.look.ty = Math.max(0, Math.min(420, this.look.ty + dy * k * 0.9));
+    this.look.ty = Math.max(0, Math.min(360, this.look.ty + dy * k * 0.4));
     this.look.tz = Math.max(-200, Math.min(240, this.look.tz + dy * k * 0.25));
     this.look.free = true;
   }
