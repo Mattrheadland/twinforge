@@ -215,7 +215,11 @@ export class Director {
     const power = this.qualityPower(quality, move.slot);
     const word = quality === 'indep' && move.slot === 'power' ? (move.word || 'POW!').replace('!', '!!') : move.word || 'POW!';
     const big = move.slot === 'power' && quality === 'indep';
+    // a move's own voice (move.sfx on the wind-up, move.sfxHit on the hit) plays
+    // over the generic whoosh / thud, so each toy sounds like itself
+    if (move.sfx) this.audio.sfx(move.sfx);
     const onHit = async () => {
+      if (move.sfxHit && !ev.dodged && !ev.blocked && !ev.perfect) this.audio.sfx(move.sfxHit);
       this.strike(def, ev, { power, word, big, color: move.color });
       applyHit();
       await this.wait(240);
@@ -314,7 +318,7 @@ export class Director {
   async guardUp(f, move) {
     f.guardType = move.guard || 'block';
     f.guardColor = move.color || '#4EA8DE';
-    this.audio.sfx(f.guardType === 'dodge' ? 'whoosh' : 'shieldUp');
+    this.audio.sfx(move.sfx || (f.guardType === 'dodge' ? 'whoosh' : 'shieldUp'));
     buzz('light');
     await this.to(f, { sy: 0.9, sx: 1.06, armF: -1.2 }, 150);
     await Promise.all([
@@ -438,6 +442,7 @@ export class Director {
 
   async spGeneric(att, def, move, q, ev, applyHit) {
     await this.chargeUp(att, move.color);
+    if (move.sfx) this.audio.sfx(move.sfx);
     await this.lunge(att, def, { power: 1.4, onImpact: () => this.finishSpecial(att, def, ev, move.color, 'BOOM!', applyHit) });
   }
 
@@ -664,6 +669,7 @@ export class Director {
     foe.dizzy = false;
     await this.to(foe, { sy: 0.8, sx: 1.08, rot: -0.08 }, 600, Ease.outQuad);
     hero.cheer = true;
+    if (hero.def?.winSfx) this.audio.sfx(hero.def.winSfx); // a toy's own victory sting
     this.fx.confetti(this.stage.W, 450);
   }
 

@@ -243,7 +243,7 @@ export function midiFreq(n) {
   return 440 * Math.pow(2, (midi - 69) / 12);
 }
 
-const SFX = {
+export const SFX = {
   tap: (a) => {
     a.tone(880, 0.07, { type: 'triangle', gain: 0.22 });
     a.tone(1320, 0.06, { type: 'sine', gain: 0.1, delay: 0.02 });
@@ -315,4 +315,97 @@ const SFX = {
   },
   star: (a, i = 0) => [1047, 1319, 1568].forEach((f, j) => a.tone(f * (1 + i * 0.12), 0.18, { type: 'triangle', gain: 0.14, delay: j * 0.04 })),
   yawn: (a) => a.tone(520, 0.8, { type: 'sine', slide: 260, slideTime: 0.7, gain: 0.12, attack: 0.1 }),
+
+  // ---------- the new four (sound notes in docs/lore/<id>.md) ----------
+  // Capt'n Crookhook
+  hookShing: (a) => { // metal shing: bright ping sliding up with a steel hiss
+    a.tone(2200, 0.28, { type: 'triangle', slide: 3600, slideTime: 0.08, gain: 0.416 });
+    a.tone(3300, 0.22, { type: 'sine', gain: 0.208, delay: 0.02 });
+    a.noise(0.18, { filter: 'highpass', freq: 5500, gain: 0.416, attack: 0.01 });
+  },
+  squawk: (a) => { // Squawks the parrot: a two-note squawk and a wing flutter
+    [[1180, 1500], [980, 1250]].forEach(([f, s], i) => a.tone(f, 0.16, { type: 'square', slide: s, slideTime: 0.06, gain: 0.176, lp: 3200, delay: i * 0.18 }));
+    [0, 0.07, 0.14, 0.21, 0.28].forEach((d) => a.noise(0.05, { filter: 'bandpass', freq: 900, q: 1.5, gain: 0.22, delay: 0.3 + d }));
+  },
+  barrelClonk: (a) => { // a wooden clonk and a rolling rumble
+    a.tone(260, 0.12, { type: 'triangle', slide: 150, slideTime: 0.1, gain: 0.3, lp: 1200 });
+    a.noise(0.04, { filter: 'bandpass', freq: 1800, gain: 0.2 });
+    [0, 0.12, 0.24, 0.36].forEach((d, i) => a.tone(95 - i * 5, 0.14, { type: 'sine', gain: 0.22, delay: 0.1 + d, lp: 400 }));
+    a.noise(0.5, { filter: 'lowpass', freq: 500, sweep: 200, gain: 0.18, attack: 0.05, delay: 0.1 });
+  },
+  broadside: (a) => { // four low cannon booms, then a splash tail
+    [0, 0.22, 0.44, 0.66].forEach((d, i) => {
+      a.tone(70 - i * 4, 0.6, { type: 'sine', slide: 26, slideTime: 0.5, gain: 0.8, delay: d });
+      a.noise(0.5, { filter: 'lowpass', freq: 1500, sweep: 90, gain: 0.5, delay: d });
+    });
+    a.noise(0.9, { filter: 'bandpass', freq: 1800, sweep: 600, q: 0.6, gain: 0.25, attack: 0.15, delay: 1.0 });
+  },
+  squeezebox: (a) => [[392, 494], [523, 659], [659, 784]].forEach((pair, i) => pair.forEach((f) => a.tone(f, 0.26, { type: 'sawtooth', gain: 0.11, lp: 1800, detune: 8, delay: i * 0.2, attack: 0.03 }))),
+
+  // Jack-Knife
+  boneRattle: (a) => [0, 0.05, 0.1, 0.16, 0.21, 0.27].forEach((d, i) => a.tone([1760, 2093, 1568, 2349, 1976, 1760][i], 0.07, { type: 'triangle', gain: 0.24, delay: d, lp: 5000 })),
+  snikt: (a) => { // a pocket-knife fold
+    a.noise(0.03, { filter: 'highpass', freq: 4000, gain: 0.22 });
+    a.tone(2800, 0.12, { type: 'triangle', slide: 900, slideTime: 0.1, gain: 0.14, delay: 0.03 });
+    a.tone(180, 0.08, { type: 'sine', slide: 90, gain: 0.3, delay: 0.09 });
+  },
+  pumpkinThonk: (a) => { // a hollow pumpkin thonk
+    a.tone(210, 0.22, { type: 'sine', slide: 95, slideTime: 0.16, gain: 0.55, lp: 700 });
+    a.tone(420, 0.06, { type: 'triangle', gain: 0.12, lp: 900 });
+    a.noise(0.05, { filter: 'lowpass', freq: 900, gain: 0.2 });
+  },
+  slideWhistle: (a) => { // a spooky slide-whistle, up then down, for the barrage
+    a.tone(520, 0.45, { type: 'sine', slide: 1500, slideTime: 0.42, gain: 0.238, attack: 0.03 });
+    a.tone(1500, 0.5, { type: 'sine', slide: 420, slideTime: 0.48, gain: 0.238, attack: 0.02, delay: 0.45 });
+  },
+  giggle: (a) => [0, 0.09, 0.18, 0.27].forEach((d, i) => a.tone(880 + i * 60, 0.08, { type: 'square', slide: 1100 + i * 60, slideTime: 0.05, gain: 0.13, lp: 2600, delay: d })),
+
+  // Big Bad Wolfgang
+  sniff: (a) => [0, 0.14].forEach((d) => a.noise(0.09, { filter: 'bandpass', freq: 1400, sweep: 2600, q: 1.2, gain: 0.308, attack: 0.02, delay: d })),
+  pawThud: (a) => {
+    a.noise(0.16, { filter: 'bandpass', freq: 400, sweep: 1800, q: 1.2, gain: 0.22, attack: 0.03 });
+    a.tone(150, 0.16, { type: 'sine', slide: 60, gain: 0.4, delay: 0.12 });
+  },
+  howl: (a) => { // a cartoon howl: pitch bends up, holds, falls
+    a.tone(330, 0.5, { type: 'sine', slide: 660, slideTime: 0.3, gain: 0.252, attack: 0.08 });
+    a.tone(660, 0.6, { type: 'sine', slide: 720, slideTime: 0.4, gain: 0.252, attack: 0.02, delay: 0.5 });
+    a.tone(700, 0.55, { type: 'sine', slide: 300, slideTime: 0.5, gain: 0.224, attack: 0.02, delay: 1.05 });
+    a.tone(330, 0.5, { type: 'triangle', slide: 660, slideTime: 0.3, gain: 0.07, attack: 0.08, detune: 12 });
+  },
+  baa: (a) => { // a soft baa for the sheep disguise
+    [0, 0.06, 0.12, 0.18, 0.24, 0.3].forEach((d, i) => a.tone(i % 2 ? 470 : 440, 0.07, { type: 'square', gain: 0.154, lp: 1600, delay: d, attack: 0.01 }));
+  },
+  huffPuff: (a) => { // a big inhale (rising sweep), then a gale with straw rustle
+    a.noise(1.1, { filter: 'bandpass', freq: 300, sweep: 2400, q: 1.6, gain: 0.26, attack: 0.4 });
+    a.noise(1.2, { filter: 'bandpass', freq: 1800, sweep: 250, q: 0.8, gain: 0.5, attack: 0.05, delay: 1.15 });
+    [0, 0.1, 0.22, 0.31, 0.45, 0.58].forEach((d) => a.noise(0.05, { filter: 'highpass', freq: 6000, gain: 0.12, delay: 1.3 + d }));
+    a.tone(120, 1.0, { type: 'sawtooth', slide: 60, slideTime: 0.9, gain: 0.08, lp: 300, attack: 0.1, delay: 1.2 });
+  },
+
+  // Commander Payne (no breathing sounds, by design)
+  halberdHum: (a) => { // a low hum: detuned saws with a slow wobble, then the sweep
+    [0, 7, -7].forEach((dt) => a.tone(110, 0.5, { type: 'sawtooth', gain: 0.084, lp: 700, detune: dt, attack: 0.05 }));
+    a.tone(110, 0.3, { type: 'sawtooth', slide: 330, slideTime: 0.25, gain: 0.112, lp: 1400, delay: 0.4 });
+  },
+  gravityVwoom: (a) => { // a gravity sweep: down, then pulled up hard
+    a.tone(420, 0.45, { type: 'sine', slide: 70, slideTime: 0.4, gain: 0.22, attack: 0.05 });
+    a.tone(70, 0.5, { type: 'sawtooth', slide: 520, slideTime: 0.42, gain: 0.12, lp: 1200, attack: 0.02, delay: 0.42 });
+    a.noise(0.6, { filter: 'bandpass', freq: 200, sweep: 1600, q: 3, gain: 0.1, attack: 0.2, delay: 0.3 });
+  },
+  shieldZap: (a) => { // shield chime plus an electric zap
+    [1319, 1760, 2637].forEach((f, i) => a.tone(f, 0.45, { type: 'sine', gain: 0.15, attack: 0.03, delay: i * 0.05 }));
+    [0, 0.04, 0.09, 0.13].forEach((d) => a.noise(0.03, { filter: 'highpass', freq: 3500, gain: 0.21, delay: 0.1 + d }));
+    a.tone(60, 0.2, { type: 'square', gain: 0.09, lp: 400, delay: 0.1 });
+  },
+  orbitalStrike: (a) => { // countdown beeps, then the beam
+    [0, 0.25, 0.5].forEach((d) => a.tone(1046, 0.09, { type: 'square', gain: 0.08, lp: 3000, delay: d }));
+    a.tone(1568, 0.14, { type: 'square', gain: 0.1, lp: 3500, delay: 0.75 });
+    a.noise(0.9, { filter: 'bandpass', freq: 3200, sweep: 300, q: 0.8, gain: 0.45, attack: 0.02, delay: 0.95 });
+    a.tone(1200, 0.8, { type: 'sawtooth', slide: 90, slideTime: 0.7, gain: 0.12, lp: 2500, delay: 0.95 });
+    a.tone(55, 0.9, { type: 'sine', slide: 30, slideTime: 0.8, gain: 0.7, delay: 1.1 });
+  },
+  servoStep: (a) => {
+    a.tone(900, 0.06, { type: 'sawtooth', slide: 500, slideTime: 0.05, gain: 0.05, lp: 1600 });
+    a.tone(95, 0.18, { type: 'sine', slide: 45, gain: 0.5, delay: 0.05 });
+  },
 };
