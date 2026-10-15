@@ -12,10 +12,12 @@ Paste this:
 
 ## Rules (from Matt, keep these)
 - Toy photos never go in the repo or the game.
-- Hocus Pocus and The Chernabog stay as original stand-ins: **Wanda Wickwhistle** and **Czernobog** (renamed from Gloomwing on 2026-10-14; the look is our own chubby night creature).
+- Hocus Pocus and The Chernabog stay as original stand-ins: **Wanda Wickwhistle** (a tall, wicked, cackling sorceress since the 2026-10-14 redesign) and **Czernobog** (a giant obsidian demon god with horns and tattered wings since the same redesign; the old chubby night creature is gone). Matt wanted both menacing; keep them scary-fun, never gory.
 - Free tools only (Hunyuan 3D for models, no paid generators).
 - Run `npm test` before every push. Commits by Matt Headland <mattrheadland@gmail.com>.
 - Keep replies brief and end with next steps. Human-sounding writing; documents as PDF unless asked otherwise.
+- Matt wants a status line at least every 10 minutes during long work, and to be told plainly when something is blocked. Helper agents get declined by a permission prompt on his side; work solo unless he says otherwise.
+- Targets: iPhone 16 Pro landscape AND Matt's Windows laptop "FastWillie" (Chrome, i5-1135G7, Iris Xe, DPR 1.5, ~1280x700 window, mouse + touch). Chrome on the laptop must be the front window for Claude in Chrome to work; hidden tabs are throttled to a crawl.
 
 ## Where things are
 | What | Where |
@@ -38,23 +40,22 @@ Paste this:
 
 Commands: `npm test` (unit), `npm run build`, `npm run e2e` (Puppeteer, ~5 min), `npm run perf`, `npm run model:import <id> <file.glb>`, `npm run model:check` (CHAR=<id>, FOE=<id>), `npm run deploy` (set GIT_AUTHOR_/GIT_COMMITTER_ name+email to Matt).
 
-## State as of this handoff
+## State as of this handoff (2026-10-14, 8:30 PM)
 - **Roster (8)**: Battle Rex, Spooky Tree, Ragin' Rockfish, Young Arthur, Wanda Wickwhistle, Czernobog, Remy Roo (family dog; special Power Paws), Billy Bass (wall fish; power Take Me to the River).
-- **Modes**: Campaign (board game over five island worlds, wild creatures, a boss per world, giant Czernobog at the end), Tournament (every toy on its home turf, then a giant boss), Arcade (pick toy, opponent or Surprise, arena or Surprise), Toy Box.
-- **Wild creatures (9)**: Rexlet, Spooky Sprout, Rock Minnow, Little Squire, Bog Frog, Sneaky Squirrel, Bubble Crab, Shadow Imp and Jitterbones (Czernobog's crew, from Matt's mountaintop reference).
-- **3D models**: Battle Rex, Young Arthur, Ragin' Rockfish and Spooky Tree are real models (Hunyuan, 6k triangles each, 365–559 KB). Remy Roo and Billy Bass are generating; Wanda and Czernobog wait on Astra's sheets. Everyone without a GLB uses the code-built toy.
-- **Learning**: 22 question types (13 math, 9 reading incl. spelling and sight words) over 5 auto levels, about 120 picture words, 26 rhyme families, 41 read-a-word words, 44 sight words. Hundreds of distinct questions per subject from level 2 up (unit-tested). The last 25 questions per subject never repeat; a missed skill comes back 3–5 questions later in a new form, up to twice. The phone reads each question aloud. Learning report and question preview cover every type, and the report counts "second tries".
-- **Tests**: 59 unit, 78 e2e, all passing. Perf and leak checks pass (results in `docs/AUDIT.md`). The e2e waits count game time as well as wall time and only tap a button once it holds still under the finger, so it stays green on a busy machine where headless Chromium drops to a few frames a second.
-- **Hammering guard**: a question card ignores taps until the burst of taps that opened it pauses (`src/ui/answer-gate.js`); before, hammering the power move past 0.8 s answered the question at random (the power button sits under the right-hand answer).
-- **Conflicts settled when merging the two chats**: the name is Czernobog everywhere (not Gloomwing); the mode list is Campaign / Tournament / Arcade / Toy Box (the older Story / endless Arcade / Quick Fight list is gone).
+- **3D models (7 of 8 in game)**: Rex, Arthur, Rockfish, Tree, Remy, Billy and Czernobog are real Hunyuan models (6k triangles, 365–572 KB) with toy joints in `characters.js`. **Wanda's model is generated on Hunyuan but not downloaded** (see Next up). Her sheets and split views are in `assets/characters/wanda-wickwhistle/`.
+- **Modes**: Campaign (board over five worlds, giant Czernobog at the end), Tournament, Arcade, Toy Box. Each mode keeps its own saved run now.
+- **Wild creatures (9)**: Rexlet, Spooky Sprout, Rock Minnow, Little Squire, Bog Frog, Sneaky Squirrel, Bubble Crab, Shadow Imp, Jitterbones (the last two are lanky dancing silhouettes).
+- **Learning**: 22 question types (13 math, 9 reading incl. spelling and sight words) over 5 auto levels; word banks now live in `public/words.json` (fetched lazily) to keep the bundle at 974 KB. The last 25 questions per subject never repeat; a missed skill comes back later in a new form; the phone reads each question aloud.
+- **Laptop support (new today)**: rotate-phone overlay only on touch phones; screens fit from 4:3 to 21:9; portraits cached so the select screen doesn't stutter; keyboard (Enter/Space/arrows/Escape); a battle step that throws recovers instead of freezing; WebGL context loss handled; save reset/backup bugs fixed.
+- **Full-campaign test**: `node test/campaign-run.mjs tree@desktop nightwing@iphone` plays a whole campaign through the real UI and counts sounds. Measured run: 15 battles, 61 turns, 48 questions, 18 rolls, 4.5 min of animation. For a 4-year-old that's about 25–45 minutes per campaign, usually 2–3 sittings.
+- **Tests**: 65 unit, ~80 e2e. e2e runs that overlap with other headless runs on the same box fail spuriously (load avg 20+); run them alone.
 
-## Next up (needs Matt's PC online with Chrome + the Claude extension)
-1. **Pull Remy Roo and Billy Bass from Hunyuan.** hy3d.tencent.ai → Assets (free, 20 a day, 3 jobs at once). Remy has two jobs; use the **newer** one (the first had his sides flipped; see ASSET_PIPELINE §4 on slot orientation). Download the GLBs into `C:\Users\mattr\Downloads`, stage them, then `npm run model:import <id> <file>`.
-2. Set `art.joints` (and `art.face` / anchors where useful) in `characters.js`. Plan the boxes from side / front / top views in rig units, then check with `node test/model-check.mjs <char> scratch/model/<char>` and look at every pose. Watch for parts fused together in the mesh (Rockfish's forearms are fused to his hips): a swing stretches the seam, so cut elsewhere or lower `armScale`.
-3. Test, commit, deploy.
-5. **Astra**: send the three requests in `docs/ASTRA_REQUESTS.md` (Bog Shack floor, Wanda pack, Czernobog pack). When the sheets come back, split them (`scripts/split-turnaround.py`) and run them through Hunyuan too.
-6. Matt plays with Luca and sends the learning report ("Copy as text") plus anything too hard, too long or confusing; tune from that. On the iPhone, check that the voice reads the questions (it needs one tap first) and that the emoji pictures read the way the answers expect.
-7. iPhone performance pass (manual steps in `docs/AUDIT.md` §4).
+## Next up
+1. **Wanda's model.** With Chrome in front on the laptop: hy3d.tencent.ai → Assets, newest card, Download GLB into `C:\Users\mattr\Downloads`, stage, `npm run model:import wanda-wickwhistle <file>`, then set `art.model: 'wanda-wickwhistle'`, joints (head incl. hat/hair, arms, maybe the broom as `tail`) and a face in `characters.js` the way the others are done; `node test/model-check.mjs witch scratch/model/witch`; deploy.
+2. Laptop playtest in Matt's Chrome (frame times per scene, a full campaign with the mouse). Fix anything not smooth.
+3. Sitrep PDF for Matt (status, bugs fixed, durations, risks).
+4. Matt and Luca play; tune from the learning report.
+5. Bog Shack floor from Astra is in the ChatGPT TwinForge project ("Bog Shack Floor Texture" chat); download it to `assets/arenas/bog-shack/arena-bog-shack-floor.png` and run `scripts/build-arenas.py`.
 
 ## Known gaps
 - Read-aloud can't be tested headless; it uses the iPhone's built-in voice (Web Speech API) and needs a real-device check.
