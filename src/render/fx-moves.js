@@ -287,6 +287,110 @@ export function swirl({ cx, cy, r = 120, color = '#B98CFF', life = 1200, delay =
   };
 }
 
+// Czernobog's fire underglow: a hot orange/red band along the bottom edge of
+// the arena with a row of chunky inked flame lobes licking up out of it. Lives
+// until stopped: `on` (0..1) is tweened by the director; set `max = 0` to drop
+// it. Pulses at about 2 Hz with a slow drift so it never looks like a
+// metronome. One cached gradient, a dozen small paths: cheap.
+export function underglow({ width = () => 900, y = 450, h = 150, tongues = 11 }) {
+  let grad = null, gradW = 0;
+  const seeds = Array.from({ length: tongues }, (_, i) => ({ x: (i + 0.5) / tongues + (((i * 7) % 5) - 2) * 0.012, w: 30 + ((i * 5) % 4) * 7, ph: i * 1.7, sp: 190 + (i % 3) * 40 }));
+  // one flame: a round-bottomed tongue that narrows to a sharp, leaning tip,
+  // with a small side lick on the left
+  const lobe = (ctx, x, base, w, hh, lean) => {
+    ctx.beginPath();
+    ctx.moveTo(x - w, base);
+    ctx.quadraticCurveTo(x - w * 1.1, base - hh * 0.45, x - w * 0.55, base - hh * 0.5);
+    ctx.lineTo(x - w * 0.75 + lean * 0.5, base - hh * 0.72);
+    ctx.lineTo(x - w * 0.25 + lean * 0.6, base - hh * 0.6);
+    ctx.lineTo(x + lean * 1.5, base - hh);
+    ctx.lineTo(x + w * 0.3 + lean * 0.6, base - hh * 0.55);
+    ctx.quadraticCurveTo(x + w * 1.1, base - hh * 0.4, x + w, base);
+    ctx.closePath();
+  };
+  return {
+    max: Infinity, on: 0,
+    draw(ctx, k, t) {
+      if (this.on <= 0.01) return;
+      const pulse = 0.7 + 0.3 * Math.sin((t / 1000) * Math.PI * 4) * (0.7 + 0.3 * Math.sin(t / 1700));
+      const a = this.on * pulse;
+      const W = width();
+      if (!grad || gradW !== W) {
+        gradW = W;
+        grad = ctx.createLinearGradient(0, y - h, 0, y);
+        grad.addColorStop(0, 'rgba(215,38,61,0)');
+        grad.addColorStop(0.5, 'rgba(244,96,54,0.5)');
+        grad.addColorStop(1, 'rgba(255,170,40,0.95)');
+      }
+      // warm light washing up the floor (additive so it reads as glow, not paint)
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = a * 0.8;
+      ctx.fillStyle = grad;
+      ctx.fillRect(-40, y - h, W + 80, h + 40);
+      ctx.globalCompositeOperation = 'source-over';
+      // flame lobes along the bottom edge
+      const base = y + 4;
+      for (const s of seeds) {
+        const lick = 0.5 + 0.5 * Math.sin(t / s.sp + s.ph);
+        const hh = (34 + 40 * lick) * (0.5 + 0.5 * this.on);
+        const x = s.x * W + Math.sin(t / 900 + s.ph) * 5;
+        const lean = Math.sin(t / 310 + s.ph * 2) * 6;
+        ctx.globalAlpha = Math.min(1, a * 1.1);
+        lobe(ctx, x, base, s.w, hh, lean);
+        ctx.lineWidth = 4; ctx.strokeStyle = INK; ctx.stroke();
+        ctx.fillStyle = '#F46036'; ctx.fill();
+        lobe(ctx, x, base, s.w * 0.5, hh * 0.62, lean * 0.6);
+        ctx.fillStyle = '#FFC914'; ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    },
+  };
+}
+
+// Rising spirit wisp (Czernobog's storm): a pale, see-through, faceless streak
+// of light that climbs from the floor, spirals a little and thins to a wavy
+// tapered tail, fading near the top. Our own shape: no eyes, no sheet, just a
+// glowing head with a trailing tail and two streaks behind it.
+export function wisp({ x, y, rise = 300, size = 14, color = '#E6D8FF', life = 2200, delay = 0, spin = 1 }) {
+  const ph = Math.random() * Math.PI * 2;
+  return {
+    max: life, delay,
+    draw(ctx, k, t) {
+      const yy = y - rise * ease(k) - 10;
+      const sway = Math.sin(ph + k * Math.PI * 2 * spin) * (28 + 20 * k);
+      const xx = x + sway;
+      const alpha = (k < 0.12 ? k / 0.12 : 1) * (k > 0.65 ? (1 - k) / 0.35 : 1) * 0.62;
+      const s = size * (1 - 0.3 * k);
+      const lean = Math.cos(ph + k * Math.PI * 2 * spin) * 0.3;
+      const w1 = Math.sin(t / 90 + ph) * s * 0.7, w2 = Math.sin(t / 90 + ph + 1.8) * s * 0.9;
+      ctx.save();
+      ctx.translate(xx, yy);
+      ctx.rotate(lean);
+      ctx.lineCap = 'round';
+      // trailing streaks
+      ctx.globalAlpha = alpha * 0.55;
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = color;
+      ctx.beginPath(); ctx.moveTo(-s * 0.7, s * 1.2); ctx.quadraticCurveTo(-s * 1.1 + w1, s * 3, -s * 0.8 + w2, s * 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(s * 0.7, s * 1.3); ctx.quadraticCurveTo(s * 1.1 - w1, s * 2.8, s * 0.9 - w2, s * 4.4); ctx.stroke();
+      // body: round head into a wavy tapered tail
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(0, 0, s, Math.PI * 0.9, Math.PI * 2.1);
+      ctx.quadraticCurveTo(s * 0.75 + w1, s * 1.7, w2 * 0.6, s * 3.6);
+      ctx.quadraticCurveTo(-s * 0.75 + w1, s * 1.7, -s * 0.95, s * 0.3);
+      ctx.closePath();
+      ctx.lineWidth = 3; ctx.strokeStyle = INK; ctx.stroke();
+      ctx.fillStyle = color; ctx.fill();
+      // hot core
+      ctx.globalAlpha = alpha * 0.9;
+      ctx.beginPath(); ctx.arc(-s * 0.15, -s * 0.15, s * 0.45, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff'; ctx.fill();
+      ctx.restore();
+    },
+  };
+}
+
 // The stone with the sword in it (Sword in the Stone). `pullAt` = when the sword leaves.
 export function stone({ x, y, pullAt = 0.55, life = 1500, delay = 0 }) {
   return {

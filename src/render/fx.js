@@ -13,12 +13,13 @@ export class FX {
     this.bursts = [];
     this.lines = [];
     this.ents = [];
+    this.under = []; // entities drawn beneath everything else (floor glow, ground effects)
     this.sprites = [];
     this.reduced = false;
     this.seed = 1;
   }
   clear() {
-    this.parts.length = this.words.length = this.rings.length = this.bodies.length = this.bursts.length = this.lines.length = this.ents.length = this.sprites.length = 0;
+    this.parts.length = this.words.length = this.rings.length = this.bodies.length = this.bursts.length = this.lines.length = this.ents.length = this.under.length = this.sprites.length = 0;
   }
   // Painted effect sprite from Astra's effects sheet (public/ui/fx-<name>.png,
   // scripts/build-ui.py): pops in, holds, fades. Skipped quietly until loaded.
@@ -33,6 +34,13 @@ export class FX {
   add(e) {
     e.life = -(e.delay || 0);
     this.ents.push(e);
+    return new Promise((r) => { e._done = r; });
+  }
+  // Same, but drawn under the toys' overlay effects (stage calls drawUnder()
+  // before draw()). Used for floor effects such as Czernobog's fire underglow.
+  addUnder(e) {
+    e.life = -(e.delay || 0);
+    this.under.push(e);
     return new Promise((r) => { e._done = r; });
   }
 
@@ -148,6 +156,12 @@ export class FX {
       if (was < e.max && e.life >= e.max) { e.onDone && e.onDone(); e._done && e._done(); }
     }
     this.ents = this.ents.filter((e) => e.life < e.max);
+    for (const e of this.under) {
+      const was = e.life;
+      e.life += dt;
+      if (was < e.max && e.life >= e.max) { e.onDone && e.onDone(); e._done && e._done(); }
+    }
+    this.under = this.under.filter((e) => e.life < e.max);
     for (const l of this.lines) l.life += dt;
     this.lines = this.lines.filter((l) => l.life < l.max);
     for (const sp of this.sprites) sp.life += dt;
@@ -204,6 +218,16 @@ export class FX {
       burstPath(ctx, 0, 0, r * 0.32, r * 0.18, 7, b.seed + 3, b.rot);
       ctx.fillStyle = '#ffffff';
       ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawUnder(ctx) {
+    for (const e of this.under) {
+      if (e.life < 0) continue;
+      ctx.save();
+      e.draw(ctx, Math.min(1, e.life / e.max), performance.now());
       ctx.restore();
     }
     ctx.globalAlpha = 1;

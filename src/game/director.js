@@ -3,6 +3,7 @@
 import { Ease } from '../engine/time.js';
 import { buzz } from '../haptics.js';
 import * as FXM from '../render/fx-moves.js';
+import { VH } from '../render/stage.js';
 
 const WORDS = { indep: ['WHAM!', 'POW!!', 'KAPOW!'], hint: ['POW!', 'BAM!'], support: ['pow!', 'bop!'] };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -23,10 +24,21 @@ export class Director {
   // few seconds. off: everything clears.
   setStorm(on) {
     if (on) {
-      this.storm = { bolt: 2500 + Math.random() * 3000, ember: 0 };
+      if (this.storm) return;
+      // fire underglow along the floor (drawn under the other effects)
+      const glow = FXM.underglow({ width: () => this.stage.W, y: VH, h: 170 });
+      this.fx.addUnder(glow);
+      this.clock.to(glow, { on: 1 }, 1400);
+      this.storm = { bolt: 2500 + Math.random() * 3000, ember: 0, wisp: 900, glow };
       this.clock.to(this.stage, { vignette: 0.6 }, 1200);
     } else {
+      const st = this.storm;
       this.storm = null;
+      if (st?.glow) {
+        const glow = st.glow;
+        this.clock.killTweensOf(glow);
+        this.clock.to(glow, { on: 0 }, 500).then(() => { glow.max = 0; });
+      }
       this.clock.to(this.stage, { vignette: 0 }, 600);
     }
   }
@@ -46,6 +58,18 @@ export class Director {
         st.ember = 90 + Math.random() * 120;
         const W = this.stage.W;
         this.fx.burst(Math.random() * W, 420 + Math.random() * 40, { count: 1, kind: 'spark', colors: ['#FF7A1A', '#FFC914', '#C07CFF'], speed: 40 + Math.random() * 50, gravity: -140, drag: 1.2, life: 1600 + Math.random() * 900, size: 4 + Math.random() * 4, spread: 0.6, dir: -Math.PI / 2 });
+      }
+      // spirit wisps rising around Czernobog every 1.5-3 s
+      st.wisp -= real;
+      if (st.wisp <= 0) {
+        st.wisp = 1500 + Math.random() * 1500;
+        const cz = [this.foe, this.hero].find((f) => f?.def?.id === 'nightwing') || this.foe;
+        if (cz) {
+          const n = Math.random() < 0.35 ? 2 : 1;
+          for (let i = 0; i < n; i++) {
+            this.fx.add(FXM.wisp({ x: cz.x + (Math.random() - 0.5) * 240, y: cz.y + 6, rise: 260 + Math.random() * 120, size: 11 + Math.random() * 7, color: Math.random() < 0.5 ? '#E6D8FF' : '#CFC2FF', life: 2000 + Math.random() * 800, delay: i * 350, spin: Math.random() < 0.5 ? 1 : -1 }));
+          }
+        }
       }
       st.bolt -= real;
       if (st.bolt <= 0) {
@@ -249,9 +273,12 @@ export class Director {
     // a move's own voice (move.sfx on the wind-up, move.sfxHit on the hit) plays
     // over the generic whoosh / thud, so each toy sounds like itself
     if (move.sfx) this.audio.sfx(move.sfx);
+    // Czernobog hits harder: his power move rattles the room an extra notch
+    const czernobog = att.def?.id === 'nightwing' && move.slot === 'power';
     const onHit = async () => {
       if (move.sfxHit && !ev.dodged && !ev.blocked && !ev.perfect) this.audio.sfx(move.sfxHit);
       this.strike(def, ev, { power, word, big, color: move.color });
+      if (czernobog && !ev.dodged) this.stage.shake(0.4);
       applyHit();
       await this.wait(240);
     };
@@ -678,7 +705,13 @@ export class Director {
       last = this.fx.add(FXM.ghost({ cx: c.x, cy: c.y, r0: 230, phase: (i / n) * Math.PI * 2, life: 1300, delay: i * 80, size: 20 + (i % 3) * 4, onHit: i % 2 ? () => this.tap(def, move.color) : null }));
     }
     await last;
-    await this.finishSpecial(att, def, ev, move.color, 'BOO-YAH!', applyHit);
+    const fin = this.finishSpecial(att, def, ev, move.color, 'BOO-YAH!', applyHit);
+    if (att.def?.id === 'nightwing' && !ev.dodged) {
+      // the ultimate villain's storm lands with a red flash and a big shake
+      this.stage.flash(0.35, '#FF3B2F');
+      this.stage.shake(0.9);
+    }
+    await fin;
     await this.to(att, { oy: 0 }, 380, Ease.inQuad);
     this.squash(att, 1.2, 0.8, 300);
     await sw;
