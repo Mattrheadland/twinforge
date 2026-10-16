@@ -6,8 +6,8 @@
 export const NEW_ARENAS = {
   'skull-cove': {
     id: 'skull-cove', name: 'Skull Cove', horizon: 0.62, floorTile: 200, tint: 0xe6e8ff,
-    // 1 chest · 2 cannon · 3 barrels · 4 palm · 5 anchor · 6 lantern post
-    props: [[4, 'backL', 260], [6, 'backR', 190], [3, 'backL2', 95], [5, 'backR2', 110], [1, 'frontL', 80], [2, 'frontR', 85]],
+    // 1 chest · 2 cannon · 3 barrels · 4 palm · 5 lantern post · 6 anchor (Astra's sheet order)
+    props: [[4, 'backL', 260], [5, 'backR', 190], [3, 'backL2', 95], [6, 'backR2', 110], [1, 'frontL', 80], [2, 'frontR', 85]],
   },
   'pumpkin-patch': {
     id: 'pumpkin-patch', name: 'Midnight Pumpkin Patch', horizon: 0.62, floorTile: 180, tint: 0xe6e0ff,

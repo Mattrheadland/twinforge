@@ -484,9 +484,9 @@ html.reduced #tv::after { animation: none; }
 .mode-badge canvas:not(.px-label) { border-radius: 50%; background: #2a2458; }
 
 .arena-screen { display: flex; align-items: center; justify-content: center; }
-.arena-grid { display: grid; grid-template-columns: repeat(3, 210px); gap: 14px 16px; }
+.arena-grid { display: grid; grid-template-columns: repeat(var(--cols, 3), var(--cw, 210px)); gap: 14px 16px; }
 .arena-card {
-  position: relative; width: 210px; height: 140px; background: #120E26 center 30% / cover no-repeat;
+  position: relative; width: var(--cw, 210px); height: var(--ch, 140px); background: #120E26 center 30% / cover no-repeat;
   border: 4px solid #FFC914; box-shadow: 0 0 0 4px var(--ink), 4px 9px 0 4px rgba(10, 6, 30, 0.6);
   animation: pop-in 0.45s var(--d) both; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; transition: transform 0.15s;
 }

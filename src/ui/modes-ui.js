@@ -46,14 +46,18 @@ export function showArenaPick(ui, { onPick, onHome }) {
   ui.clear();
   const cards = Object.values(ARENAS).map((a, i) => {
     const b = h('button', { class: 'arena-card', style: { '--d': i * 80 + 'ms', backgroundImage: `url(${bg(a.id)})` }, 'aria-label': a.name },
-      h('span', { class: 'arena-name' }, pixelLabel(a.name, 13, '#ffffff', { maxW: 190 })));
+      h('span', { class: 'arena-name' }, pixelLabel(a.name, 13, '#ffffff', { maxW: 150 })));
     onTap(b, () => onPick(a.id), 500);
     return b;
   });
   const shuffle = h('button', { class: 'arena-card shuffle', style: { '--d': cards.length * 80 + 'ms' }, 'aria-label': 'Surprise me' },
     h('span', { class: 'shuffle-icon', html: ICON.shuffle }), h('span', { class: 'arena-name' }, pixelLabel('SURPRISE!', 13, '#FFC914')));
   onTap(shuffle, () => onPick(null), 500);
-  ui.layer.appendChild(h('div', { class: 'screen arena-screen' }, h('div', { class: 'arena-grid' }, ...cards, shuffle), homeBtn(onHome)));
+  // two rows at most: 3, 4 or 5 columns as the arena list grows (the new four's arenas join as their art lands)
+  const n = cards.length + 1, cols = n <= 6 ? 3 : n <= 8 ? 4 : 5;
+  const cw = { 3: 210, 4: 186, 5: 164 }[cols];
+  const grid = h('div', { class: 'arena-grid', style: { '--cols': cols, '--cw': cw + 'px', '--ch': Math.round(cw * 0.667) + 'px' } }, ...cards, shuffle);
+  ui.layer.appendChild(h('div', { class: 'screen arena-screen' }, grid, homeBtn(onHome)));
 }
 
 // ---------------- run map ----------------

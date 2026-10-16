@@ -7,6 +7,8 @@
 // props: [file number, slot, height]; slots: backL / backL2 / backR / backR2
 //   (against the backdrop, outer and inner), frontL / frontR (big, near the camera)
 
+import { NEW_ARENAS, NEW_HOME } from './arenas-new-four.js';
+
 export const ARENAS = {
   bedroom: { id: 'bedroom', name: 'Bedroom Block Fortress', built: true },
   castle: {
@@ -31,7 +33,13 @@ export const ARENAS = {
 const HOME = {
   rex: 'bedroom', tree: 'haunted-forest', rockfish: 'fishing-pier', arthur: 'castle',
   witch: 'bog-shack', nightwing: 'haunted-forest', roo: 'bedroom', bass: 'fishing-pier',
+  ...NEW_HOME,
 };
+
+// The new four's arenas join as Astra's art is cut into public/arenas/<id>/ (scripts/build-arenas.py).
+// A toy whose arena isn't ready yet fights in the bedroom (arenaFor's fallback).
+export const READY_NEW_ARENAS = ['skull-cove', 'pumpkin-patch'];
+for (const id of READY_NEW_ARENAS) ARENAS[id] = NEW_ARENAS[id];
 
 export function arenaFor(foeId) {
   return ARENAS[HOME[foeId]] ? HOME[foeId] : 'bedroom';
