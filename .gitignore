@@ -4,3 +4,4 @@ preview/
 scratch/
 *.log
 .claude/
+__pycache__/
