@@ -58,9 +58,10 @@ function starBadge(outer, inner, depth, points = 8) {
 // v6 (Founder, 2026-10-16): "each of the new 4 needs a unique body shape and build".
 // Astra's sheets drew all four on one blocky template; these rigs keep each costume but
 // give every toy its own body plan, checked with scripts/silhouette-sheet.mjs:
-//   Crookhook        barrel-chested captain on short legs, a peg leg, a huge tricorn
-//   Jack-Knife       hunched, lanky bone puppet, a giant pumpkin on a stick-thin frame
-//   Wolfgang         hunched beast on reverse-jointed wolf legs, head thrust forward, tail
+// (body shapes from the Founder's references; outfits and colours from the poster):
+//   Crookhook        stocky, broad-chested pirate on short sturdy legs, long open coat
+//   Jack-Knife       very tall and thin, legs over half his height, long spidery arms
+//   Wolfgang         lean, muscular upright wolf on long reverse-jointed legs, long arms
 //   Galactic Hunter  walking fortress: huge spiked pauldrons, small sunken helmet, wide stance
 
 const UP = new THREE.Vector3(0, 1, 0);
@@ -81,83 +82,72 @@ function anchorAt(root, obj, x = 0, y = 0, z = 0) {
 }
 
 // ======================= Capt'n Crookhook =======================
-// Barrel on short legs: a huge round teal coat over a round belly, the head sunk into the
-// shoulders behind a snow-white beard, short legs with a wooden peg on the camera side,
-// coat tails behind only, so the lower body tapers away. He rocks on the peg and puffs
-// his chest out.
+// Body (Founder's reference, 2026-10-16): a stocky, heavy-set pirate. Very broad chest
+// and shoulders, thick arms held away from the body, big cuffs and hands, a long coat
+// open at the front that flares below the hips, short sturdy legs in a wide stance, big
+// boots. Outfit and colours from the poster: teal coat, gold epaulets and cuffs, red
+// sash, cream shirt, big black tricorn with a teal plume, white beard, eyepatch, silver
+// hook. He sways his weight from boot to boot and puffs his chest.
 export function buildCrookhook(flash) {
   const P = maker(flash);
   const root = new THREE.Group();
   const TEAL = 0x1f8a8a, TEAL2 = 0x176b6b, GOLD = 0xffc914, RED = 0xd7263d, CREAM = 0xf0e2c0, SKIN = 0xe0a878;
-  const SILVER = 0xc4cad8, HAT = 0x22202a, BOOT = 0x2a2430, PANTS = 0x5a3a24, STEEL = 0x7d8798, WOOD = 0x9a6232, WHITE = 0xeef0f5;
+  const SILVER = 0xc4cad8, HAT = 0x22202a, BOOT = 0x2a2430, PANTS = 0x3a2a24, STEEL = 0x7d8798, WHITE = 0xeef0f5;
 
-  // legs: short. Back leg in a cuffed boot, camera-side leg is a wooden peg
-  const legB = group(root, 0, 0, -15);
-  legB.add(P(box(22, 22, 18), BOOT, { pos: [1, 11, 0] }));
-  legB.add(P(box(14, 9, 17), BOOT, { pos: [13, 4.5, 0] }));
-  legB.add(P(box(25, 7, 21), BOOT, { pos: [0, 25, 0], ink: 1.6 }));
-  legB.add(P(box(3, 6, 7), GOLD, { pos: [12, 16, 0], shiny: true, ink: 1 }));
-  legB.add(P(cyl(9, 8, 22, 6), PANTS, { pos: [0, 38, 0] }));
-  const legF = group(root, 0, 0, 15);
-  legF.add(P(cyl(10, 9, 16, 6), PANTS, { pos: [0, 44, 0] }));
-  legF.add(P(cyl(10.5, 10.5, 4, 6), PANTS, { pos: [0, 35.5, 0], ink: 1.4 })); // rolled-up cuff
-  legF.add(P(cyl(6, 6.5, 6, 7), STEEL, { pos: [1, 31, 0], shiny: true, ink: 1.2 })); // iron collar
-  legF.add(P(cyl(4.6, 2.6, 28, 7), WOOD, { pos: [2, 15, 0], rot: [0, 0, -0.06] }));
-  legF.add(P(cyl(3.2, 3.2, 3, 7), STEEL, { pos: [3, 1.5, 0], shiny: true, ink: 1 }));
-  root.add(P(ico(1), PANTS, { scale: [22, 11, 26], pos: [0, 52, 0] })); // seat
-
-  // everything from the hips up rides on `upper`, so he can rock on the peg
-  const upper = group(root, 0, 50, 0);
-  // coat tails: a flared skirt behind only (open at the front so the short legs show)
-  const BACKA = Math.PI * 1.5;
-  const skirtG = new THREE.CylinderGeometry(30, 42, 40, 10, 1, false, BACKA - 1.25, 2.5); skirtG.translate(0, -20, 0);
-  const skirt = group(upper, -4, 26, 0);
-  skirt.add(P(skirtG, TEAL2, { scale: [0.9, 1, 1] }));
-  const hemG = new THREE.CylinderGeometry(42.6, 42.6, 4, 10, 1, true, BACKA - 1.25, 2.5); hemG.translate(0, -40, 0);
-  skirt.add(new THREE.Mesh(hemG, new THREE.MeshBasicMaterial({ color: GOLD, side: THREE.DoubleSide })));
-  skirt.children[1].scale.set(0.9, 1, 1);
-  const tails = [skirt];
-  // the barrel: one big egg of teal coat
-  const barrel = group(upper, 0, 54, 0);
-  // pot belly: narrow at the shoulders, widest low down
-  barrel.add(P(new THREE.IcosahedronGeometry(1, 2), TEAL, { scale: [38, 46, 38], pos: [0, 4, 0] }));
-  barrel.add(P(new THREE.IcosahedronGeometry(1, 2), TEAL, { scale: [42, 34, 52], pos: [2, -12, 0] }));
-  // round cream belly and shirt showing down the front
-  barrel.add(P(new THREE.IcosahedronGeometry(1, 2), CREAM, { scale: [10, 30, 22], pos: [36, -8, 0], ink: 1.4 }));
-  const surf = (y, z) => 2 + 42 * Math.sqrt(Math.max(0, 1 - (z / 52) ** 2 - ((y + 12) / 34) ** 2));
-  // gold lapel edges and two rows of brass buttons following the curve
-  for (const s of [-1, 1]) {
-    for (let i = 0; i < 9; i++) {
-      const y = -26 + i * 6.5, z = s * 19;
-      barrel.add(P(box(2.4, 6.8, 2.4), GOLD, { pos: [surf(y, z) + 0.5, y, z], ink: false }));
-    }
-    for (let i = 0; i < 4; i++) {
-      const y = -14 + i * 10, z = s * 25;
-      barrel.add(P(ico(0), GOLD, { scale: [2.8, 2.8, 2.8], pos: [surf(y, z) + 1, y, z], shiny: true, ink: 0.9 }));
-    }
+  // legs: short, thick, wide apart; big cuffed boots
+  for (const z of [-19, 19]) {
+    const lg = group(root, 0, 0, z);
+    lg.rotation.x = z > 0 ? -0.07 : 0.07;
+    lg.add(P(box(26, 26, 22), BOOT, { pos: [1, 13, 0] }));
+    lg.add(P(box(17, 11, 21), BOOT, { pos: [15, 5.5, 0] }));
+    lg.add(P(box(30, 9, 26), BOOT, { pos: [0, 29, 0], ink: 1.8 })); // folded cuff
+    lg.add(P(box(3, 7, 9), GOLD, { pos: [14, 18, 0], shiny: true, ink: 1 }));
+    lg.add(P(cyl(12, 11, 30, 7), PANTS, { pos: [0, 47, 0] }));
   }
-  // red sash around the belly with a big gold buckle
-  const sash = new THREE.TorusGeometry(1, 0.15, 5, 18); sash.rotateX(Math.PI / 2);
-  barrel.add(P(sash, RED, { pos: [2, -30, 0], scale: [37, 36, 44.5], ink: 1.4 }));
-  barrel.add(P(box(6, 13, 14), GOLD, { pos: [41, -30, 0], shiny: true, ink: 1.2 }));
-  barrel.add(P(box(3, 6, 6), 0x9a7a10, { pos: [43.5, -30, 0], ink: false }));
-  barrel.add(P(cyl(16, 20, 8, 8), TEAL2, { pos: [0, 44, 0] })); // collar
+  root.add(P(ico(1), PANTS, { scale: [24, 12, 30], pos: [0, 64, 0] }));
 
-  // head: sunk right into the shoulders
-  const HEADY = 108; // in `upper` space
+  // `upper` carries everything from the hips up, so he can sway his weight
+  const upper = group(root, 0, 62, 0);
+  // long coat: open at the front, flaring out behind and at the sides down to the boot cuffs
+  const OPEN = 0.62;
+  const skirtG = new THREE.CylinderGeometry(30, 46, 46, 12, 1, false, Math.PI / 2 + OPEN, Math.PI * 2 - OPEN * 2); skirtG.translate(0, -23, 0);
+  const skirt = group(upper, -2, 22, 0);
+  skirt.add(P(skirtG, TEAL, { scale: [0.92, 1, 1] }));
+  const hemG = new THREE.CylinderGeometry(46.5, 46.5, 4, 12, 1, true, Math.PI / 2 + OPEN, Math.PI * 2 - OPEN * 2); hemG.translate(0, -45, 0);
+  const hem = new THREE.Mesh(hemG, new THREE.MeshBasicMaterial({ color: GOLD, side: THREE.DoubleSide })); hem.scale.set(0.92, 1, 1); skirt.add(hem);
+  for (const s of [-1, 1]) skirt.add(P(box(3, 46, 4), GOLD, { pos: [Math.cos(OPEN) * 38 * 0.92, -23, s * Math.sin(OPEN) * 38], rot: [s * 0.2, 0, 0.32], ink: false })); // gold front edges
+  // torso: a big chest, much wider at the shoulders than the waist
+  const chest = group(upper, 0, 0, 0);
+  chest.add(P(cyl(30, 31, 22, 9), TEAL, { pos: [0, 12, 0], scale: [0.9, 1, 1] })); // waist
+  chest.add(P(cyl(46, 31, 50, 9), TEAL, { pos: [0, 47, 0], scale: [0.86, 1, 1] }));
+  chest.add(P(new THREE.IcosahedronGeometry(1, 2), TEAL, { scale: [22, 20, 34], pos: [18, 54, 0], ink: false })); // deep chest
+  chest.add(P(cyl(46.6, 46.6, 4, 9), TEAL2, { pos: [0, 72, 0], scale: [0.86, 1, 1], ink: 1 }));
+  // cream shirt in a V down the front, two rows of brass buttons, gold lapels
+  chest.add(P(box(6, 40, 20), CREAM, { pos: [34, 46, 0], rot: [0, 0, -0.32] }));
+  for (const s of [-1, 1]) {
+    chest.add(P(box(3.4, 46, 5), GOLD, { pos: [34, 44, s * 13], rot: [s * 0.16, 0, -0.3], ink: false }));
+    for (let i = 0; i < 4; i++) chest.add(P(ico(0), GOLD, { scale: [3, 3, 3], pos: [30 + i * 2.7, 28 + i * 10, s * 21], shiny: true, ink: 0.9 }));
+  }
+  // red sash and gold buckle at the waist
+  chest.add(P(cyl(31.5, 31.5, 11, 9), RED, { pos: [0, 10, 0], scale: [0.9, 1, 1] }));
+  chest.add(P(box(6, 13, 15), GOLD, { pos: [28.5, 10, 0], shiny: true, ink: 1.2 }));
+  for (const z of [-4, 4]) chest.add(P(box(3, 22, 6), RED, { pos: [26, -6, z + 10], rot: [0.2 * Math.sign(z), 0, -0.1], ink: 1 })); // sash ends
+  chest.add(P(cyl(16, 20, 10, 8), TEAL2, { pos: [-2, 78, 0] })); // collar
+
+  // head: on a short thick neck, big white beard down the chest
+  const HEADY = 98; // in `upper` space
   const head = group(upper, 8, HEADY, 0);
-  const skull = P(ico(1), SKIN, { scale: [20, 21, 20] });
+  const skull = P(ico(1), SKIN, { scale: [19, 21, 19] });
   head.add(skull);
-  head.add(P(ico(1), SKIN, { scale: [8, 7, 9], pos: [21, -3, 0], ink: 1.6 })); // big round nose
-  for (const z of [-20, 20]) head.add(P(ico(0), SKIN, { scale: [4, 6, 3], pos: [-2, -1, z], ink: 1.2 }));
-  for (const z of [-17, 17]) head.add(P(ico(0), SILVER, { scale: [10, 10, 7], pos: [-10, -2, z], ink: 1.6 }));
-  // the beard: huge, spilling down over the barrel like a bib
-  head.add(P(ico(1), WHITE, { scale: [18, 18, 25], pos: [12, -17, 0], ink: 2 }));
-  const beard = group(head, 16, -28, 0);
-  beard.add(P(ico(1), WHITE, { scale: [15, 22, 22], pos: [4, -10, 0], ink: 1.8 }));
-  beard.add(P(cone(15, 30, 6), WHITE, { pos: [8, -34, 0], rot: [Math.PI, 0, 0.18], ink: 1.6 }));
-  for (const z of [-1, 1]) head.add(P(ico(1), WHITE, { scale: [6, 5.5, 15], pos: [22, -8, z * 9], rot: [z * 0.45, 0, 0.1], ink: 1.4 }));
-  const face = sphereDecal(head, 20.6, 1.5, 1.3, 180, 160, [0, 2, 0]);
+  head.add(P(ico(1), SKIN, { scale: [7.5, 7, 8.5], pos: [20, -3, 0], ink: 1.6 }));
+  for (const z of [-19, 19]) head.add(P(ico(0), SKIN, { scale: [4, 6, 3], pos: [-2, -1, z], ink: 1.2 }));
+  for (const z of [-16, 16]) head.add(P(ico(0), SILVER, { scale: [10, 10, 7], pos: [-10, -2, z], ink: 1.6 }));
+  head.add(P(ico(1), WHITE, { scale: [18, 18, 24], pos: [11, -17, 0], ink: 2 }));
+  const beard = group(head, 15, -27, 0);
+  beard.add(P(ico(1), WHITE, { scale: [14, 19, 21], pos: [3, -8, 0], ink: 1.8 }));
+  beard.add(P(cone(14, 28, 6), WHITE, { pos: [7, -30, 0], rot: [Math.PI, 0, 0.15], ink: 1.6 }));
+  for (const z of [-1, 1]) head.add(P(ico(1), WHITE, { scale: [6, 5.5, 14], pos: [21, -8, z * 9], rot: [z * 0.45, 0, 0.1], ink: 1.4 }));
+  const face = sphereDecal(head, 19.6, 1.5, 1.3, 180, 160, [0, 2, 0]);
   const updFace = faceUpdater(face, (g, W, H, e, m, t) => {
     g.clearRect(0, 0, W, H);
     g.save(); g.translate(0, H * 0.06); g.scale(1, 0.62); paintEyes(g, W, H, e, { iris: '#2F8FD0', lid: '#E0A878', brow: '#C4CAD8', size: H * 0.31, gap: W * 0.17 }, t); g.restore();
@@ -170,9 +160,8 @@ export function buildCrookhook(flash) {
     g.beginPath(); g.moveTo(W * 0.54, H * 0.25); g.lineTo(W * 0.86, H * 0.15); g.stroke();
     g.save(); g.translate(0, H * 0.58); g.scale(1, 0.42); paintMouth(g, W, H, m, { inside: '#7A1E2A' }); g.restore();
   });
-  // the hat: an oversized black tricorn, gold edge, anchor badge, teal plume
-  const hat = group(head, -3, 21, 0);
-  hat.scale.setScalar(1.55);
+  const hat = group(head, -3, 20, 0);
+  hat.scale.setScalar(1.38);
   const brim = cyl(38, 38, 5, 3); brim.rotateY(Math.PI / 2);
   hat.add(P(brim, HAT));
   const brimTrim = cyl(39.5, 39.5, 2, 3); brimTrim.rotateY(Math.PI / 2);
@@ -193,48 +182,50 @@ export function buildCrookhook(flash) {
   plume.add(P(ico(1), 0x2fb5b5, { scale: [17, 5.5, 7], pos: [-20, 30, 6], rot: [0.2, 0, -1.15], ink: 1.4 }));
   plume.add(P(ico(1), 0x5fd6d0, { scale: [9, 3.5, 5], pos: [-28, 44, 7], rot: [0.2, 0, -1.4], ink: 1.2 }));
 
-  // arms: set wide on the barrel, big gold epaulets, hook and cutlass
+  // arms: thick, from big rounded shoulders; huge gold cuffs; hook and cutlass
   const arm = (z, back) => {
-    const pv = group(upper, 2, 88, z);
-    pv.add(P(ico(1), back ? TEAL2 : TEAL, { scale: [13, 13, 12], pos: [0, -2, 0] }));
-    pv.add(P(cyl(10.5, 7.5, 36, 7), back ? TEAL2 : TEAL, { pos: [0, -22, 0] }));
-    pv.add(P(cyl(11.5, 10, 11, 7), GOLD, { pos: [0, -42, 0], ink: 1.6 }));
-    pv.add(P(cyl(15, 16, 5, 8), GOLD, { pos: [2, 9, 0], shiny: true, ink: 1.2 }));
-    for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; pv.add(P(cyl(1.5, 1.5, 9, 4), GOLD, { pos: [2 + Math.sin(a) * 15, 3, Math.cos(a) * 15], ink: 0.6 })); }
+    const pv = group(upper, 0, 70, z);
+    const c = back ? TEAL2 : TEAL;
+    pv.add(P(ico(1), c, { scale: [16, 16, 15] }));
+    pv.add(P(cyl(18, 19, 5, 8), GOLD, { pos: [1, 11, 0], shiny: true, ink: 1.2 }));
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; pv.add(P(cyl(1.6, 1.6, 10, 4), GOLD, { pos: [1 + Math.sin(a) * 18, 4, Math.cos(a) * 18], ink: 0.6 })); }
+    pv.add(P(cyl(13, 12, 28, 7), c, { pos: [0, -18, 0] }));
+    pv.add(P(cyl(13.5, 12.5, 18, 7), c, { pos: [1, -40, 0] }));
+    pv.add(P(cyl(17, 15, 14, 7), GOLD, { pos: [2, -52, 0], ink: 1.6 })); // big turned-back cuff
     return pv;
   };
-  const armB = arm(-39, true), armF = arm(39, false);
-  armF.add(P(cyl(8, 6.5, 10, 8), STEEL, { pos: [0, -53, 0], shiny: true, ink: 1.4 }));
-  const hk = new THREE.TorusGeometry(15, 3.4, 5, 12, Math.PI * 1.35); hk.rotateZ(Math.PI * 0.9);
-  armF.add(P(hk, SILVER, { pos: [8, -72, 0], shiny: true, ink: 1.4 }));
-  armF.add(P(cone(3.4, 9, 4), SILVER, { pos: [21, -62, 0], rot: [0, 0, -0.4], shiny: true, ink: 1 }));
-  armB.add(P(ico(1), SKIN, { scale: [7.5, 7.5, 7.5], pos: [0, -52, 0], ink: 1.4 }));
-  const cut = group(armB, 0, -52, 0);
-  cut.add(P(box(3, 30, 10), 0xdde6f2, { pos: [0, 21, 0], shiny: true, ink: 1.2 }));
-  cut.add(P(box(3, 22, 10), 0xdde6f2, { pos: [-3, 45, 0], rot: [0, 0, 0.22], shiny: true, ink: 1.2 }));
-  cut.add(P(cone(5, 12, 3), 0xdde6f2, { pos: [-6.5, 60, 0], rot: [0, 0, 0.4], scale: [0.5, 1, 1], shiny: true, ink: 1 }));
-  cut.add(P(box(5, 4, 22), GOLD, { pos: [0, 5, 0], shiny: true, ink: 1.2 }));
+  const armB = arm(-52, true), armF = arm(52, false);
+  armF.add(P(cyl(9, 7.5, 11, 8), STEEL, { pos: [2, -63, 0], shiny: true, ink: 1.4 }));
+  const hk = new THREE.TorusGeometry(15, 3.6, 5, 12, Math.PI * 1.35); hk.rotateZ(Math.PI * 0.9);
+  armF.add(P(hk, SILVER, { pos: [10, -82, 0], shiny: true, ink: 1.4 }));
+  armF.add(P(cone(3.6, 9, 4), SILVER, { pos: [23, -72, 0], rot: [0, 0, -0.4], shiny: true, ink: 1 }));
+  armB.add(P(ico(1), SKIN, { scale: [10, 9, 10], pos: [2, -64, 0], ink: 1.4 })); // big fist
+  const cut = group(armB, 2, -64, 0);
+  cut.add(P(box(3, 32, 11), 0xdde6f2, { pos: [0, 22, 0], shiny: true, ink: 1.2 }));
+  cut.add(P(box(3, 24, 11), 0xdde6f2, { pos: [-3, 48, 0], rot: [0, 0, 0.22], shiny: true, ink: 1.2 }));
+  cut.add(P(cone(5.5, 13, 3), 0xdde6f2, { pos: [-7, 64, 0], rot: [0, 0, 0.4], scale: [0.5, 1, 1], shiny: true, ink: 1 }));
+  cut.add(P(box(5, 4, 24), GOLD, { pos: [0, 5, 0], shiny: true, ink: 1.2 }));
   cut.add(P(box(4, 10, 4), PANTS, { pos: [0, -2, 0], ink: 1 }));
   cut.rotation.z = -1.15;
 
   const rig = {
-    root, head, faceParts: [skull, hat], headY: HEADY, armF, armB,
+    root, head, faceParts: [skull, hat], headY: HEADY, armF, armB, armFRest: 0.05, armBRest: 0.05,
     anchors: {
       head: anchorAt(root, head, 6, 0, 0), top: anchorAt(root, hat, -2, 34, 0),
-      center: anchorAt(root, barrel, 0, 0, 0), muzzle: anchorAt(root, head, 22, -6, 0),
+      center: anchorAt(root, chest, 0, 38, 0), muzzle: anchorAt(root, head, 22, -6, 0),
     },
-    headR: 52,
+    headR: 50,
   };
   rig.apply = (p) => {
     baseApply(rig, p);
     updFace(p);
     const t = p.t || 0;
     const hurt = p.hurt ? Math.sin(t / 30) * 0.05 * Math.min(1, p.hurt) : 0;
-    // rocks back and forth on the peg, chest puffed; arms held wide of the barrel
-    upper.rotation.z = Math.sin(t / 700) * 0.035 + (p.pose === 'victory' ? -0.12 : 0) + hurt;
-    upper.position.y = 50 + Math.max(0, Math.sin(t / 350)) * 1.2;
-    barrel.scale.set(1, 1 + Math.sin(t / 420) * 0.015, 1 + Math.sin(t / 420) * 0.02);
-    armF.rotation.x = -0.32; armB.rotation.x = 0.32; // arms ride out over the belly
+    upper.rotation.x = Math.sin(t / 800) * 0.025; // weight from boot to boot
+    upper.rotation.z = (p.pose === 'victory' ? -0.12 : 0) + hurt;
+    upper.position.y = 62 + Math.sin(t / 400) * 0.8;
+    chest.scale.set(1 + Math.sin(t / 420) * 0.012, 1, 1 + Math.sin(t / 420) * 0.018);
+    armF.rotation.x = -0.24; armB.rotation.x = 0.24; // thick arms held away from the body
     beard.rotation.z = Math.sin(t / 420) * 0.06 + (p.fly ? -0.25 : 0);
     plume.rotation.z = 0.5 + Math.sin(t / 360) * 0.08;
     skirt.rotation.z = Math.sin(t / 380) * 0.03 - (p.fly ? 0.25 : 0) - Math.min(0.3, Math.abs(p.lunge || 0) / 250);
@@ -315,137 +306,136 @@ function paintPumpkinFace(g, W, H, eyes, mouth, t) {
 }
 
 // ======================= Jack-Knife =======================
-// A bone puppet, not a person: a giant pumpkin on a stick-thin, hunched frame. Narrow
-// shoulders under a head three times their width, a long bare spine that curls forward,
-// arms that hang past his knees, knobbly knees bent and turned in, big curled boots.
-// Everything dangles: arms swing on their own clocks, the head wobbles on the neck,
-// bones rattle when hit. Fold Up folds him into a ball under the pumpkin.
+// Body (Founder's reference, 2026-10-16): very tall and very thin. Legs are well over half
+// his height, a short narrow torso, narrow shoulders, long thin arms with long spidery
+// fingers held a little out from the body, a slight stoop, the head on a thin neck.
+// Outfit and colours from the poster: carved pumpkin head, gold vest with buttons over
+// the ribs, vine belt, long purple cape with a tall collar, green-and-purple striped
+// socks, black buckled boots. Loose, dangly movement; Fold Up folds the long legs.
 export function buildJackKnife(flash) {
   const P = maker(flash);
   const root = new THREE.Group();
-  const BONE = 0xede6d2, BONE2 = 0xd2c8ae, PUMP = 0xe8762b, PUMP2 = 0xd0601e, STEM = 0x2e7a3a, BURLAP = 0xc9a15a, PURPLE = 0x6a3fa0, VINE = 0x2e9e44, BOOT = 0x24202c;
-  const HIP = 84, THIGH = 42, SHIN = 40, REST = 0.22; // knees always a little bent
+  const BONE = 0xede6d2, BONE2 = 0xd2c8ae, PUMP = 0xe8762b, PUMP2 = 0xd0601e, STEM = 0x2e7a3a, BURLAP = 0xd9a03a, BURLAP2 = 0xa8742a, PURPLE = 0x6a3fa0, VINE = 0x2e9e44, BOOT = 0x24202c;
+  const HIP = 124, THIGH = 62, SHIN = 56, REST = 0.06;
 
-  // legs: ball hip > thigh > big knee knob > shin > striped sock > huge curled boot
+  // legs: very long and thin; striped socks up the shins, pointed buckled boots
   const legs = [];
-  for (const z of [-9, 9]) {
+  for (const z of [-8, 8]) {
     const back = z < 0, c = back ? BONE2 : BONE;
     const hip = group(root, 0, HIP, z);
-    hip.add(P(ico(0), c, { scale: [5, 5, 5], ink: 1.1 }));
-    hip.add(P(cyl(2.8, 2.4, THIGH - 7, 6), c, { pos: [0, -THIGH / 2, 0] }));
+    hip.add(P(ico(0), c, { scale: [4.6, 4.6, 4.6], ink: 1.1 }));
+    hip.add(P(cyl(2.6, 2.2, THIGH - 7, 6), c, { pos: [0, -THIGH / 2, 0] }));
     const knee = group(hip, 0, -THIGH, 0);
-    knee.add(P(ico(0), c, { scale: [7, 6.5, 7], ink: 1.4 }));
-    knee.add(P(cyl(2.4, 2, SHIN - 14, 6), c, { pos: [0, -14, 0] }));
-    for (let i = 0; i < 3; i++) knee.add(P(cyl(3.6, 3.6, 4, 6), i % 2 ? PURPLE : VINE, { pos: [0, -28 - i * 4, 0], ink: i !== 1 ? 1 : false }));
+    knee.add(P(ico(0), c, { scale: [5, 4.6, 5], ink: 1.2 }));
+    knee.add(P(cyl(2.2, 1.9, 14, 6), c, { pos: [0, -9, 0] }));
+    for (let i = 0; i < 7; i++) knee.add(P(cyl(3.3, 3.1, 5, 6), i % 2 ? PURPLE : VINE, { pos: [0, -19 - i * 5, 0], ink: i === 0 || i === 6 ? 1 : false }));
     const boot = group(knee, 0, -SHIN, 0);
-    boot.add(P(box(15, 12, 13), BOOT, { pos: [-1, 4, 0] }));
-    boot.add(P(box(18, 7, 12), BOOT, { pos: [8, -1, 0] }));
-    boot.add(P(cone(5.5, 14, 4), BOOT, { pos: [21, 2, 0], rot: [0, 0, -Math.PI / 2 - 0.6], scale: [1, 1, 0.9], ink: 1.2 })); // toe curls up
-    boot.add(P(box(2, 5, 7), 0xffc914, { pos: [6, 6, 0], shiny: true, ink: 0.8 }));
-    hip.rotation.x = back ? 0.06 : -0.06; // knees turned in
+    boot.add(P(box(12, 12, 11), BOOT, { pos: [-1, 4, 0] }));
+    boot.add(P(box(16, 6, 10), BOOT, { pos: [8, -1, 0] }));
+    boot.add(P(cone(5, 12, 4), BOOT, { pos: [19, 1, 0], rot: [0, 0, -Math.PI / 2 - 0.45], scale: [1, 1, 0.9], ink: 1.2 }));
+    boot.add(P(box(2, 5, 7), 0xffc914, { pos: [5, 6, 0], shiny: true, ink: 0.8 }));
+    hip.rotation.x = back ? -0.05 : 0.05; // feet a little apart
     legs.push({ hip, knee, boot, back });
   }
 
-  // `body` hangs everything above the hips (Fold Up drops it); `chest` curls forward on the spine
+  // short narrow torso
   const body = group(root, 0, HIP, 0);
-  for (const z of [-6, 6]) body.add(P(ico(0), BONE, { scale: [6, 5, 4.5], pos: [0, 2, z], rot: [z > 0 ? 0.5 : -0.5, 0, 0], ink: 1.1 }));
-  body.add(P(box(5, 8, 5), BONE2, { pos: [-2, 1, 0], ink: 1 }));
-  const vb = new THREE.TorusGeometry(9, 1.6, 4, 12); vb.rotateX(Math.PI / 2);
-  body.add(P(vb, VINE, { pos: [0, 5, 0], scale: [0.9, 1, 1], ink: 1 }));
-  for (const [x, z, r] of [[9, 4, 0.4], [6, -7, -0.5]]) body.add(P(cone(3.2, 8, 4), 0x46c25a, { pos: [x, 2, z], rot: [Math.PI / 2 + r, 0, -0.3], scale: [1, 1, 0.4], ink: 1 }));
-  // long bare lumbar spine
-  for (let i = 0; i < 6; i++) body.add(P(box(4.4, 3.2, 4.4), i % 2 ? BONE2 : BONE, { pos: [-2, 10 + i * 4.4, 0], ink: 0.9 }));
-  const chest = group(body, -2, 36, 0);
-  // small open ribcage, narrow shoulders
-  const RIB = [[9.5, 30], [10.5, 25], [10.5, 20], [9.5, 15], [8, 10]];
+  for (const z of [-5, 5]) body.add(P(ico(0), BONE, { scale: [5.5, 4.5, 4], pos: [0, 2, z], rot: [z > 0 ? 0.5 : -0.5, 0, 0], ink: 1.1 }));
+  body.add(P(box(5, 7, 5), BONE2, { pos: [-2, 1, 0], ink: 1 }));
+  const vb = new THREE.TorusGeometry(8.5, 1.7, 4, 12); vb.rotateX(Math.PI / 2);
+  body.add(P(vb, VINE, { pos: [0, 5, 0], scale: [0.85, 1, 1], ink: 1 }));
+  for (const [x, z, r] of [[8, 4, 0.4], [6, -7, -0.5], [-2, 8, 1.2]]) body.add(P(cone(3.2, 8, 4), 0x46c25a, { pos: [x, 3, z], rot: [Math.PI / 2 + r, 0, -0.3], scale: [1, 1, 0.4], ink: 1 }));
+  for (let i = 0; i < 3; i++) body.add(P(box(4, 3.2, 4), i % 2 ? BONE2 : BONE, { pos: [-2, 9 + i * 4, 0], ink: 0.9 }));
+  const chest = group(body, -1, 20, 0);
+  const RIB = [[9, 30], [10, 25], [10, 20], [9, 15], [7.5, 10]];
   RIB.forEach(([r, y], i) => {
-    const rib = new THREE.TorusGeometry(r, 1.3, 4, 14, Math.PI * 2 - 0.8);
+    const rib = new THREE.TorusGeometry(r, 1.2, 4, 14, Math.PI * 2 - 0.8);
     rib.rotateX(Math.PI / 2); rib.rotateY(0.4);
-    chest.add(P(rib, i % 2 ? BONE2 : BONE, { pos: [1, y, 0], scale: [0.72, 1, 1], ink: 0.9 }));
+    chest.add(P(rib, i % 2 ? BONE2 : BONE, { pos: [1, y, 0], scale: [0.7, 1, 1], ink: 0.9 }));
   });
-  chest.add(P(box(2.6, 22, 3.4), BONE, { pos: [8, 21, 0], ink: 0.9 }));
-  for (let i = 0; i < 6; i++) chest.add(P(box(4, 2.8, 4), BONE2, { pos: [-6, 6 + i * 5, 0], ink: false }));
-  // little open vest (sheet), well clear of the ribs
+  chest.add(P(box(2.4, 22, 3.2), BONE, { pos: [7.5, 21, 0], ink: 0.9 }));
+  for (let i = 0; i < 6; i++) chest.add(P(box(3.8, 2.8, 3.8), BONE2, { pos: [-6, 6 + i * 5, 0], ink: false }));
+  // the poster's gold vest: open front panels with buttons, a back panel
   for (const s of [-1, 1]) {
-    chest.add(P(box(2.6, 20, 5), BURLAP, { pos: [4.5, 22, s * 9.5], rot: [s * 0.14, 0, -0.05] }));
-    chest.add(P(ico(0), 0xffc914, { scale: [1.6, 1.6, 1.6], pos: [7, 18 + (s + 1) * 4, s * 7], shiny: true, ink: 0.6 }));
+    chest.add(P(box(3, 28, 7), BURLAP, { pos: [4.5, 21, s * 10], rot: [s * 0.12, 0, -0.04] }));
+    chest.add(P(box(3.4, 28, 1.6), BURLAP2, { pos: [6, 21, s * 6.6], ink: 0.8 }));
+    for (let i = 0; i < 3; i++) chest.add(P(ico(0), 0xffc914, { scale: [1.8, 1.8, 1.8], pos: [6.8, 13 + i * 7, s * 8.6], shiny: true, ink: 0.7 }));
   }
-  chest.add(P(box(2.6, 22, 17), BURLAP, { pos: [-9, 22, 0] }));
-  for (const s of [-1, 1]) chest.add(P(cyl(1.6, 1.6, 15, 5), BONE, { pos: [2, 35, s * 8], rot: [Math.PI / 2, 0, 0], ink: 0.8 })); // collarbones
-  // long thin neck, curving forward
-  const neck = group(chest, 4, 37, 0);
-  for (let i = 0; i < 4; i++) neck.add(P(cyl(2.4, 2.8, 3.6, 6), BONE, { pos: [i * 2.2, i * 4.4, 0], ink: 0.8 }));
-  // cape: a tall pointed vampire collar behind the pumpkin and a short ragged mantle
-  const CAPE2 = 0x4a2a78, BACK = Math.PI * 1.5;
-  const cape = group(chest, -6, 36, 0);
-  const collar = new THREE.CylinderGeometry(30, 10, 44, 8, 1, true, BACK - 1.4, 2.8); collar.translate(0, 22, 0);
-  cape.add(P(collar, PURPLE, { scale: [0.6, 1, 1] }));
-  const collarIn = new THREE.CylinderGeometry(29, 9.5, 43, 8, 1, true, BACK - 1.35, 2.7); collarIn.translate(0, 22, 0);
-  const ci = new THREE.Mesh(collarIn, new THREE.MeshBasicMaterial({ color: CAPE2, side: THREE.BackSide })); ci.scale.set(0.6, 1, 1); cape.add(ci);
-  const strips = [];
-  for (const [z, len, fan] of [[-12, 46, -0.28], [-4, 58, -0.1], [4, 52, 0.1], [12, 44, 0.28]]) {
-    const st = group(cape, -2, 0, z);
-    const sg = box(2, len, 8); sg.translate(0, -len / 2, 0);
-    st.add(P(sg, z < 0 ? CAPE2 : PURPLE, { ink: 1 }));
-    st.add(P(cone(3.6, 10, 3), PURPLE, { pos: [0, -len - 3, 0], rot: [Math.PI, 0, 0], scale: [0.6, 1, 1], ink: 0.9 }));
-    st.rotation.x = fan;
-    strips.push(st);
-  }
-  for (const z of [-11, 11]) chest.add(P(ico(1), PURPLE, { scale: [5, 3.5, 5], pos: [-2, 36, z], ink: 1.1 }));
+  chest.add(P(box(3, 30, 20), BURLAP2, { pos: [-9, 21, 0] }));
+  for (const s of [-1, 1]) chest.add(P(cyl(1.5, 1.5, 15, 5), BONE, { pos: [1, 35, s * 8], rot: [Math.PI / 2, 0, 0], ink: 0.8 }));
+  const neck = group(chest, 3, 37, 0);
+  for (let i = 0; i < 3; i++) neck.add(P(cyl(2.2, 2.6, 3.4, 6), BONE, { pos: [i * 1.4, i * 4.2, 0], ink: 0.8 }));
 
-  // the head: a giant pumpkin on the end of the neck
-  const HEADY = 44; // in neck space
-  const head = group(neck, 14, HEADY, 0);
-  const R = 40;
-  for (let k = 0; k < 6; k++) head.add(P(ico(1), k % 2 ? PUMP2 : PUMP, { scale: [R * 1.06, R * 0.88, R * 0.48], rot: [0, (k * Math.PI) / 6, 0], ink: 2.6 }));
+  // long purple cape with a tall collar, ragged hem; hangs behind the legs
+  const CAPE2 = 0x4a2a78, BACK = Math.PI * 1.5;
+  const cape = group(chest, -5, 36, 0);
+  const collar = new THREE.CylinderGeometry(24, 9, 34, 8, 1, true, BACK - 1.35, 2.7); collar.translate(0, 17, 0);
+  cape.add(P(collar, PURPLE, { scale: [0.6, 1, 1] }));
+  const collarIn = new THREE.CylinderGeometry(23, 8.5, 33, 8, 1, true, BACK - 1.3, 2.6); collarIn.translate(0, 17, 0);
+  const ci = new THREE.Mesh(collarIn, new THREE.MeshBasicMaterial({ color: CAPE2, side: THREE.BackSide })); ci.scale.set(0.6, 1, 1); cape.add(ci);
+  const LEN = 86;
+  const drape = new THREE.CylinderGeometry(12, 15, LEN, 10, 1, false, BACK - 1.3, 2.6); drape.translate(0, -LEN / 2, 0);
+  cape.add(P(drape, PURPLE, { scale: [0.5, 1, 1] }));
+  const dIn = new THREE.CylinderGeometry(11.2, 14.2, LEN - 1, 10, 1, true, BACK - 1.27, 2.54); dIn.translate(0, -LEN / 2, 0);
+  const di = new THREE.Mesh(dIn, new THREE.MeshBasicMaterial({ color: CAPE2, side: THREE.BackSide })); di.scale.set(0.5, 1, 1); cape.add(di);
+  for (let i = 0; i < 7; i++) {
+    const a = BACK - 1.2 + (i / 6) * 2.4;
+    cape.add(P(cone(3.6, 9 + (i % 2) * 6, 4), PURPLE, { pos: [Math.sin(a) * 15 * 0.5, -LEN - 4 - (i % 2) * 2, Math.cos(a) * 15], rot: [Math.PI, 0, 0], ink: 1 }));
+  }
+  for (const z of [-10, 10]) chest.add(P(ico(1), PURPLE, { scale: [5, 3.5, 5], pos: [-2, 36, z], ink: 1.1 }));
+  chest.add(P(ico(0), 0xffc914, { scale: [3.4, 3.2, 3.4], pos: [6, 37, 0], shiny: true, ink: 1 })); // clasp
+
+  // pumpkin head
+  const HEADY = 34;
+  const head = group(neck, 5, HEADY, 0);
+  const R = 29;
+  for (let k = 0; k < 6; k++) head.add(P(ico(1), k % 2 ? PUMP2 : PUMP, { scale: [R * 1.06, R * 0.88, R * 0.48], rot: [0, (k * Math.PI) / 6, 0], ink: 2.2 }));
   head.add(P(ico(1), PUMP, { scale: [R, R * 0.86, R], ink: false }));
-  const stem = cyl(4, 6, 19, 5); stem.translate(0, 9.5, 0);
-  head.add(P(stem, STEM, { pos: [-3, R * 0.82, 0], rot: [0, 0, 0.4], ink: 1.4 }));
-  head.add(P(cone(7, 19, 4), 0x46c25a, { pos: [-14, R * 0.82 + 10, 6], rot: [0.4, 0, 1.2], scale: [1, 1, 0.3], ink: 1 }));
-  const curl = new THREE.TorusGeometry(5.5, 1.3, 3, 8, Math.PI * 1.5);
-  head.add(P(curl, STEM, { pos: [-8, R * 0.82 + 17, 0], ink: 0.8 }));
-  const face = sphereDecal(head, R + 0.8, 1.75, 1.7, 220, 200, [0, -1, 0], [1, 0.86, 1]);
+  const stem = cyl(3.2, 4.8, 15, 5); stem.translate(0, 7.5, 0);
+  head.add(P(stem, STEM, { pos: [-2, R * 0.82, 0], rot: [0, 0, 0.35], ink: 1.3 }));
+  head.add(P(cone(5.5, 15, 4), 0x46c25a, { pos: [-11, R * 0.82 + 8, 5], rot: [0.4, 0, 1.2], scale: [1, 1, 0.3], ink: 1 }));
+  const curl = new THREE.TorusGeometry(4.5, 1.1, 3, 8, Math.PI * 1.5);
+  head.add(P(curl, STEM, { pos: [-6, R * 0.82 + 14, 0], ink: 0.8 }));
+  const face = sphereDecal(head, R + 0.7, 1.75, 1.7, 220, 200, [0, -1, 0], [1, 0.86, 1]);
   const updFace = faceUpdater(face, paintPumpkinFace);
 
-  // arms: very long and loose; shoulder, humerus, elbow, twin forearm bones, long fingers
+  // arms: long and thin; spidery fingers
   const arm = (z, back) => {
     const pv = group(chest, 1, 34, z);
     const c = back ? BONE2 : BONE;
-    pv.add(P(ico(0), c, { scale: [4.6, 4.6, 4.6], ink: 1.1 }));
-    pv.add(P(cyl(2.2, 1.9, 40, 6), c, { pos: [0, -22, 0] }));
-    const elbow = group(pv, 0, -45, 0);
-    elbow.add(P(ico(0), c, { scale: [4.2, 4.2, 4.2], ink: 1.1 }));
-    for (const dz of [-1.6, 1.6]) elbow.add(P(cyl(1.2, 1.1, 38, 5), c, { pos: [0, -21, dz], ink: 0.8 }));
-    elbow.add(P(box(5.5, 5, 5.5), c, { pos: [1, -42, 0], ink: 1 }));
-    for (const [dz, len] of [[-2.4, 15], [-0.8, 18], [0.8, 18], [2.4, 14]]) elbow.add(P(box(1.4, len, 1.4), c, { pos: [2.5, -45 - len / 2, dz], rot: [dz * 0.06, 0, -0.18], ink: 0.7 }));
+    pv.add(P(ico(0), c, { scale: [4.2, 4.2, 4.2], ink: 1.1 }));
+    pv.add(P(cyl(2.1, 1.8, 40, 6), c, { pos: [0, -22, 0] }));
+    const elbow = group(pv, 0, -44, 0);
+    elbow.add(P(ico(0), c, { scale: [3.8, 3.8, 3.8], ink: 1.1 }));
+    for (const dz of [-1.5, 1.5]) elbow.add(P(cyl(1.1, 1, 36, 5), c, { pos: [0, -20, dz], ink: 0.8 }));
+    elbow.add(P(box(5, 5, 5.5), c, { pos: [1, -40, 0], ink: 1 }));
+    // long spidery fingers, splayed
+    for (const [dz, len, sp] of [[-3, 18, -0.25], [-1, 21, -0.08], [1, 21, 0.08], [3, 17, 0.25]]) elbow.add(P(box(1.3, len, 1.3), c, { pos: [3, -43 - len / 2, dz + sp * 10], rot: [sp, 0, -0.22], ink: 0.7 }));
+    elbow.add(P(box(1.3, 12, 1.3), c, { pos: [5, -46, back ? -4 : 4], rot: [back ? -0.6 : 0.6, 0, -0.5], ink: 0.7 })); // thumb
     pv.userData.elbow = elbow;
     return pv;
   };
-  const armB = arm(-13, true), armF = arm(13, false);
+  const armB = arm(-12, true), armF = arm(12, false);
 
-  // rest pose: the hunch
-  const HUNCH = -0.32;
-  chest.rotation.z = HUNCH;
-  neck.rotation.z = HUNCH * 0.6;
-  head.rotation.z = -HUNCH * 1.2; // the face still looks ahead
-  const rig = { root, head, headY: HEADY, armF, armB, armFRest: 0.28, armBRest: 0.22 };
+  // rest pose: a slight stoop, head a little forward
+  const STOOP = -0.12;
+  chest.rotation.z = STOOP;
+  neck.rotation.z = -0.1;
+  head.rotation.z = -STOOP * 1.4;
+  const rig = { root, head, headY: HEADY, armF, armB, armFRest: 0.05, armBRest: 0.0 };
   for (const L of legs) { L.hip.rotation.z = REST; L.knee.rotation.z = -2 * REST; L.boot.rotation.z = REST; }
-  body.position.y = HIP - (THIGH + SHIN) * (1 - Math.cos(REST));
-  for (const L of legs) L.hip.position.y = body.position.y;
   rig.anchors = {
-    head: anchorAt(root, head, 6, 0, 0), top: anchorAt(root, head, -2, R * 0.82 + 22, 0),
+    head: anchorAt(root, head, 6, 0, 0), top: anchorAt(root, head, -2, R * 0.82 + 18, 0),
     center: anchorAt(root, chest, 0, 10, 0), muzzle: anchorAt(root, head, R * 0.9, -6, 0),
   };
-  rig.headR = R * 1.3;
+  rig.headR = R * 1.45;
   rig.apply = (p) => {
     baseApply(rig, p);
     updFace(p);
     const t = p.t || 0;
     const fold = Math.max(0, Math.min(1, p.shield || 0));
     const hurt = p.hurt ? Math.sin(t / 22) * 0.14 * Math.min(1, p.hurt) : 0;
-    // legs: bent at rest, buckle for Fold Up, the camera-side leg kicks high on Rattle Kick
-    const bounce = Math.sin(t / 300) * 0.03;
-    const a = REST + bounce + fold * 0.95;
+    const a = REST + Math.sin(t / 300) * 0.02 + fold * 1.05;
     const kick = Math.max(0, Math.min(1, ((p.lunge || 0) - 15) / 60));
     for (const L of legs) {
       const k = !L.back ? kick : 0;
@@ -456,155 +446,145 @@ export function buildJackKnife(flash) {
     body.position.y = HIP - (THIGH + SHIN) * (1 - Math.cos(a));
     for (const L of legs) L.hip.position.y = body.position.y;
     body.rotation.z = -fold * 0.3 + (p.pose === 'victory' ? Math.sin(t / 140) * 0.08 : 0);
-    // the hunch breathes; the pumpkin wobbles loose on the neck
-    chest.rotation.z = HUNCH + Math.sin(t / 650) * 0.04 - fold * 0.35 + hurt * 0.5;
-    neck.rotation.z = HUNCH * 0.6 + Math.sin(t / 650 + 0.6) * 0.05;
-    head.rotation.z = -HUNCH * 1.2 + Math.sin(t / 520) * 0.06;
-    head.rotation.x = Math.sin(t / 410) * 0.09 + hurt;
-    head.position.y -= fold * 22;
-    // arms dangle and swing like a puppet's; folded, they wrap round the knees
+    chest.rotation.z = STOOP + Math.sin(t / 650) * 0.03 - fold * 0.35 + hurt * 0.5;
+    head.rotation.z = -STOOP * 1.4 + Math.sin(t / 520) * 0.05;
+    head.rotation.x = Math.sin(t / 410) * 0.07 + hurt;
+    head.position.y -= fold * 16;
+    // long arms hang a little out from the body and swing loose
     for (const [pv, ph] of [[armF, 0], [armB, 2.1]]) {
       const sw = Math.sin(t / 470 + ph);
-      pv.rotation.x = (pv === armF ? -0.12 : 0.12) + sw * 0.1 + hurt * (ph ? -1 : 1) + fold * (pv === armF ? 0.7 : -0.7);
-      pv.userData.elbow.rotation.z = 0.12 + Math.sin(t / 470 + ph - 0.7) * 0.12 + fold * 1.4;
+      pv.rotation.x = (pv === armF ? -0.2 : 0.2) + sw * 0.06 + hurt * (ph ? -1 : 1) + fold * (pv === armF ? 0.7 : -0.7);
+      pv.userData.elbow.rotation.z = 0.1 + Math.sin(t / 470 + ph - 0.7) * 0.08 + fold * 1.4;
+      pv.userData.elbow.rotation.x = pv === armF ? -0.12 : 0.12;
     }
-    cape.rotation.z = Math.sin(t / 460) * 0.05 + (p.fly ? 0.35 : 0) + fold * 0.3;
-    strips.forEach((st, i) => { st.rotation.z = Math.sin(t / (300 + i * 47) + i) * 0.09 - (p.fly ? 0.45 : 0) + 0.3; });
+    cape.rotation.z = Math.sin(t / 460) * 0.04 + (p.fly ? 0.35 : 0) + fold * 0.3 - STOOP;
   };
   return rig;
 }
 
 // ======================= Big Bad Wolfgang =======================
-// An upright wolf, not a man in a wolf suit: reverse-jointed legs (he stands on his toes
-// with the heel high off the ground), a deep chest and puffed coat shoulders over a narrow
-// waist, the whole spine hunched so the head and long muzzle lead the body, long arms
-// with big clawed paws hanging forward, and a big bushy tail. He breathes heavily, sniffs,
-// and his tail sways.
+// Body (Founder's reference, 2026-10-16): a lean, muscular upright wolf. Long
+// reverse-jointed wolf legs (he stands on his toes, heel high), a broad chest over a
+// narrow waist, a slight forward lean with the head and long muzzle ahead of the chest,
+// long arms that reach mid-thigh ending in big clawed hands, pointed ears, a bushy tail.
+// Outfit and colours from the poster: grey fur, cream chest ruff, red long coat open at
+// the front with black lapels and gold buttons, dark ragged trousers, toothy snarl.
 export function buildWolfgang(flash) {
   const P = maker(flash);
   const root = new THREE.Group();
   const FUR = 0x7f838d, FUR2 = 0x63676f, CREAM = 0xeceae4, RED = 0xc81e32, RED2 = 0x9e1628, BLACK = 0x24222c, PANTS = 0x34323e, PANTS2 = 0x2a2832, CLAW = 0xfff3d6, GOLD = 0xffc914;
-  const HIP = 88;
+  const HIP = 102;
 
-  // digitigrade legs: thigh forward to the knee, shin back to the high hock, long foot
-  // forward down to the paw. Ragged trousers stop at the knee.
+  // legs: thigh forward to the knee, long shin back to the high hock, long foot down to the toes
   const legs = [];
-  for (const z of [-15, 15]) {
+  for (const z of [-13, 13]) {
     const back = z < 0, f = back ? FUR2 : FUR, pc = back ? PANTS2 : PANTS;
     const hip = group(root, 0, HIP, z);
-    const K = [17, -30, 0], H = [-9, -60, 0], B = [8, -82, 0];
-    seg(P, hip, [0, 2, 0], K, 13, 10.5, pc);
-    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; hip.add(P(cone(2.6, 7, 3), pc, { pos: [K[0] + Math.cos(a) * 9, K[1] - 4, Math.sin(a) * 10], rot: [Math.PI, 0, 0], ink: 0.8 })); }
-    seg(P, hip, K, H, 8, 6, f);
-    hip.add(P(ico(0), f, { scale: [7, 7, 7], pos: H, ink: 1.2 })); // the hock: the "backwards knee"
-    seg(P, hip, H, B, 6, 5.5, f);
+    const K = [16, -36, 0], H = [-10, -72, 0], B = [6, -97, 0];
+    seg(P, hip, [0, 3, 0], K, 12, 9, pc); // muscular thigh in dark trousers
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; hip.add(P(cone(2.4, 7, 3), pc, { pos: [K[0] + Math.cos(a) * 8, K[1] - 4, Math.sin(a) * 9], rot: [Math.PI, 0, 0], ink: 0.8 })); }
+    seg(P, hip, K, H, 7.5, 5, f);
+    hip.add(P(ico(0), f, { scale: [6, 6, 6], pos: H, ink: 1.1 }));
+    seg(P, hip, H, B, 5, 4.5, f);
     const paw = group(hip, B[0], B[1], 0);
-    paw.add(P(ico(1), f, { scale: [14, 6, 10], pos: [5, -1, 0] }));
-    for (const dz of [-6, 0, 6]) paw.add(P(cone(2.6, 8, 4), CLAW, { pos: [19, -2, dz], rot: [0, 0, -Math.PI / 2], ink: 0.9 }));
+    paw.add(P(ico(1), f, { scale: [13, 5.5, 9], pos: [5, 0, 0] }));
+    for (const dz of [-5, 0, 5]) paw.add(P(cone(2.4, 8, 4), CLAW, { pos: [18, -1, dz], rot: [0, 0, -Math.PI / 2], ink: 0.9 }));
     legs.push({ hip, back });
   }
-  root.add(P(ico(1), PANTS, { scale: [18, 14, 23], pos: [0, HIP + 2, 0] })); // hips
+  root.add(P(ico(1), PANTS, { scale: [15, 13, 20], pos: [0, HIP + 2, 0] }));
 
-  // big bushy tail swinging out behind
-  const tail = group(root, -16, HIP + 4, 0);
-  tail.add(P(ico(1), FUR, { scale: [22, 11, 12], pos: [-16, 4, 0], rot: [0, 0, -0.5] }));
-  tail.add(P(ico(1), FUR, { scale: [20, 13, 14], pos: [-34, 16, 0], rot: [0, 0, -0.9] }));
-  tail.add(P(ico(1), CREAM, { scale: [11, 10, 10], pos: [-44, 30, 0], rot: [0, 0, -1.1], ink: 1.6 }));
+  const tail = group(root, -14, HIP + 2, 0);
+  tail.add(P(ico(1), FUR, { scale: [20, 9, 10], pos: [-14, -8, 0], rot: [0, 0, 0.5] }));
+  tail.add(P(ico(1), FUR, { scale: [18, 11, 12], pos: [-30, -22, 0], rot: [0, 0, 0.8] }));
+  tail.add(P(ico(1), CREAM, { scale: [10, 9, 9], pos: [-40, -36, 0], rot: [0, 0, 1.0], ink: 1.6 }));
 
-  // torso: hunched forward from the hips
-  const HUNCH = -0.38;
-  const torso = group(root, 0, HIP + 6, 0);
-  torso.rotation.z = HUNCH;
-  torso.add(P(cyl(17, 17, 7, 8), BLACK, { pos: [0, 4, 0], ink: 1 })); // belt
-  torso.add(P(box(4, 7, 8), GOLD, { pos: [17, 4, 0], shiny: true, ink: 1 }));
-  // the V: deep chest, narrow waist
-  const chest = P(cyl(33, 17, 58, 8), RED, { pos: [0, 36, 0], scale: [0.95, 1, 1.05] });
+  // torso: lean V, a slight forward lean
+  const LEAN = -0.18;
+  const torso = group(root, 0, HIP + 4, 0);
+  torso.rotation.z = LEAN;
+  torso.add(P(cyl(15, 15, 7, 8), BLACK, { pos: [0, 4, 0], ink: 1 }));
+  torso.add(P(box(4, 7, 8), GOLD, { pos: [15, 4, 0], shiny: true, ink: 1 }));
+  const chest = P(cyl(30, 15, 62, 8), RED, { pos: [0, 38, 0], scale: [0.85, 1, 1] });
   torso.add(chest);
-  torso.add(P(box(5, 46, 14), BLACK, { pos: [27, 36, 0], rot: [0, 0, -0.27] })); // dark shirt
+  torso.add(P(new THREE.IcosahedronGeometry(1, 1), CREAM, { scale: [9, 26, 15], pos: [21, 46, 0], ink: 1.4 })); // furry chest showing through the open coat
   for (const s of [-1, 1]) {
-    torso.add(P(box(4, 40, 9), BLACK, { pos: [28, 40, s * 11], rot: [s * 0.2, 0, -0.27], ink: 1.2 }));
-    for (let i = 0; i < 3; i++) torso.add(P(ico(0), GOLD, { scale: [2.6, 2.6, 2.6], pos: [21 + i * 2.6, 18 + i * 10, s * 17], shiny: true, ink: 0.9 }));
+    torso.add(P(box(4, 50, 8), BLACK, { pos: [19, 40, s * 14], rot: [s * 0.22, 0, -0.24], ink: 1.2 }));
+    for (let i = 0; i < 3; i++) torso.add(P(ico(0), GOLD, { scale: [2.6, 2.6, 2.6], pos: [14 + i * 2.6, 20 + i * 11, s * 19], shiny: true, ink: 0.9 }));
   }
-  // coat tails behind, split, down to the hocks
-  const tails = [];
-  for (const z of [-9, 9]) {
-    const tl = group(torso, -14, 6, z);
-    const g = box(4, 40, 18); g.translate(0, -20, 0);
-    tl.add(P(g, RED2));
-    tl.rotation.z = -HUNCH - 0.25;
-    tl.rotation.x = z > 0 ? -0.15 : 0.15;
-    tails.push(tl);
-  }
-  torso.add(P(ico(1), CREAM, { scale: [12, 13, 16], pos: [24, 58, 0], ink: 1.6 })); // chest ruff
-  torso.add(P(cyl(26, 18, 18, 8, 1, false), RED2, { pos: [-8, 66, 0], scale: [0.7, 1, 1.15] })); // tall collar
-  const neck = seg(P, torso, [6, 60, 0], [22, 76, 0], 13, 11, FUR);
+  // long coat skirt: open at the front so the wolf legs show, long tails behind
+  const OPEN = 0.95;
+  const skirtG = new THREE.CylinderGeometry(16, 30, 64, 10, 1, false, Math.PI / 2 + OPEN, Math.PI * 2 - OPEN * 2); skirtG.translate(0, -32, 0);
+  const skirt = group(torso, -2, 8, 0);
+  skirt.add(P(skirtG, RED2, { scale: [0.9, 1, 1] }));
+  torso.add(P(ico(1), CREAM, { scale: [11, 12, 15], pos: [20, 66, 0], ink: 1.6 })); // ruff
+  torso.add(P(cyl(22, 15, 16, 8, 1, false), RED2, { pos: [-6, 70, 0], scale: [0.7, 1, 1.1] })); // collar
+  seg(P, torso, [5, 64, 0], [18, 80, 0], 11, 9.5, FUR);
 
-  // head: thrust forward of the chest, level; long muzzle, tall ears
-  const HEADY = 82;
-  const head = group(torso, 30, HEADY, 0);
-  head.rotation.z = -HUNCH;
-  const wskull = P(ico(1), FUR, { scale: [22, 21, 22] });
+  const HEADY = 86;
+  const head = group(torso, 26, HEADY, 0);
+  head.rotation.z = -LEAN * 0.8;
+  const wskull = P(ico(1), FUR, { scale: [20, 19, 20] });
   head.add(wskull);
-  for (const z of [-16, 16]) head.add(P(ico(1), CREAM, { scale: [10, 10, 6], pos: [6, -10, z], ink: 1.4 }));
-  const snout = cyl(8, 13.5, 38, 6); snout.rotateZ(-Math.PI / 2);
-  const snoutM = P(snout, FUR, { pos: [30, -4, 0], scale: [1, 0.85, 1] });
+  for (const z of [-15, 15]) head.add(P(ico(1), CREAM, { scale: [9, 9, 5.5], pos: [6, -9, z], ink: 1.4 }));
+  const snout = cyl(7.5, 12.5, 38, 6); snout.rotateZ(-Math.PI / 2);
+  const snoutM = P(snout, FUR, { pos: [28, -4, 0], scale: [1, 0.85, 1] });
   head.add(snoutM);
-  head.add(P(ico(1), CREAM, { scale: [16, 6.5, 10], pos: [34, -11, 0], ink: 1.6 }));
-  head.add(P(ico(1), 0x14111a, { scale: [6, 5, 7.5], pos: [50, 0, 0], shiny: true, ink: 1.2 }));
+  head.add(P(ico(1), CREAM, { scale: [15, 6, 9.5], pos: [32, -10, 0], ink: 1.6 }));
+  head.add(P(ico(1), 0x14111a, { scale: [5.5, 4.5, 7], pos: [48, 0, 0], shiny: true, ink: 1.2 }));
   const ears = [];
   for (const z of [-1, 1]) {
-    const ear = group(head, -6, 16, z * 12);
-    ear.add(P(cone(8.5, 30, 4), FUR, { pos: [0, 12, 0], rot: [z * -0.25, 0, 0.18] }));
-    ear.add(P(cone(4.5, 18, 4), CREAM, { pos: [3.5, 9, 0], rot: [z * -0.25, 0, 0.18], ink: false, scale: [0.6, 1, 1] }));
+    const ear = group(head, -6, 14, z * 11);
+    ear.add(P(cone(7.5, 28, 4), FUR, { pos: [0, 11, 0], rot: [z * -0.22, 0, 0.2] }));
+    ear.add(P(cone(4, 17, 4), CREAM, { pos: [3, 8, 0], rot: [z * -0.22, 0, 0.2], ink: false, scale: [0.6, 1, 1] }));
     ears.push(ear);
   }
-  head.add(P(cone(5, 12, 4), FUR2, { pos: [-4, 22, 0], rot: [0, 0, 0.5], ink: 1.2 }));
-  const jaw = group(head, 20, -15, 0);
-  jaw.add(P(ico(1), CREAM, { scale: [15, 4.5, 8.5], pos: [13, -2, 0], ink: 1.6 }));
-  for (const z of [-4, 4]) jaw.add(P(cone(1.6, 5, 3), 0xffffff, { pos: [22, 3, z], ink: 0.6 }));
-  const eyes = sphereDecal(head, 22.4, 1.45, 0.62, 180, 76, [0, 7, 0], [1, 1, 1]);
-  const mouthD = sphereDecal(head, 11, 1.7, 1.2, 120, 72, [37, -11, 0], [1, 0.8, 1]);
+  head.add(P(cone(4.5, 11, 4), FUR2, { pos: [-4, 20, 0], rot: [0, 0, 0.5], ink: 1.2 }));
+  const jaw = group(head, 18, -14, 0);
+  jaw.add(P(ico(1), CREAM, { scale: [15, 4.2, 8], pos: [13, -2, 0], ink: 1.6 }));
+  for (const z of [-4, 4]) jaw.add(P(cone(1.5, 5, 3), 0xffffff, { pos: [22, 3, z], ink: 0.6 }));
+  const eyes = sphereDecal(head, 20.4, 1.45, 0.62, 180, 76, [0, 6, 0], [1, 1, 1]);
+  const mouthD = sphereDecal(head, 10.5, 1.7, 1.2, 120, 72, [35, -10, 0], [1, 0.8, 1]);
   const updEyes = faceUpdater(eyes, (g, W, H, e, m, t) => paintEyes(g, W, H, e === 'open' ? 'angry' : e, { iris: '#FFC914', lid: '#7F838D', brow: '#2A2832', size: H * 0.32, gap: W * 0.26 }, t));
   const updMouth = faceUpdater(mouthD, (g, W, H, e, m) => { g.clearRect(0, 0, W, H); paintMouth(g, W, H, m === 'smile' || m === 'flat' ? 'grit' : m, { inside: '#7A2030', fangs: true }); });
 
-  // arms: from big puffed coat shoulders, long, ending in heavy clawed paws
+  // arms: long, lean sleeves to black cuffs, big clawed hands down by mid-thigh
   const arm = (z, back) => {
-    const pv = group(torso, 2, 56, z);
+    const pv = group(torso, 2, 62, z);
     const c = back ? RED2 : RED;
-    pv.add(P(ico(1), c, { scale: [17, 16, 16] }));
-    pv.add(P(cyl(11, 10, 38, 6), c, { pos: [0, -24, 0] }));
-    pv.add(P(cyl(13, 12.5, 9, 6), BLACK, { pos: [0, -45, 0], ink: 1.4 }));
-    pv.add(P(cyl(8.5, 8, 10, 6), back ? FUR2 : FUR, { pos: [0, -53, 0] }));
-    pv.add(P(ico(1), back ? FUR2 : FUR, { scale: [13, 12, 13], pos: [3, -64, 0] }));
-    for (const dz of [-6, 0, 6]) pv.add(P(cone(2.6, 9, 4), CLAW, { pos: [13, -70, dz], rot: [0, 0, -2.5], ink: 0.8 }));
+    pv.add(P(ico(1), c, { scale: [12, 12, 11] }));
+    pv.add(P(cyl(9, 8, 42, 6), c, { pos: [0, -23, 0] }));
+    pv.add(P(cyl(8, 7.5, 30, 6), c, { pos: [2, -56, 0] }));
+    pv.add(P(cyl(10.5, 10, 8, 6), BLACK, { pos: [2, -72, 0], ink: 1.4 }));
+    pv.add(P(cyl(6.5, 6, 6, 6), back ? FUR2 : FUR, { pos: [2, -78, 0] }));
+    pv.add(P(ico(1), back ? FUR2 : FUR, { scale: [9, 11, 10], pos: [3, -87, 0] }));
+    for (const dz of [-5, -1.7, 1.7, 5]) pv.add(P(cone(1.9, 12, 4), CLAW, { pos: [7, -100, dz], rot: [0, 0, -2.9], ink: 0.8 })); // long claws
     return pv;
   };
-  const armB = arm(-37, true), armF = arm(37, false);
+  const armB = arm(-32, true), armF = arm(32, false);
 
-  const rig = { root, head, faceParts: [wskull, snoutM], headY: HEADY, armF, armB, armFRest: -HUNCH * 0.7, armBRest: -HUNCH * 0.7 };
+  const rig = { root, head, faceParts: [wskull, snoutM], headY: HEADY, armF, armB, armFRest: -LEAN * 0.5, armBRest: -LEAN * 0.5 };
   rig.anchors = {
-    head: anchorAt(root, head, 14, 0, 0), top: anchorAt(root, head, -4, 46, 0),
-    center: anchorAt(root, torso, 0, 26, 0), muzzle: anchorAt(root, head, 52, -4, 0),
+    head: anchorAt(root, head, 14, 0, 0), top: anchorAt(root, head, -4, 44, 0),
+    center: anchorAt(root, torso, 0, 30, 0), muzzle: anchorAt(root, head, 50, -4, 0),
   };
-  rig.headR = 52;
+  rig.headR = 50;
   rig.apply = (p) => {
     baseApply(rig, p);
     updEyes(p); updMouth(p);
     const t = p.t || 0;
     const puff = p.puff || 0;
-    // heavy breathing in the hunch; a sniff now and then
     const heave = Math.sin(t / 520);
-    torso.rotation.z = HUNCH + heave * 0.025 + (p.pose === 'victory' ? 0.3 : 0) + (p.action === 'win' ? 0.2 : 0);
-    torso.position.y = HIP + 6 + heave * 1.2;
-    chest.scale.set(0.95 + puff * 0.18 + heave * 0.012, 1 + puff * 0.1, 1.05 + puff * 0.16 + heave * 0.015);
+    torso.rotation.z = LEAN + heave * 0.02 + (p.pose === 'victory' ? 0.22 : 0);
+    torso.position.y = HIP + 4 + heave * 1.0;
+    chest.scale.set(0.85 + puff * 0.18 + heave * 0.01, 1 + puff * 0.1, 1 + puff * 0.16 + heave * 0.012);
     const sniff = (t % 4200) < 500 ? Math.sin(((t % 4200) / 500) * Math.PI * 4) * 0.05 : 0;
-    head.rotation.z = -HUNCH - (p.pose === 'victory' ? 0.55 : 0) + sniff;
+    head.rotation.z = -LEAN * 0.8 - (p.pose === 'victory' ? 0.5 : 0) + sniff;
     ears.forEach((e, i) => { e.rotation.z = (p.hurt ? 0.5 : 0) + Math.sin(t / 900 + i) * 0.05; });
-    tail.rotation.z = Math.sin(t / 300) * 0.16 + (p.tail || 0) + (p.hurt ? -0.4 : 0);
+    tail.rotation.z = Math.sin(t / 300) * 0.14 + (p.tail || 0) + (p.hurt ? -0.4 : 0);
     tail.rotation.x = Math.sin(t / 450) * 0.15;
     jaw.rotation.z = p.mouth === 'open' ? -0.4 : p.mouth === 'o' ? -0.22 : 0;
-    tails.forEach((tl) => { tl.rotation.z = -HUNCH - 0.25 - (p.fly ? 0.3 : 0); });
-    // lunges spring off the camera-side leg
+    armF.rotation.x = -0.14; armB.rotation.x = 0.14;
+    skirt.rotation.z = -(p.fly ? 0.3 : 0) - Math.min(0.3, Math.abs(p.lunge || 0) / 250);
     const spring = Math.max(0, Math.min(1, Math.abs(p.lunge || 0) / 70));
     for (const L of legs) L.hip.rotation.z = L.back ? -spring * 0.5 : spring * 0.35;
   };

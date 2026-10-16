@@ -39,7 +39,7 @@ export const NEW_FOUR = {
     foePattern: ['power', 'quick', 'charge', 'slam'],
     arcadeOnly: true, // playable everywhere, but no campaign world or wild creature
     winSfx: 'giggle',
-    art: { kind: 'procedural', draw: 'jackknife', portrait: { y: 6, r: 48 } },
+    art: { kind: 'procedural', draw: 'jackknife', portrait: { y: 2, r: 34 } },
   },
   // the storybook wolf who huffs and puffs; rival of Remy Roo
   wolfgang: {
