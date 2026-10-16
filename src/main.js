@@ -277,9 +277,38 @@ class App {
   registerSW() {
     try {
       if ('serviceWorker' in navigator && location.protocol === 'https:' && !this.debug) {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
       }
     } catch {}
+    this.checkForUpdate();
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && this.checkForUpdate());
+  }
+
+  // One game, every device: GitHub Pages caches index.html for ten minutes and an
+  // old service worker can keep serving the previous build, so a laptop could lag
+  // the phone by a whole deploy. Ask the server which build is current (sw.js is
+  // tiny and fetched with no cache); if it's newer than this page and nothing is
+  // mid-battle, refresh the worker and reload once.
+  async checkForUpdate() {
+    if (this.debug || location.protocol !== 'https:' || this._updating) return;
+    try {
+      const txt = await (await fetch('./sw.js?t=' + Date.now(), { cache: 'no-store' })).text();
+      const live = (txt.match(/tbb-(\d{12})/) || [])[1];
+      if (!live || live <= BUILD) return;
+      let key = null;
+      try { key = sessionStorage.getItem('tbb.reloadedFor'); } catch {}
+      if (key === live) return; // already reloaded for this build once; don't loop
+      this._updating = true;
+      const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+      if (reg) {
+        await reg.update().catch(() => {});
+        // wait (briefly) for the new worker to take over, then reload
+        await new Promise((r) => { const t = setTimeout(r, 4000); navigator.serviceWorker.addEventListener('controllerchange', () => { clearTimeout(t); r(); }, { once: true }); });
+      }
+      const go = () => { try { sessionStorage.setItem('tbb.reloadedFor', live); } catch {} location.replace(location.pathname + '?b=' + live); };
+      if (this.battle) this._reloadWhenIdle = go; // never yank a battle away from Luca
+      else go();
+    } catch { /* offline: keep playing the build we have */ }
   }
 
   endBattle() {
@@ -322,6 +351,7 @@ class App {
 
   goModes() {
     this.endBattle();
+    if (this._reloadWhenIdle) { const go = this._reloadWhenIdle; this._reloadWhenIdle = null; return go(); } // a new build arrived mid-battle
     this.leaveGallery();
     this.audio.play('title'); // menu music again after a battle (no-op if it's already on)
     this.stage.setArena('bedroom');
