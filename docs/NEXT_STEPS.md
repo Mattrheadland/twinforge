@@ -60,7 +60,8 @@
 - **Villain scene**: dancers leap about 2.6× higher while Czernobog stirs. As the camera swings back to the piece (k > 0.8, or on a tap-skip), two extra peekers rise behind it, one at each shoulder, then sink and go.
 - **Cost**: 8 dancers + 8 peekers, all built once with the board. Nothing allocated per frame; peekers that aren't out don't animate.
 - **Verified headless** with `scratch/board-look.mjs` (mountain close-up, forest-edge wide view, gloom 0.95 with three worlds cleared, villain scene mid-strike and right after). The script lives in the git-ignored scratch folder.
-- **Bug for the night-crew.js owner**: `buildShadowPeeker`'s `animate(t)` computes `k = (((t + ph*300) % period) + period) / period`, which lands in 1..2 for any positive t, so a peeker driven with `performance.now()` never rises. Fix: `k = ((((t + ph*300) % period) + period) % period) / period`. board3d.js works around it with `peekAt()` (feeds it a pre-wrapped time). Once the rig is fixed, `peekAt` can simply call `rig.animate(ms)`; leaving it as is also works.
+- **Fire dancers v2** (lead's note: they read as traffic cones): each is now three stacked, flattened teardrop flames (deep orange shell, yellow body, white-hot heart), unlit so they glow, on separate flicker clocks so the tips lick; two tongues peel off the top and rise; teardrop arms flick; two tiny bright eye slits, no face decal. Geometry and materials shared by all dancers. The summit five are ~30% smaller, circle the peak below Czernobog's feet at their own height, pace and hop beat (1.75–2.25 Hz), and turn to face the camera.
+- **Peeker cycle bug fixed** in night-crew.js (`k` now wraps into 0..1); board3d.js `peekAt` just offsets the rig's phase.
 
 ## Next (see HANDOFF.md "Next up" for the 8 PM order)
 - Deploy the music engine + arena tracks + Czernobog piece after Matt's listen.

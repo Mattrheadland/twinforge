@@ -21,53 +21,95 @@
 
 const INK = 0x14111a;
 
-// Fire dancer: five-sided flame cone (open bottom), a yellow core cone, two
-// three-sided arm spikes, two flat ink eyes and a grin plate. Hops at 2 Hz and
-// sways side to side at 1 Hz; the tip flickers.
-export function buildFireDancer(THREE, part, { height = 72, seed = Math.random() * 1000 } = {}) {
+// Fire dancer: a living flame. Three flattened teardrops stacked front to back
+// (deep orange shell, yellow body, white-hot heart), each wavering on its own
+// clock so the tips lick and lean independently; two little tongues of flame
+// peel off the top and rise away; two teardrop arms flick. Two tiny bright eye
+// slits and nothing else on the face. All glow (unlit basic materials), so they
+// read in the storm. Hops at ~2 Hz (opts.hz) with a squash on landing.
+// Geometry and materials are shared by every dancer (built once per module).
+// The flame faces +z; turn root to face the camera for the best silhouette.
+let FD = null;
+function fireKit(THREE) {
+  if (FD) return FD;
+  // teardrop lathe: round belly low, a long point on top, height 1, max radius ~0.5
+  const pts = [];
+  for (let k = 0; k <= 9; k++) {
+    const u = k / 9;
+    pts.push(new THREE.Vector2(Math.max(0.001, 0.5 * Math.sin(Math.PI * Math.pow(u, 0.55)) * Math.pow(1 - u, 0.6)), u));
+  }
+  const tear = new THREE.LatheGeometry(pts, 7);
+  const slit = new THREE.PlaneGeometry(1, 1);
+  for (const g of [tear, slit]) g.userData.boardShared = true; // board3d.js leaves shared geometry alone on dispose
+  const glow = (c) => new THREE.MeshBasicMaterial({ color: c });
+  FD = { tear, slit, shell: glow(0xe8461e), body: glow(0xffb21e), heart: glow(0xfff3c4), tongue: glow(0xff7a24), arm: glow(0xff8a2a), eye: glow(0xfffde8) };
+  return FD;
+}
+
+export function buildFireDancer(THREE, part, { height = 72, seed = Math.random() * 1000, hz = 2 } = {}) {
+  const K = fireKit(THREE);
+  const h = height;
   const root = new THREE.Group();
   const body = new THREE.Group();
   root.add(body);
-  const h = height * 0.8, r = height * 0.28;
-  const flame = part(new THREE.ConeGeometry(r, h, 5, 1, true), 0xf46036, { pos: [0, h / 2, 0], ink: 2 });
-  const core = part(new THREE.ConeGeometry(r * 0.52, h * 0.6, 5, 1, true), 0xffc914, { pos: [0, h * 0.3, r * 0.5], ink: false });
-  core.scale.set(1, 1, 0.6);
-  body.add(flame, core);
-  // arms: little three-sided spikes stuck to the sides, pivoted at the shoulder
-  const arms = [];
-  for (const d of [-1, 1]) {
+  // each layer sits in a pivot at its base so a z-rotation swings the tip
+  const layer = (mat, w, hh, d, z, ink) => {
     const pivot = new THREE.Group();
-    pivot.position.set(d * r * 0.85, h * 0.45, 0);
-    const spike = part(new THREE.ConeGeometry(r * 0.18, r * 0.9, 3, 1, true), 0xf46036, { pos: [d * r * 0.4, 0, 0], rot: [0, 0, -d * Math.PI / 2], ink: 1.2 });
-    pivot.add(spike);
+    pivot.position.z = z;
+    pivot.add(part(K.tear, null, { mat, scale: [w, hh, d], ink }));
     body.add(pivot);
-    arms.push(pivot);
-  }
-  // face: two ink dots and a grin plate on the front (+z)
-  const eyeGeo = new THREE.PlaneGeometry(r * 0.22, r * 0.22);
-  for (const d of [-1, 1]) {
-    const e = part(eyeGeo, INK, { pos: [d * r * 0.3, h * 0.5, r * 0.7], ink: false });
-    body.add(e);
-  }
-  const grin = part(new THREE.PlaneGeometry(r * 0.9, r * 0.16), INK, { pos: [0, h * 0.36, r * 0.66], ink: false });
-  body.add(grin);
-  const ph = seed % 6.283, sideDir = seed % 2 < 1 ? 1 : -1;
-  const animate = (t) => {
-    const hop = (t / 1000) * Math.PI * 4 + ph;
-    const air = Math.abs(Math.sin(hop));
-    body.position.y = air * height * 0.22;
-    body.position.x = Math.sin(hop * 0.5) * height * 0.28 * sideDir;
-    const squash = 1 - 0.16 * Math.max(0, Math.cos(hop * 2)) * (1 - air);
-    body.scale.set(1 / squash, squash, 1);
-    body.rotation.z = Math.sin(hop) * 0.12 * sideDir;
-    // tip flicker: the flame cone leans and stretches a little
-    flame.rotation.z = Math.sin(t / 60 + ph) * 0.08;
-    flame.scale.y = 1 + Math.sin(t / 110 + ph * 2) * 0.08;
-    core.rotation.z = Math.sin(t / 50 + ph + 1) * 0.1;
-    const swing = Math.sin(hop) * 0.9;
-    arms[0].rotation.z = -swing * 0.6 - 0.3;
-    arms[1].rotation.z = -swing * 0.6 + 0.3;
+    return pivot;
   };
+  const shell = layer(K.shell, 0.56 * h, h, 0.16 * h, 0, 1.4);
+  const mid = layer(K.body, 0.4 * h, 0.74 * h, 0.12 * h, 0.06 * h, false);
+  const heart = layer(K.heart, 0.22 * h, 0.44 * h, 0.08 * h, 0.11 * h, false);
+  // two tongues that peel off the top and rise away, shrinking
+  const tongues = [0, 1].map((k) => {
+    const m = part(K.tear, null, { mat: K.tongue, ink: false });
+    body.add(m);
+    return { m, off: k * 0.5, side: k ? 1 : -1 };
+  });
+  // arms: thin teardrops with the point outward, pivoted at the shoulder
+  const arms = [-1, 1].map((d) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(d * 0.2 * h, 0.36 * h, 0.03 * h);
+    pivot.add(part(K.tear, null, { mat: K.arm, scale: [0.13 * h, 0.3 * h, 0.06 * h], rot: [0, 0, -d * 1.1], ink: 1 }));
+    body.add(pivot);
+    return { pivot, d };
+  });
+  // eye slits on the orange shell, above the yellow body's tip
+  for (const d of [-1, 1]) body.add(part(K.slit, null, { mat: K.eye, pos: [d * 0.065 * h, 0.6 * h, 0.135 * h], scale: [0.055 * h, 0.018 * h, 1], rot: [0, 0, d * -0.25], ink: false }));
+  const ph = seed % 6.283, sideDir = seed % 2 < 1 ? 1 : -1;
+  const w = (Math.PI * 2 * hz) / 1000; // hop phase per ms (one hop per half sine)
+  const animate = (t) => {
+    const hop = t * w * 0.5 + ph;
+    const air = Math.abs(Math.sin(hop));
+    body.position.y = air * h * 0.22;
+    body.position.x = Math.sin(hop * 0.5) * h * 0.12 * sideDir;
+    const squash = 1 - 0.18 * Math.max(0, Math.cos(hop * 2)) * (1 - air);
+    body.scale.set(1 / squash, squash, 1);
+    body.rotation.z = Math.sin(hop) * 0.1 * sideDir;
+    // three clocks: the tips never line up, so the outline keeps licking
+    shell.rotation.z = Math.sin(t / 170 + ph) * 0.1;
+    shell.scale.y = 1 + Math.sin(t / 90 + ph) * 0.07;
+    mid.rotation.z = Math.sin(t / 125 + ph + 1) * 0.15;
+    mid.scale.y = 1 + Math.sin(t / 70 + ph * 2) * 0.1;
+    heart.rotation.z = Math.sin(t / 95 + ph + 2) * 0.12;
+    heart.scale.y = 1 + Math.sin(t / 55 + ph * 3) * 0.13;
+    for (const q of tongues) {
+      const c = (((t / 430 + q.off + ph) % 1) + 1) % 1; // 0: just peeled off, 1: gone
+      const s = 1 - c;
+      q.m.position.set(q.side * 0.07 * h + Math.sin(c * 6 + ph) * 0.05 * h, 0.55 * h + c * 0.6 * h, 0.02 * h);
+      q.m.scale.set(0.14 * h * s, 0.3 * h * (1 - c * 0.5), 0.05 * h);
+      q.m.visible = s > 0.04;
+    }
+    // arm flicks: a lazy wave plus a quick snap every other hop
+    for (const a of arms) {
+      const snap = Math.pow(Math.max(0, Math.sin(hop * 0.5 + (a.d > 0 ? 1.6 : 0))), 8);
+      a.pivot.rotation.z = a.d * (0.25 + Math.sin(t / 150 + ph + a.d) * 0.35 + snap * 0.9);
+    }
+  };
+  animate(0);
   return { root, body, animate, height };
 }
 
@@ -94,7 +136,7 @@ export function buildShadowPeeker(THREE, part, { height = 80, seed = Math.random
   const ease = (x) => x * x * (3 - 2 * x);
   const ph = seed % 6.283, first = seed % 2 < 1 ? 1 : -1;
   const animate = (t) => {
-    const k = (((t + ph * 300) % period) + period) / period;
+    const k = ((((t + ph * 300) % period) + period) % period) / period;
     const up = k < 0.3 ? ease(k / 0.3) : k > 0.72 ? ease(Math.max(0, 1 - (k - 0.72) / 0.28)) : 1;
     // the shape spans y = -h..h; at rest the top sits at y = 0 (fully buried),
     // fully up the top sits at h * 0.5 (half of it showing)

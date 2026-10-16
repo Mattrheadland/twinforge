@@ -110,7 +110,7 @@ export class Board3D {
     this.amb = { flags: [], beams: [], flies: [], embers: [], bolt: 4000 + Math.random() * 4000 };
     // Czernobog's night crew: fire dancers on the summit and the forest's dark
     // edge, shadow peekers rising near the path wherever the gloom has reached
-    this.crew = { dancers: [], peekers: [], spots: [], extra: [], boost: 0, want: -1 };
+    this.crew = { dancers: [], swirl: [], peekers: [], spots: [], extra: [], boost: 0, want: -1 };
     this.scene = new THREE.Scene();
     this.sky = new THREE.Color(LOOK.bedroom.sky);
     this.scene.background = this.sky;
@@ -303,18 +303,17 @@ export class Board3D {
         this.villain.group.add(this.villain.rig.root);
         this.scene.add(this.villain.group);
       }
-      // fire dancers: a ring of five around the summit just under the peak glow,
-      // and three along the island's dark back edge, all facing the camera
+      // fire dancers: five swirl around the summit below Czernobog's feet (small,
+      // so he stays the focal point), each on its own height, pace and hop beat;
+      // three more dance along the island's dark back edge
       const mx = b.x + 60, mz = -420;
       for (let k = 0; k < 5; k++) {
-        const a = Math.PI / 2 + (k - 2) * 0.62; // spread over the front of the cone (+z faces the camera)
-        const y = 246 + (k % 2) * 22, f = (390 - y) / 400; // the cone is 400 tall, peak at y = 390
-        // 0.96: feet sink a touch into the slope instead of floating off it
-        const d = this.dancer(mx + Math.cos(a) * 320 * f * 0.96, y - 6, mz + Math.sin(a) * 260 * f * 0.96, 1.3, k * 1.7 + 0.3);
-        d.root.rotation.y = (Math.PI / 2 - a) * 0.5;
+        const y = 262 + ((k * 2) % 5) * 12; // 262..310, mixed so neighbours differ
+        const f = ((390 - y) / 400) * 0.96; // cone radius fraction at that height (peak y = 390); feet sink a touch
+        const d = this.dancer(0, y - 4, 0, 0.9, k * 1.9 + 0.4, 1.75 + (k % 3) * 0.25);
+        this.crew.swirl.push({ d, cx: mx, cz: mz, rx: 320 * f, rz: 260 * f, a0: (k / 5) * Math.PI * 2 + (k % 2) * 0.3, w: 0.00022 + (k % 3) * 0.00004 });
       }
-      // the forest's dark back edge, left of the mountain's foot (it covers the right end)
-      for (let k = 0; k < 3; k++) this.dancer(cx - hx * 0.45 + k * hx * 0.26, 2, -206 + (k % 2) * 12, 1.2, 7 + k * 2.3);
+      for (let k = 0; k < 3; k++) this.dancer(cx - hx * 0.45 + k * hx * 0.26, 2, -206 + (k % 2) * 12, 1.1, 7 + k * 2.3, 1.8 + k * 0.2);
       // embers drifting up from the summit
       const emberMat = new THREE.MeshBasicMaterial({ color: 0xff8a3a });
       for (let k = 0; k < 14; k++) {
@@ -337,8 +336,8 @@ export class Board3D {
   }
 
   // one fire dancer (night-crew.js), feet at y, hopping on its own beat
-  dancer(x, y, z, scale, seed) {
-    const d = buildFireDancer(THREE, part, { seed });
+  dancer(x, y, z, scale, seed, hz = 2) {
+    const d = buildFireDancer(THREE, part, { seed, hz });
     d.root.position.set(x, y, z);
     d.root.scale.setScalar(scale);
     this.scene.add(d.root);
@@ -681,9 +680,17 @@ export class Board3D {
     const C = this.crew;
     const stir = this.villain?.stir || 0;
     C.boost += ((stir > 0 ? 1 : 0) - C.boost) * Math.min(1, dt / 350);
+    // the summit ring circles the peak (it passes behind the mountain and comes round again)
+    for (const q of C.swirl) {
+      const a = q.a0 + now * q.w;
+      q.d.root.position.x = q.cx + Math.cos(a) * q.rx;
+      q.d.root.position.z = q.cz + Math.sin(a) * q.rz;
+    }
+    const cp = this.camera.position;
     for (const d of C.dancers) {
       d.animate(now);
       d.body.position.y *= 1 + C.boost * 1.6; // the villain scene: they leap
+      d.root.rotation.y = Math.atan2(cp.x - d.root.position.x, cp.z - d.root.position.z); // flames face the camera
     }
     // peekers come out as the gloom spreads: round(gloom * 6), mountain end first
     const want = Math.min(C.peekers.length, Math.round(this.gloom * 6));
@@ -790,12 +797,10 @@ export class Board3D {
   }
 }
 
-// Drive a shadow peeker at `ms` into its own rise-look-sink cycle. The rig's
-// animate(t) computes its cycle position as ((t + ph*300) % period + period) / period,
-// which only lands in 0..1 when t + ph*300 is negative (for positive t it sits in
-// 1..2 and the peeker never rises), so hand it a time in that window.
+// Drive a shadow peeker so its rise-look-sink cycle sits at ms into the cycle
+// (the rig offsets its own clock by ph * 300).
 function peekAt(p, ms) {
-  p.rig.animate((((ms % p.period) + p.period) % p.period) - p.period - p.ph * 300);
+  p.rig.animate(ms - p.ph * 300);
 }
 
 // how far the villain's darkness has spread: by worlds beaten and rolls taken
