@@ -102,7 +102,8 @@ export function showRunResult(ui, { win, stars, total, streak = null, best = nul
     onTap(next, guard(onNext), 800);
     btns.push(next);
   } else if (onAgain) {
-    const again = h('button', { class: `round-btn again ${win ? '' : 'pulse'}`, 'aria-label': 'Play again', html: ICON.retry });
+    // after a loss: one big pulsing "Try again" that restarts the same fight
+    const again = h('button', { class: `round-btn again ${win ? '' : 'pulse big'}`, 'aria-label': win ? 'Play again' : 'Try again', html: ICON.retry });
     onTap(again, guard(onAgain), 800);
     btns.push(again);
   }

@@ -102,7 +102,7 @@ export class Hud {
     const hp = h('div', { class: 'hp' }, h('div', { class: 'hp-track' }, chip, fill));
     const pips = side === 'hero'
       ? h('div', { class: 'energy' }, ...Array.from({ length: RULES.maxEnergy }, () => h('span', { class: 'pip', html: ICON.bolt })))
-      : null;
+      : h('div', { class: 'charge-meter', 'aria-label': 'Charge' }); // filled by setMeter
     const status = h('div', { class: 'status' });
     const root = h('div', { class: `panel panel-${side}` },
       h('div', { class: 'portrait' }, portrait(def, 62, px * 1.2)),
@@ -147,6 +147,29 @@ export class Hud {
     const full = n >= RULES.maxEnergy;
     this.btn.special.classList.toggle('ready', full);
     this.btn.special.classList.toggle('locked', !full);
+  }
+
+  // The foe's charge meter: one flame per pip, lit by wrong answers. Full = the
+  // foe is winding up (the meter pulses). pulse: pop newly lit flames.
+  setMeter({ meter, max, windup }, pulse = false) {
+    const el = this.panels.foe.pips;
+    while (el.children.length < max) el.appendChild(h('span', { class: 'cpip', html: ICON.flame }));
+    while (el.children.length > max) el.lastChild.remove();
+    [...el.children].forEach((p, i) => {
+      const was = p.classList.contains('on');
+      p.classList.toggle('on', i < meter);
+      if (pulse && !was && i < meter) {
+        p.classList.remove('pop');
+        void p.offsetWidth;
+        p.classList.add('pop');
+      }
+    });
+    el.classList.toggle('full', !!windup);
+  }
+
+  meterAnchor() {
+    const r = this.toVirtual(this.panels.foe.pips.getBoundingClientRect());
+    return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
   }
 
   setStatus(side, st) {

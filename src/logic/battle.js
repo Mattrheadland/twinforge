@@ -10,6 +10,20 @@
 // Quality of an answer: 'indep' (first try), 'hint' (second try), 'support'
 // (shown the answer), or 'none' (no question: Learning off, or a quick/guard move).
 // A wrong answer never causes a miss.
+//
+// Stakes (v6): the foe has a CHARGE meter, counted in whole pips so it can be
+// drawn as a row of lights. Each wrong tap on a math or reading question adds
+// pips ('hint' = 1 wrong tap, 'support' = 2; never more than 2 per question); a
+// first-try answer drains some. When the meter fills, the foe winds up (the
+// 'windup' event). The foe's move right after that is still a normal one; its
+// first attack after the hero's NEXT turn is the charged attack: more damage,
+// then the meter empties. So the child always gets one turn with the wind-up on
+// screen, and a guard still blocks or dodges it: the wind-up is a warning the
+// child can act on. All numbers are per learning pathway in RULES.stakes;
+// a battle keeps the pathway it was created with (s.pathway).
+//
+// When the hero's health reaches 0 the battle is lost (result 'lose'); nothing
+// here rescues it. Losing never touches stars, XP or progress (logic/outcome.js).
 
 export const RULES = {
   maxEnergy: 3,
@@ -21,7 +35,24 @@ export const RULES = {
   reflect: 6,
   heal: 16,
   foe: { quick: 8, power: 12, slam: 22 },
+  // Per pathway (save.js PATHWAYS). Balance proven by test/balance.test.mjs.
+  // Before v6 even random tapping won ~100% of fights in about 5 turns, so the
+  // foe also gets more health: a fight lasts long enough for the meter to matter.
+  //   pips        meter size (the charged attack comes when it is full)
+  //   perWrong    pips added per wrong tap (max 2 wrong taps count per question)
+  //   drain       pips removed by a first-try answer
+  //   chargedHit  base damage of the charged attack (a foe's slam, 22, if bigger)
+  //   foePower    multiplier on every foe hit (1 = the pre-v6 numbers above)
+  //   foeHp       multiplier on the foe's health (bosses get BOSS_HP on top)
+  stakes: {
+    early: { pips: 3, perWrong: 1, drain: 1, chargedHit: 36, foePower: 0.9, foeHp: 1.5 },
+    growing: { pips: 2, perWrong: 1, drain: 1, chargedHit: 46, foePower: 1, foeHp: 1.4 },
+  },
 };
+
+export const PATHWAY_DEFAULT = 'early';
+export const stakesFor = (s) => RULES.stakes[s && s.pathway] || RULES.stakes[PATHWAY_DEFAULT];
+const WRONG_TAPS = { indep: 0, hint: 1, support: 2, none: 0 };
 
 export const SLOTS = ['quick', 'power', 'guard', 'special'];
 export const QUALITIES = ['indep', 'hint', 'support', 'none'];
@@ -44,22 +75,25 @@ export function learningFor(slot) {
 }
 
 // boss: a GIANT foe (game/modes.js) with BOSS_HP times the health.
-export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss = false }) {
+// pathway: the player's learning pathway ('early' | 'growing'); sets the stakes.
+export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss = false, pathway = PATHWAY_DEFAULT }) {
   const h = chars[heroId];
   const f = chars[foeId];
   if (!h || !f) throw new Error('unknown character');
-  const foeHp = boss ? Math.round(f.maxHp * 1.35) : f.maxHp;
+  if (!RULES.stakes[pathway]) pathway = PATHWAY_DEFAULT;
+  const foeHp = Math.round(f.maxHp * (boss ? 1.35 : 1) * RULES.stakes[pathway].foeHp);
   return {
     v: BATTLE_VERSION,
     heroId,
     foeId,
     arenaId,
+    pathway,
     round: 1,
     turn: 'hero',
     result: null,
     hero: { hp: h.maxHp, maxHp: h.maxHp, energy: 0, guard: null, shield: false },
     boss,
-    foe: { hp: foeHp, maxHp: foeHp, charged: false, dizzy: false, step: 0 },
+    foe: { hp: foeHp, maxHp: foeHp, charged: false, dizzy: false, step: 0, meter: 0, windup: false, windupFresh: false },
     stats: { indep: 0, hint: 0, support: 0, turns: 0 },
   };
 }
@@ -90,6 +124,32 @@ function damage(s, target, amount, events, extra = {}) {
     events.push({ type: 'ko', target });
   }
 }
+
+// The foe's charge meter after an answered question. Battles saved before v6
+// have no meter fields; they start at 0.
+function chargeMeter(s, quality, ev) {
+  const st = stakesFor(s);
+  const f = s.foe;
+  if (f.windup) return; // already winding up: the next attack is charged either way
+  const before = f.meter || 0;
+  const wrong = WRONG_TAPS[quality] || 0;
+  let meter = before;
+  if (wrong) meter = Math.min(st.pips, before + wrong * st.perWrong);
+  else if (quality === 'indep') meter = Math.max(0, before - st.drain);
+  if (meter === before) return;
+  f.meter = meter;
+  ev.push({ type: 'meter', target: 'foe', meter, max: st.pips, delta: meter - before, reason: wrong ? 'wrong' : 'drain' });
+  if (meter >= st.pips) {
+    // the foe's very next move stays a normal one, so the child gets a turn
+    // to see the wind-up and guard before the charged attack lands
+    f.windup = true;
+    f.windupFresh = true;
+    ev.push({ type: 'windup', target: 'foe' });
+  }
+}
+
+// What the HUD draws: pips lit, meter size, and whether the foe is winding up.
+export const meterOf = (s) => ({ meter: s.foe.meter || 0, max: stakesFor(s).pips, windup: !!s.foe.windup });
 
 function setGuard(s, type, ev, from) {
   s.hero.guard = type;
@@ -146,6 +206,7 @@ export function heroAct(s0, action, quality, chars) {
     }
   }
 
+  if (!s.result && quality !== 'none') chargeMeter(s, quality, ev);
   s.hero.lastSlot = slot;
   if (!s.result) s.turn = 'foe';
   return { state: s, events: ev };
@@ -169,7 +230,8 @@ export function foeAct(s0, chars) {
   const ev = [];
   const fc = chars[s.foeId];
   const intent = foeIntent(s, chars);
-  const power = fc.foePower || 1;
+  const st = stakesFor(s);
+  const power = (fc.foePower || 1) * st.foePower;
 
   if (intent === 'dizzy') {
     s.foe.dizzy = false;
@@ -187,22 +249,33 @@ export function foeAct(s0, chars) {
     if (slam && pattern[s.foe.step % pattern.length] === 'slam') s.foe.step++;
     const slot = slam ? 'special' : intent;
     const move = moveFor(fc, slot);
-    ev.push({ type: 'action', who: 'foe', action: slam ? 'slam' : intent, move: move?.id });
-    const base = (slam ? RULES.foe.slam : RULES.foe[intent] || RULES.foe.quick) * power;
+    // a full charge meter (filled before the hero's last turn) makes this attack
+    // a charged one, then empties
+    const charged = !!s.foe.windup && !s.foe.windupFresh;
+    ev.push({ type: 'action', who: 'foe', action: slam ? 'slam' : intent, move: move?.id, charged });
+    const plain = slam ? RULES.foe.slam : RULES.foe[intent] || RULES.foe.quick;
+    const base = (charged ? Math.max(plain, st.chargedHit) : plain) * power;
     const guard = s.hero.guard || (s.hero.shield ? 'block' : null);
     const kind = slam ? 'slam' : intent;
+    const big = slam || charged;
     if (guard === 'dodge') {
-      ev.push({ type: 'dodge', target: 'hero', perfect: slam });
-      damage(s, 'hero', 0, ev, { kind, blocked: true, dodged: true, perfect: slam, big: slam });
+      ev.push({ type: 'dodge', target: 'hero', perfect: big });
+      damage(s, 'hero', 0, ev, { kind, blocked: true, dodged: true, perfect: big, big, charged });
     } else {
       const blocked = !!guard;
       const amount = blocked ? Math.max(1, Math.round(base * RULES.guardFactor)) : base;
-      damage(s, 'hero', amount, ev, { kind, blocked, perfect: blocked && slam, big: slam, guard });
+      damage(s, 'hero', amount, ev, { kind, blocked, perfect: blocked && big, big, guard, charged });
       if (guard === 'reflect' && !s.result) damage(s, 'foe', RULES.reflect, ev, { kind: 'reflect' });
     }
-    if (guard && slam && !s.result) gainEnergy(s, RULES.energy.perfect, ev, 'perfect');
+    if (guard && big && !s.result) gainEnergy(s, RULES.energy.perfect, ev, 'perfect');
+    if (charged) {
+      s.foe.windup = false;
+      s.foe.meter = 0;
+      ev.push({ type: 'meter', target: 'foe', meter: 0, max: st.pips, delta: 0, reason: 'release' });
+    }
   }
 
+  s.foe.windupFresh = false;
   if (s.hero.guard || s.hero.shield) {
     s.hero.guard = null;
     s.hero.shield = false;
