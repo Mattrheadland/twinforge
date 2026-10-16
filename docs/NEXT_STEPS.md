@@ -53,6 +53,15 @@
 - **Signature power moves** for the new four (parrot, howl rings, pumpkin lob, gravity well) and **HUD portrait framing** fixed per toy (Billy Bass was cut off).
 - **Sounds** for all 16 new-four moves plus win stings (`move.sfx`, `move.sfxHit`, `def.winSfx`).
 
+## Board night crew (done)
+`src/render3d/board3d.js`, rigs from `src/render3d/night-crew.js`.
+- **Fire dancers**: five on Czernobog's summit slope (spread across the face the camera sees, feet on the cone) and three along the Haunted Forest's back edge, left of the mountain's foot. Each hops on its own beat at about 2 Hz, scaled 1.2–1.3 so they read at the follow camera.
+- **Shadow peekers**: round(gloom × 6) rise behind the path, only on islands the darkness has reached (world `dark` > 0.05). Spots are dealt round-robin from the mountain end so they spread across the dark islands instead of piling into the forest. Each runs its own rise / look / sink timer. They stay ≥ 90 units from every space centre and sit behind the path, so the piece is never covered.
+- **Villain scene**: dancers leap about 2.6× higher while Czernobog stirs. As the camera swings back to the piece (k > 0.8, or on a tap-skip), two extra peekers rise behind it, one at each shoulder, then sink and go.
+- **Cost**: 8 dancers + 8 peekers, all built once with the board. Nothing allocated per frame; peekers that aren't out don't animate.
+- **Verified headless** with `scratch/board-look.mjs` (mountain close-up, forest-edge wide view, gloom 0.95 with three worlds cleared, villain scene mid-strike and right after). The script lives in the git-ignored scratch folder.
+- **Bug for the night-crew.js owner**: `buildShadowPeeker`'s `animate(t)` computes `k = (((t + ph*300) % period) + period) / period`, which lands in 1..2 for any positive t, so a peeker driven with `performance.now()` never rises. Fix: `k = ((((t + ph*300) % period) + period) % period) / period`. board3d.js works around it with `peekAt()` (feeds it a pre-wrapped time). Once the rig is fixed, `peekAt` can simply call `rig.animate(ms)`; leaving it as is also works.
+
 ## Next (see HANDOFF.md "Next up" for the 8 PM order)
 - Deploy the music engine + arena tracks + Czernobog piece after Matt's listen.
 - Campaign board: free look, Czernobog alive on the peak, ambient animation, fly-over, between-turn cutscenes (Mario Party-style).
