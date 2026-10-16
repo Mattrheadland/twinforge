@@ -26,7 +26,7 @@ Pulled from Matt's requests, STYLE_GUIDE v5 and the project rules.
 | T6 stand-ins | Wanda Wickwhistle and Czernobog are original code-built designs | OK |
 | T2 models | Only Battle Rex is a real model (6k tris, toy joints, swappable eyes); five more are generated and waiting on the PC | In progress |
 | T2 models | Rex Cannon: the model's cannon doesn't swing forward like the code rig's; the beam still starts at the muzzle anchor | Known, minor |
-| T2 arenas | Four painted arenas + bedroom; Bog Shack floor borrowed from the pier (tinted) | OK; Astra request out |
+| T2 arenas | Four painted arenas + bedroom; every arena has its own floor | OK |
 | T2 2D fallback | Without WebGL there are no arenas or models (bedroom only); new minions need a 2D look | Fix: generic 2D minion |
 | T7 modes | Current modes don't match the new definition: Story should be Tournament; Arcade is an endless streak; Quick Fight should be Arcade; no Campaign board | **Fix** |
 | T8 minions | None exist | **Build** |

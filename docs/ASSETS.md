@@ -40,7 +40,7 @@ Not in the repo: the Hocus Pocus and Chernabog sheets (Disney characters). Their
 
 The four new arenas each have `ARENA.md` (lore, backdrop / floor / prop spec, ambient sound) and `arena-<id>-mockup-empty.png` / `-mockup-fighters.png` (layout references for Astra, not game art). Their `src/data/arenas.js` entries are drafted in `src/data/arenas-new-four.js`; merge `NEW_ARENAS` and `NEW_HOME` once Astra's packs are built with `scripts/build-arenas.py`. Until then the new toys fight in the Bedroom.
 
-The Bedroom Block Fortress arena is built in code (`src/render3d/room.js`). The other four are in the game: `python3 scripts/build-arenas.py` turns these sheets into `public/arenas/<id>/` (backdrop.jpg, floor.jpg, prop-1..6.png cut-outs); `src/data/arenas.js` sets each arena's horizon, floor tile size and prop layout, and which opponent fights where (each foe's home turf). Bog Shack's floor is the Fishing Pier planks, tinted darker, until Astra makes its own.
+The Bedroom Block Fortress arena is built in code (`src/render3d/room.js`). The other four are in the game: `python3 scripts/build-arenas.py` turns these sheets into `public/arenas/<id>/` (backdrop.jpg, floor.jpg, prop-1..6.png cut-outs); `src/data/arenas.js` sets each arena's horizon, floor tile size and prop layout, and which opponent fights where (each foe's home turf). Bog Shack has its own Astra floor (dark weathered dock planks with moss), added 2026-10-15.
 
 ## UI and effects — `assets/ui/`
 All on flat magenta (#FF00FF) to be keyed out.
