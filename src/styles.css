@@ -234,6 +234,8 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
   --b: var(--purple); --l: #A983E0; --d: #3A1E66; border-width: 4px; padding: 8px; opacity: 0.92;
   box-shadow: 0 0 0 3px var(--ink), 2px 5px 0 3px var(--ink);
 }
+/* invisible 10 px of extra touch area: the button scales below 40 px on small phones */
+.pause-btn::after { content: ''; position: absolute; inset: -10px; }
 .actions {
   position: absolute; left: 50%; bottom: calc(var(--sb) + 12px); display: flex; align-items: flex-end; gap: 22px;
   transform: translateX(-50%); transition: transform 0.28s cubic-bezier(0.3, 1.4, 0.5, 1), opacity 0.2s;
