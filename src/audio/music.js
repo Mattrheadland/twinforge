@@ -691,6 +691,421 @@ const czernobog = {
   ],
 };
 
+// ---------------------------------------------------- BATTLE: SKULL COVE
+// Capt'n Crookhook's cove. Swashbuckling sea-shanty rock, E minor (dorian C#
+// in the verse), 150 bpm. A 3+3+2 lilt in the tune and the kick, squeezebox
+// off-beats on pluck, "heave!" brass hits, a galloping bass; the chorus climbs.
+const battleSkullCove = {
+  bpm: 150, grid: 16, kit: 'modern', loop: true, length: 256,
+  parts: [
+    { // the tune (fiddle-ish lead), verse then chorus
+      kind: 'tone', inst: 'lead', gain: 0.055, lp: 2600, legato: 0.8, verb: 0.3, delay: 0.2,
+      notes: J(
+        B('E5 - - E5 - - B4 - E5 - F#5 - G5 - - -'), B('F#5 - - E5 - - D5 - E5 - - - B4 - - -'),
+        B('D5 - - D5 - - A4 - D5 - E5 - F#5 - - -'), B('E5 - - D5 - - C#5 - D5 - - - A4 - - -'),
+        B('C5 - - C5 - - G4 - C5 - D5 - E5 - - -'), B('D5 - - D5 - - A4 - D5 - E5 - F#5 - G5 -'),
+        B('A5 - - G5 - - F#5 - G5 - F#5 - E5 - D#5 -'), B('E5 - - - - - - - . . . . E4 - G4 -'),
+        // chorus
+        B('G5 - - - - - E5 - G5 - - - A5 - B5 -'), B('B5 - - - A5 - G5 - D5 - - - - - - -'),
+        B('A5 - - - - - F#5 - A5 - - - B5 - C6 -'), B('B5 - - - G5 - E5 - . . E5 - F#5 - G5 -'),
+        B('G5 - - - - - E5 - G5 - - - A5 - B5 -'), B('D6 - - - B5 - G5 - D5 - - - G5 - B5 -'),
+        B('A5 - - - F#5 - D#5 - B4 - - - D#5 - F#5 -'), B('E5 - - - - - - - . . . . . . . .'),
+      ),
+    },
+    { // supersaw doubles the chorus an octave down
+      kind: 'tone', inst: 'supersaw', gain: 0.045, lp: 2200, detune: 18, legato: 0.9, verb: 0.35, delay: 0.2,
+      notes: J(
+        R('. . . . . . . . . . . . . . . .', 8),
+        B('G4 - - - - - E4 - G4 - - - A4 - B4 -'), B('B4 - - - A4 - G4 - D4 - - - - - - -'),
+        B('A4 - - - - - F#4 - A4 - - - B4 - C5 -'), B('B4 - - - G4 - E4 - . . E4 - F#4 - G4 -'),
+        B('G4 - - - - - E4 - G4 - - - A4 - B4 -'), B('D5 - - - B4 - G4 - D4 - - - G4 - B4 -'),
+        B('A4 - - - F#4 - D#4 - B3 - - - D#4 - F#4 -'), B('E4 - - - - - - - . . . . . . . .'),
+      ),
+    },
+    { // squeezebox: chords on the off-beats
+      kind: 'tone', inst: 'pluck', gain: 0.03, lp: 1500, legato: 0.4, verb: 0.3, delay: 0.15,
+      notes: J(
+        R('. . E4+G4+B4 . . . E4+G4+B4 . . . E4+G4+B4 . . . E4+G4+B4 .', 2),
+        R('. . D4+F#4+A4 . . . D4+F#4+A4 . . . D4+F#4+A4 . . . D4+F#4+A4 .', 2),
+        B('. . C4+E4+G4 . . . C4+E4+G4 . . . C4+E4+G4 . . . C4+E4+G4 .'), B('. . D4+F#4+A4 . . . D4+F#4+A4 . . . D4+F#4+A4 . . . D4+F#4+A4 .'),
+        B('. . E4+G4+B4 . . . E4+G4+B4 . . . D#4+F#4+B4 . . . D#4+F#4+B4 .'), B('. . E4+G4+B4 . . . E4+G4+B4 . . . . . . . . .'),
+        B('. . C4+E4+G4 . . . C4+E4+G4 . . . C4+E4+G4 . . . C4+E4+G4 .'), B('. . D4+G4+B4 . . . D4+G4+B4 . . . D4+G4+B4 . . . D4+G4+B4 .'),
+        B('. . D4+F#4+A4 . . . D4+F#4+A4 . . . D4+F#4+A4 . . . D4+F#4+A4 .'), B('. . E4+G4+B4 . . . E4+G4+B4 . . . E4+G4+B4 . . . E4+G4+B4 .'),
+        B('. . C4+E4+G4 . . . C4+E4+G4 . . . C4+E4+G4 . . . C4+E4+G4 .'), B('. . D4+G4+B4 . . . D4+G4+B4 . . . D4+G4+B4 . . . D4+G4+B4 .'),
+        B('. . D#4+F#4+B4 . . . D#4+F#4+B4 . . . D#4+F#4+A4 . . . D#4+F#4+A4 .'), B('. . E4+G4+B4 . . . E4+G4+B4 . . . . . . . . .'),
+      ),
+    },
+    { // "heave!" brass on the 3+3+2 accents
+      kind: 'tone', inst: 'brass', gain: 0.055, lp: 1600, legato: 0.4, verb: 0.35,
+      notes: J(
+        B('E3+B3+E4 - . E3+B3+E4 - . E3+B3+E4 - . . . . . . . .'), B('. . . . . . . . . . . . . . . .'),
+        B('D3+A3+D4 - . D3+A3+D4 - . D3+A3+D4 - . . . . . . . .'), B('. . . . . . . . . . . . . . . .'),
+        B('C3+G3+C4 - . C3+G3+C4 - . C3+G3+C4 - . . . . . . . .'), B('D3+A3+D4 - . D3+A3+D4 - . D3+A3+D4 - . . . . . . . .'),
+        B('E3+B3+E4 - . . . . B2+F#3+B3 - . . . . . . . .'), B('E3+B3+E4 - - - . . . . . . . . . . . .'),
+        B('C4+G4 - . C4+G4 - . C4+G4 - . . . . . . . .'), B('G3+D4 - . G3+D4 - . G3+D4 - . . . . . . . .'),
+        B('D4+A4 - . D4+A4 - . D4+A4 - . . . . . . . .'), B('E4+B4 - . E4+B4 - . E4+B4 - . . . . . . . .'),
+        B('C4+G4 - . C4+G4 - . C4+G4 - . . . . . . . .'), B('G3+D4 - . G3+D4 - . G3+D4 - . . . . . . . .'),
+        B('B3+F#4 - . B3+F#4 - . B3+F#4 - . . . . . . . .'), B('E3+B3+E4 - - - . . . . . . . . . . . .'),
+      ),
+    },
+    { // galloping bass (8th + two 16ths)
+      kind: 'tone', inst: 'bass', gain: 0.2, lp: 520, legato: 0.75,
+      notes: J(
+        R('E2 - E2 E2 E2 - E2 E2 E2 - E2 E2 E2 - E2 E2', 2),
+        R('D2 - D2 D2 D2 - D2 D2 D2 - D2 D2 D2 - D2 D2', 2),
+        B('C2 - C2 C2 C2 - C2 C2 C2 - C2 C2 C2 - C2 C2'), B('D2 - D2 D2 D2 - D2 D2 D2 - D2 D2 D2 - D2 D2'),
+        B('E2 - E2 E2 E2 - E2 E2 B1 - B1 B1 B1 - B1 B1'), B('E2 - E2 E2 E2 - E2 E2 E2 - E2 - E2 E2 E2 E2'),
+        B('C2 - C2 C2 C2 - C2 C2 C2 - C2 C2 C2 - C2 C2'), B('G1 - G1 G1 G1 - G1 G1 G1 - G1 G1 G1 - G1 G1'),
+        B('D2 - D2 D2 D2 - D2 D2 D2 - D2 D2 D2 - D2 D2'), B('E2 - E2 E2 E2 - E2 E2 E2 - E2 E2 E2 - E2 E2'),
+        B('C2 - C2 C2 C2 - C2 C2 C2 - C2 C2 C2 - C2 C2'), B('G1 - G1 G1 G1 - G1 G1 G1 - G1 G1 G1 - G1 G1'),
+        B('B1 - B1 B1 B1 - B1 B1 B1 - B1 B1 B1 - B1 B1'), B('E2 - E2 E2 E2 - E2 E2 E2 - E2 - E2 E2 E2 E2'),
+      ),
+    },
+    {
+      kind: 'tone', inst: 'sub', gain: 0.2, legato: 0.95,
+      notes: J(
+        R('E1 - - - - - - - - - - - - - - -', 2), R('D1 - - - - - - - - - - - - - - -', 2),
+        B('C1 - - - - - - - - - - - - - - -'), B('D1 - - - - - - - - - - - - - - -'),
+        B('E1 - - - - - - - B0 - - - - - - -'), B('E1 - - - - - - - - - - - - - - -'),
+        B('C1 - - - - - - - - - - - - - - -'), B('G0 - - - - - - - - - - - - - - -'),
+        B('D1 - - - - - - - - - - - - - - -'), B('E1 - - - - - - - - - - - - - - -'),
+        B('C1 - - - - - - - - - - - - - - -'), B('G0 - - - - - - - - - - - - - - -'),
+        B('B0 - - - - - - - - - - - - - - -'), B('E1 - - - - - - - - - - - - - - -'),
+      ),
+    },
+    {
+      kind: 'tone', inst: 'pad', gain: 0.03, lp: 1000, legato: 1, verb: 0.7,
+      notes: J(
+        R('E3+G3+B3 - - - - - - - - - - - - - - -', 2), R('D3+F#3+A3 - - - - - - - - - - - - - - -', 2),
+        B('C3+E3+G3 - - - - - - - - - - - - - - -'), B('D3+F#3+A3 - - - - - - - - - - - - - - -'),
+        B('E3+G3+B3 - - - - - - - B2+D#3+F#3 - - - - - - -'), B('E3+G3+B3 - - - - - - - - - - - - - - -'),
+        B('C3+E3+G3 - - - - - - - - - - - - - - -'), B('G2+B2+D3 - - - - - - - - - - - - - - -'),
+        B('D3+F#3+A3 - - - - - - - - - - - - - - -'), B('E3+G3+B3 - - - - - - - - - - - - - - -'),
+        B('C3+E3+G3 - - - - - - - - - - - - - - -'), B('G2+B2+D3 - - - - - - - - - - - - - - -'),
+        B('B2+D#3+F#3 - - - - - - - - - - - - - - -'), B('E3+G3+B3 - - - - - - - - - - - - - - -'),
+      ),
+    },
+    { // shanty rock: kick on the 3+3+2, snare on 2 and 4; the chorus drives harder
+      kind: 'drum', gain: 1,
+      notes: J(
+        B('kr h h k s h k h . h k h sc h h h'), B('k h h k s h k h . h k h sc h h o'),
+        B('k h h k s h k h . h k h sc h h h'), B('k h h k s h k h . h k h sc h s s'),
+        B('k h h k s h k h . h k h sc h h h'), B('k h h k s h k h . h k h sc h h o'),
+        B('k h h k s h k h . h k h sc h k h'), B('k h t h k t t h kt t kt t kt t t t'),
+        B('kr h k h sc h k h k h k h sc h k h'), B('k h k h sc h k h k h k h sc h h o'),
+        B('kr h k h sc h k h k h k h sc h k h'), B('k h k h sc h k h k h k h sc s s s'),
+        B('kr h k h sc h k h k h k h sc h k h'), B('k h k h sc h k h k h k h sc h h o'),
+        B('k h k h sc h k h k h k h sc h k h'), B('k s k s k s k s ks s ks s ks ks ks o'),
+      ),
+    },
+    { kind: 'riser', gain: 0.18, notes: J(R('. . . . . . . . . . . . . . . .', 7), B('r - - - - - - - - - - - - - - -'), R('. . . . . . . . . . . . . . . .', 7), B('r - - - - - - - - - - - - - - -')) },
+  ],
+};
+
+// ------------------------------------------------- BATTLE: PUMPKIN PATCH
+// Jack-Knife's midnight patch. A spooky swing / surf-rock romp, C minor,
+// 156 bpm. Verse: a swung surf twang over a chromatic walking bass and
+// shuffle drums, a celesta "boo" answering. Chorus: tremolo-picked surf lead,
+// pounding toms. Fun, not scary.
+const battlePumpkinPatch = {
+  bpm: 156, grid: 16, kit: 'modern', loop: true, length: 256,
+  parts: [
+    { // verse: swung surf twang (long-short pairs)
+      kind: 'tone', inst: 'pluck', gain: 0.065, lp: 2400, legato: 0.7, verb: 0.35, delay: 0.45,
+      notes: J(
+        B('C5 - - Eb5 G5 - - Gb5 F5 - - Eb5 C5 - - -'), B('Eb5 - - D5 C5 - - B4 C5 - - - . . G4 -'),
+        B('F5 - - Ab5 C6 - - B5 C6 - - Ab5 F5 - - -'), B('G5 - - F5 Eb5 - - D5 C5 - - - . . . .'),
+        B('Ab4 - - C5 Eb5 - - F5 Eb5 - - C5 Ab4 - - -'), B('G4 - - B4 D5 - - F5 Ab5 - - G5 F5 - D5 -'),
+        B('Eb5 - - D5 C5 - - G4 Ab4 - - B4 C5 - - -'), B('D5 - - Eb5 D5 - - C5 B4 - - - G4 - - -'),
+        R('. . . . . . . . . . . . . . . .', 8),
+      ),
+    },
+    { // chorus: tremolo-picked surf lead
+      kind: 'tone', inst: 'lead', gain: 0.04, lp: 2600, legato: 0.85, verb: 0.3, delay: 0.25,
+      notes: J(
+        R('. . . . . . . . . . . . . . . .', 8),
+        B('C6 C6 C6 C6 C6 C6 Bb5 Bb5 Ab5 Ab5 Ab5 Ab5 G5 G5 Ab5 Ab5'), B('Bb5 Bb5 Bb5 Bb5 D6 D6 D6 D6 F6 F6 F6 F6 D6 D6 Bb5 Bb5'),
+        B('B5 B5 B5 B5 G5 G5 G5 G5 D5 D5 D5 D5 F5 F5 G5 G5'), B('C6 - - - G5 - - - Eb5 - - - C5 - - -'),
+        B('C6 C6 C6 C6 C6 C6 Bb5 Bb5 Ab5 Ab5 Ab5 Ab5 G5 G5 Ab5 Ab5'), B('Bb5 Bb5 Bb5 Bb5 D6 D6 D6 D6 F6 F6 F6 F6 Eb6 Eb6 D6 D6'),
+        B('D6 - - - B5 - - - Ab5 - - - F5 - - -'), B('G5 - - - D5 - - - B4 - - - G4 - - -'),
+      ),
+    },
+    { // celesta "boo!" answering in the verse gaps, sparkle on the chorus
+      kind: 'tone', inst: 'bell', gain: 0.045, legato: 0.8, verb: 0.6, delay: 0.35,
+      notes: J(
+        B('. . . . . . . . . . . . . . G6 Eb6'), B('. . . . . . . . . . . . C6 - - -'),
+        B('. . . . . . . . . . . . . . Ab6 F6'), B('. . . . . . . . . . . . G6 F#6 G6 -'),
+        B('. . . . . . . . . . . . . . Eb6 C6'), B('. . . . . . . . . . . . . . . .'),
+        B('. . . . . . . . . . . . . . Eb6 D6'), B('. . . . . . . . . . . . . . . .'),
+        B('Eb6 - - - . . . . . . . . . . . .'), B('F6 - - - . . . . . . . . . . . .'),
+        B('D6 - - - . . . . . . . . . . . .'), B('. . . . . . . . . . . . G6 - Eb6 -'),
+        B('Eb6 - - - . . . . . . . . . . . .'), B('F6 - - - . . . . . . . . . . . .'),
+        B('. . . . . . . . . . . . . . . .'), B('. . . . . . . . . . . . . . . .'),
+      ),
+    },
+    { // horn pushes on the "and of 4", fat hits in the chorus
+      kind: 'tone', inst: 'brass', gain: 0.05, lp: 1700, legato: 0.45, verb: 0.3,
+      notes: J(
+        B('. . . . . . . . . . . . . . Eb4+G4 -'), B('. . . . . . . . . . . . . . . .'),
+        B('. . . . . . . . . . . . . . F4+Ab4 -'), B('. . . . . . . . . . . . Eb4+G4 - . .'),
+        B('. . . . . . . . . . . . . . Eb4+Ab4 -'), B('. . . . . . . . . . . . D4+F4+B4 - . .'),
+        B('. . . . . . . . . . . . . . Eb4+G4 -'), B('D4+F4+B4 - - - . . . . . . . . . . . .'),
+        B('Ab3+C4+Eb4 - . . . . Ab3+C4+Eb4 - . . . . . . . .'), B('Bb3+D4+F4 - . . . . Bb3+D4+F4 - . . . . . . . .'),
+        B('G3+B3+D4 - . . . . G3+B3+F4 - . . . . . . . .'), B('C4+Eb4+G4 - - - . . . . . . . . . . . .'),
+        B('Ab3+C4+Eb4 - . . . . Ab3+C4+Eb4 - . . . . . . . .'), B('Bb3+D4+F4 - . . . . Bb3+D4+F4 - . . . . . . . .'),
+        B('G3+B3+F4 - . . . . G3+B3+F4 - . . . . . . . .'), B('G3+B3+D4+F4 - - - . . . . . . . . . . . .'),
+      ),
+    },
+    { // verse: chromatic walking bass; chorus: surf 8ths with octave pops
+      kind: 'tone', inst: 'bass', gain: 0.2, lp: 540, legato: 0.85,
+      notes: J(
+        B('C2 - - - Eb2 - - - G2 - - - Gb2 - - -'), B('F2 - - - Eb2 - - - D2 - - - B1 - - -'),
+        B('F2 - - - Ab2 - - - C3 - - - B2 - - -'), B('C3 - - - Bb2 - - - G2 - - - Eb2 - - -'),
+        B('Ab1 - - - C2 - - - Eb2 - - - F#2 - - -'), B('G2 - - - F2 - - - D2 - - - B1 - - -'),
+        B('C2 - - - D2 - - - Eb2 - - - E2 - - -'), B('F2 - - - D2 - - - B1 - - - G1 - - -'),
+        B('Ab1 - Ab1 - Ab2 - Ab1 - Ab1 - Ab1 - Ab2 - Eb2 -'), B('Bb1 - Bb1 - Bb2 - Bb1 - Bb1 - Bb1 - Bb2 - F2 -'),
+        B('G1 - G1 - G2 - G1 - G1 - G1 - G2 - D2 -'), B('C2 - C2 - C3 - C2 - C2 - C2 - C3 - G2 -'),
+        B('Ab1 - Ab1 - Ab2 - Ab1 - Ab1 - Ab1 - Ab2 - Eb2 -'), B('Bb1 - Bb1 - Bb2 - Bb1 - Bb1 - Bb1 - Bb2 - F2 -'),
+        B('G1 - G1 - G2 - G1 - G1 - G1 - G2 - F2 -'), B('G1 - G1 - G2 - G1 - G1 - G1 G1 G1 G1 G1 G1'),
+      ),
+    },
+    {
+      kind: 'tone', inst: 'sub', gain: 0.2, legato: 0.95,
+      notes: J(
+        B('C1 - - - - - - - - - - - - - - -'), B('C1 - - - - - - - G0 - - - - - - -'),
+        B('F1 - - - - - - - - - - - - - - -'), B('C1 - - - - - - - - - - - - - - -'),
+        B('Ab0 - - - - - - - - - - - - - - -'), B('G0 - - - - - - - - - - - - - - -'),
+        B('C1 - - - - - - - - - - - - - - -'), B('G0 - - - - - - - - - - - - - - -'),
+        B('Ab0 - - - - - - - - - - - - - - -'), B('Bb0 - - - - - - - - - - - - - - -'),
+        B('G0 - - - - - - - - - - - - - - -'), B('C1 - - - - - - - - - - - - - - -'),
+        B('Ab0 - - - - - - - - - - - - - - -'), B('Bb0 - - - - - - - - - - - - - - -'),
+        R('G0 - - - - - - - - - - - - - - -', 2),
+      ),
+    },
+    { // spooky organ-ish pad
+      kind: 'tone', inst: 'pad', gain: 0.03, lp: 1300, legato: 1, verb: 0.7,
+      notes: J(
+        B('C3+Eb3+G3 - - - - - - - - - - - - - - -'), B('C3+Eb3+G3 - - - - - - - - - - - - - - -'),
+        B('F3+Ab3+C4 - - - - - - - - - - - - - - -'), B('C3+Eb3+G3 - - - - - - - - - - - - - - -'),
+        B('Ab2+C3+Eb3 - - - - - - - - - - - - - - -'), B('G2+B2+D3+F3 - - - - - - - - - - - - - - -'),
+        B('C3+Eb3+G3 - - - - - - - - - - - - - - -'), B('G2+B2+D3+F3 - - - - - - - - - - - - - - -'),
+        B('Ab2+C3+Eb3 - - - - - - - - - - - - - - -'), B('Bb2+D3+F3 - - - - - - - - - - - - - - -'),
+        B('G2+B2+D3 - - - - - - - - - - - - - - -'), B('C3+Eb3+G3 - - - - - - - - - - - - - - -'),
+        B('Ab2+C3+Eb3 - - - - - - - - - - - - - - -'), B('Bb2+D3+F3 - - - - - - - - - - - - - - -'),
+        R('G2+B2+D3+F3 - - - - - - - - - - - - - - -', 2),
+      ),
+    },
+    { // verse: shuffle (long-short hats); chorus: surf tom beat
+      kind: 'drum', gain: 0.95,
+      notes: J(
+        B('kr . . h s . . h k . . h sc . . h'), B('k . . h s . . h k . k h sc . . o'),
+        B('k . . h s . . h k . . h sc . . h'), B('k . . h s . . h k . k h sc . s s'),
+        B('k . . h s . . h k . . h sc . . h'), B('k . . h s . . h k . k h sc . . o'),
+        B('k . . h s . . h k . . h sc . . h'), B('k . s . s . s . ks . s s ks s s s'),
+        B('kr h t h sc h t h k h t h sc h t t'), B('k h t h sc h t h k h t h sc h t o'),
+        B('kr h t h sc h t h k h t h sc h t t'), B('k h t h sc h t h k h t h sc s s s'),
+        B('kr h t h sc h t h k h t h sc h t t'), B('k h t h sc h t h k h t h sc h t o'),
+        B('k h t h sc h t h k h t h sc h t t'), B('kt t kt t kt t kt t ks s ks s ks ks ks o'),
+      ),
+    },
+    { kind: 'riser', gain: 0.16, notes: J(R('. . . . . . . . . . . . . . . .', 7), B('r - - - - - - - - - - - - - - -'), R('. . . . . . . . . . . . . . . .', 7), B('r - - - - - - - - - - - - - - -')) },
+  ],
+};
+
+// ------------------------------------------------ BATTLE: GRANDMA'S WOODS
+// Big Bad Wolfgang's woods. Storybook folk-rock, D major, 144 bpm: a mandolin
+// tune doubled by a music-box bell over a root-fifth stomp. Then the wolf
+// sneaks in: B minor, a prowling staccato bass with a flat-five creep, toms
+// for footsteps, a hunting-horn tune on brass and supersaw.
+const battleGrandmasWoods = {
+  bpm: 144, grid: 16, kit: 'modern', loop: true, length: 256,
+  parts: [
+    { // storybook tune (mandolin pluck)
+      kind: 'tone', inst: 'pluck', gain: 0.065, lp: 2600, legato: 0.6, verb: 0.35, delay: 0.35,
+      notes: J(
+        B('F#5 - - - A5 - - - D6 - - - A5 - F#5 -'), B('G5 - - - E5 - - - C#5 - - - E5 - - -'),
+        B('D5 - - - F#5 - - - B5 - - - A5 - F#5 -'), B('G5 - - - B5 - A5 - G5 - - - E5 - - -'),
+        B('F#5 - - - A5 - - - D6 - - - E6 - F#6 -'), B('E6 - - - C#6 - - - A5 - - - B5 - C#6 -'),
+        B('D6 - - - B5 - G5 - A5 - - - C#6 - E6 -'), B('D6 - - - - - - - A5 - F#5 - D5 - - -'),
+        R('. . . . . . . . . . . . . . . .', 8),
+      ),
+    },
+    { // music-box bell doubles the tune
+      kind: 'tone', inst: 'bell', gain: 0.04, legato: 0.85, verb: 0.55, delay: 0.25,
+      notes: J(
+        B('F#5 - - - A5 - - - D6 - - - A5 - F#5 -'), B('G5 - - - E5 - - - C#5 - - - E5 - - -'),
+        B('D5 - - - F#5 - - - B5 - - - A5 - F#5 -'), B('G5 - - - B5 - A5 - G5 - - - E5 - - -'),
+        B('F#5 - - - A5 - - - D6 - - - E6 - F#6 -'), B('E6 - - - C#6 - - - A5 - - - B5 - C#6 -'),
+        B('D6 - - - B5 - G5 - A5 - - - C#6 - E6 -'), B('D6 - - - - - - - . . . . . . . .'),
+        R('. . . . . . . . . . . . . . . .', 8),
+      ),
+    },
+    { // the wolf's hunting-horn tune (brass)
+      kind: 'tone', inst: 'brass', gain: 0.06, lp: 1800, legato: 0.85, verb: 0.4, delay: 0.15,
+      notes: J(
+        R('. . . . . . . . . . . . . . . .', 7), B('. . . . . . . . . . . . A3+D4 - A3+E4 -'),
+        B('B4 - - - . . D5 - . . F#5 - - - . .'), B('F5 - - - E5 - - - D5 - C#5 - B4 - - -'),
+        B('G4 - - - . . B4 - . . D5 - - - . .'), B('F#4+F#5 - - - - - F5 - F#5 - - - A#4 - - -'),
+        B('B4 - - - . . D5 - . . F#5 - - - . .'), B('F5 - - - E5 - - - D5 - C#5 - B4 - - -'),
+        B('G4 - - - B4 - D5 - E5 - - - D5 - B4 -'), B('A#4 - - - C#5 - - - E5 - - - - - - -'),
+      ),
+    },
+    { // supersaw an octave up on the second time through the wolf's tune
+      kind: 'tone', inst: 'supersaw', gain: 0.04, lp: 2400, detune: 18, legato: 0.9, verb: 0.35, delay: 0.25,
+      notes: J(
+        R('. . . . . . . . . . . . . . . .', 12),
+        B('B5 - - - . . D6 - . . F#6 - - - . .'), B('F6 - - - E6 - - - D6 - C#6 - B5 - - -'),
+        B('G5 - - - B5 - D6 - E6 - - - D6 - B5 -'), B('A#5 - - - C#6 - - - E6 - - - - - - -'),
+      ),
+    },
+    { // root-fifth folk stomp, then the wolf's prowl (staccato, flat-five creep)
+      kind: 'tone', inst: 'bass', gain: 0.21, lp: 500, legato: 0.7,
+      notes: J(
+        B('D2 - - - D2 - A1 - D2 - - - D2 - A1 -'), B('C#2 - - - C#2 - A1 - C#2 - - - C#2 - E2 -'),
+        B('B1 - - - B1 - F#1 - B1 - - - B1 - F#1 -'), B('G1 - - - G1 - D2 - G1 - - - G1 - B1 -'),
+        B('D2 - - - D2 - A1 - D2 - - - D2 - A1 -'), B('A1 - - - A1 - E2 - A1 - - - A1 - C#2 -'),
+        B('G1 - - - G1 - B1 - A1 - - - A1 - C#2 -'), B('D2 - - - D2 - A1 - D2 - D2 - D2 D2 D2 D2'),
+        B('B1 . B2 . A1 . A2 . G1 . G2 . F#1 . F#2 .'), B('B1 . . D2 . F2 . . E2 . . Eb2 D2 . C#2 .'),
+        B('G1 . G2 . F#1 . F#2 . E1 . E2 . D1 . D2 .'), B('F#1 . . A1 . C2 . . C#2 . . C#2 F#1 . F#2 .'),
+        B('B1 . B2 . A1 . A2 . G1 . G2 . F#1 . F#2 .'), B('B1 . . D2 . F2 . . E2 . . Eb2 D2 . C#2 .'),
+        B('G1 . G2 . F#1 . F#2 . E1 . E2 . D1 . D2 .'), B('F#1 . A#1 . C#2 . E2 . F#2 . E2 . C#2 . A#1 .'),
+      ),
+    },
+    {
+      kind: 'tone', inst: 'sub', gain: 0.2, legato: 0.95,
+      notes: J(
+        B('D1 - - - - - - - - - - - - - - -'), B('C#1 - - - - - - - - - - - - - - -'),
+        B('B0 - - - - - - - - - - - - - - -'), B('G0 - - - - - - - - - - - - - - -'),
+        B('D1 - - - - - - - - - - - - - - -'), B('A0 - - - - - - - - - - - - - - -'),
+        B('G0 - - - - - - - A0 - - - - - - -'), B('D1 - - - - - - - - - - - - - - -'),
+        R('B0 - - - - - - - - - - - - - - -', 2), B('G0 - - - - - - - - - - - - - - -'), B('F#0 - - - - - - - - - - - - - - -'),
+        R('B0 - - - - - - - - - - - - - - -', 2), B('G0 - - - - - - - - - - - - - - -'), B('F#0 - - - - - - - - - - - - - - -'),
+      ),
+    },
+    {
+      kind: 'tone', inst: 'pad', gain: 0.03, lp: 1100, legato: 1, verb: 0.7,
+      notes: J(
+        B('D3+F#3+A3 - - - - - - - - - - - - - - -'), B('C#3+E3+A3 - - - - - - - - - - - - - - -'),
+        B('B2+D3+F#3 - - - - - - - - - - - - - - -'), B('G2+B2+D3 - - - - - - - - - - - - - - -'),
+        B('D3+F#3+A3 - - - - - - - - - - - - - - -'), B('A2+C#3+E3 - - - - - - - - - - - - - - -'),
+        B('G2+B2+D3 - - - - - - - A2+C#3+E3 - - - - - - -'), B('D3+F#3+A3 - - - - - - - - - - - - - - -'),
+        R('B2+D3+F#3 - - - - - - - - - - - - - - -', 2), B('G2+B2+D3 - - - - - - - - - - - - - - -'), B('F#2+A#2+C#3 - - - - - - - - - - - - - - -'),
+        R('B2+D3+F#3 - - - - - - - - - - - - - - -', 2), B('G2+B2+D3 - - - - - - - - - - - - - - -'), B('F#2+A#2+C#3+E3 - - - - - - - - - - - - - - -'),
+      ),
+    },
+    { // folk-rock stomp, then tom footsteps under the wolf
+      kind: 'drum', gain: 0.95,
+      notes: J(
+        B('kr h o h s h k h k h o h s h h h'), B('k h o h s h k h k h o h s h k h'),
+        B('k h o h s h k h k h o h s h h h'), B('k h o h s h k h k h o h s s s s'),
+        B('kr h o h s h k h k h o h s h h h'), B('k h o h s h k h k h o h s h k h'),
+        B('k h o h s h k h k h o h s h h h'), B('k s k s ks s ks s ks s ks s ks ks ks o'),
+        B('kr . t . sc . t . k . t . sc . t t'), B('k . t . sc . t . k . t . sc . t h'),
+        B('k . t . sc . t . k . t . sc . t t'), B('k . t . sc . t . k t t t sc t t t'),
+        B('kr h t h sc h t h k h t h sc h t t'), B('k h t h sc h t h k h t h sc h t h'),
+        B('k h t h sc h t h k h t h sc h t t'), B('kt t kt t ks s ks s kt t kt t ks ks ks o'),
+      ),
+    },
+    { kind: 'riser', gain: 0.16, notes: J(R('. . . . . . . . . . . . . . . .', 7), B('r - - - - - - - - - - - - - - -'), R('. . . . . . . . . . . . . . . .', 7), B('r - - - - - - - - - - - - - - -')) },
+  ],
+};
+
+// --------------------------------------------------- BATTLE: STAR BRIDGE
+// Commander Payne, Galactic Hunter, on his fortress bridge. Dark synthwave
+// march, F minor (a Phrygian Gb for menace), 146 bpm: 16th octave-pulse bass,
+// dotted march rhythms on supersaw, brass hits, snare drags. The second half
+// drops the theme low on brass with a pluck arp running over it.
+const battleStarBridge = {
+  bpm: 146, grid: 16, kit: 'modern', loop: true, length: 256,
+  parts: [
+    { // march theme (supersaw)
+      kind: 'tone', inst: 'supersaw', gain: 0.05, lp: 2400, detune: 20, legato: 0.9, verb: 0.4, delay: 0.25,
+      notes: J(
+        B('F4 - - C4 F4 - - - Ab4 - - - C5 - - -'), B('Db5 - - C5 Bb4 - - Ab4 G4 - - - C4 - - -'),
+        B('Db5 - - Ab4 Db5 - - - F5 - - - Ab5 - - -'), B('G5 - - F5 Eb5 - - Db5 C5 - - - Bb4 - - -'),
+        B('F5 - - C5 F5 - - - Ab5 - - - C6 - - -'), B('Db6 - - C6 Bb5 - - Ab5 G5 - - - F5 - - -'),
+        B('Ab5 - - - Gb5 - - - F5 - - - Db5 - - -'), B('C5 - - - - - - - E5 - - - G5 - Bb5 -'),
+        B('Bb5 - - - - - - - Db6 - - - F6 - - -'), B('C6 - - - - - - - Ab5 - - - F5 - - -'),
+        B('Ab5 - - - Bb5 - - - Db6 - - - F6 - - -'), B('E6 - - - - - - - G6 - - - - - - -'),
+        B('F6 - - - - - Db6 - Bb5 - - - F6 - - -'), B('Ab6 - - - - - F6 - Db6 - - - Ab6 - - -'),
+        B('G6 - - - Bb6 - - - Eb6 - - - Db6 - - -'), B('C6 - - - Bb5 - - - G5 - - - E5 - - -'),
+      ),
+    },
+    { // brass: march hits under the theme, then the theme itself, low
+      kind: 'tone', inst: 'brass', gain: 0.055, lp: 1500, legato: 0.6, verb: 0.35,
+      notes: J(
+        B('F3+C4+F4 - . . . . F3+C4+F4 - . . . . . . . .'), B('F3+C4+F4 - . . . . E3+C4+G4 - . . . . . . . .'),
+        B('Db3+Ab3+Db4 - . . . . Db3+Ab3+Db4 - . . . . . . . .'), B('Eb3+Bb3+Eb4 - . . . . Eb3+Bb3+Eb4 - . . . . . . . .'),
+        B('F3+C4+F4 - . . . . F3+C4+F4 - . . . . . . . .'), B('F3+C4+F4 - . . . . E3+C4+G4 - . . . . . . . .'),
+        B('Db3+Ab3+Db4 - . . . . Gb3+Db4+Gb4 - . . . . . . . .'), B('C3+G3+C4 - - - . . . . E3+G3+Bb3+C4 - - - . . . .'),
+        B('Bb3 - - - - - - - Db4 - - - F4 - - -'), B('C4 - - - - - - - Ab3 - - - F3 - - -'),
+        B('Ab3 - - - Bb3 - - - Db4 - - - F4 - - -'), B('E4 - - - - - - - G4 - - - - - - -'),
+        B('F4 - - - - - Db4 - Bb3 - - - F4 - - -'), B('Ab4 - - - - - F4 - Db4 - - - Ab4 - - -'),
+        B('G4 - - - Bb4 - - - Eb4 - - - Db4 - - -'), B('C4+E4+G4 - - - Bb3+E4 - - - G3+C4 - - - E3+G3+C4 - - -'),
+      ),
+    },
+    { // pluck arp racing over the second half
+      kind: 'tone', inst: 'pluck', gain: 0.032, lp: 1800, legato: 0.5, verb: 0.3, delay: 0.4,
+      notes: J(
+        R('. . . . . . . . . . . . . . . .', 8),
+        B('Bb3 Db4 F4 Bb4 F4 Db4 Bb3 Db4 F4 Bb4 F4 Db4 Bb3 Db4 F4 Db4'), B('F3 Ab3 C4 F4 C4 Ab3 F3 Ab3 C4 F4 C4 Ab3 F3 Ab3 C4 Ab3'),
+        B('Db4 F4 Ab4 Db5 Ab4 F4 Db4 F4 Ab4 Db5 Ab4 F4 Db4 F4 Ab4 F4'), B('C4 E4 G4 C5 G4 E4 C4 E4 G4 C5 G4 E4 C4 E4 G4 Bb4'),
+        B('Bb3 Db4 F4 Bb4 F4 Db4 Bb3 Db4 F4 Bb4 F4 Db4 Bb3 Db4 F4 Db4'), B('Db4 F4 Ab4 Db5 Ab4 F4 Db4 F4 Ab4 Db5 Ab4 F4 Db4 F4 Ab4 F4'),
+        B('Eb4 G4 Bb4 Eb5 Bb4 G4 Eb4 G4 Bb4 Eb5 Bb4 G4 Eb4 G4 Bb4 G4'), B('C4 E4 G4 C5 G4 E4 C4 E4 G4 C5 G4 E4 G4 Bb4 C5 E5'),
+      ),
+    },
+    { // synthwave octave pulse, 16ths
+      kind: 'tone', inst: 'bass', gain: 0.18, lp: 560, legato: 0.6,
+      notes: J(
+        R('F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2', 2),
+        B('Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3'), B('Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3'),
+        R('F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2', 2),
+        B('Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Gb1 Gb2 Gb1 Gb2 Gb1 Gb2 Gb1 Gb2'), B('C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C3'),
+        B('Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2'), B('F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2 F1 F2'),
+        B('Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3'), B('C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C3'),
+        B('Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2 Bb1 Bb2'), B('Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3 Db2 Db3'),
+        B('Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3 Eb2 Eb3'), B('C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C3 C2 C2 C2 C2'),
+      ),
+    },
+    {
+      kind: 'tone', inst: 'sub', gain: 0.22, legato: 0.95,
+      notes: J(
+        R('F1 - - - - - - - - - - - - - - -', 2), B('Db1 - - - - - - - - - - - - - - -'), B('Eb1 - - - - - - - - - - - - - - -'),
+        R('F1 - - - - - - - - - - - - - - -', 2), B('Db1 - - - - - - - Gb0 - - - - - - -'), B('C1 - - - - - - - - - - - - - - -'),
+        B('Bb0 - - - - - - - - - - - - - - -'), B('F1 - - - - - - - - - - - - - - -'),
+        B('Db1 - - - - - - - - - - - - - - -'), B('C1 - - - - - - - - - - - - - - -'),
+        B('Bb0 - - - - - - - - - - - - - - -'), B('Db1 - - - - - - - - - - - - - - -'),
+        B('Eb1 - - - - - - - - - - - - - - -'), B('C1 - - - - - - - - - - - - - - -'),
+      ),
+    },
+    { // cold, dark pad
+      kind: 'tone', inst: 'pad', gain: 0.035, lp: 900, legato: 1, verb: 0.8,
+      notes: J(
+        R('F2+Ab2+C3 - - - - - - - - - - - - - - -', 2), B('Db3+F3+Ab3 - - - - - - - - - - - - - - -'), B('Eb3+G3+Bb3 - - - - - - - - - - - - - - -'),
+        R('F2+Ab2+C3 - - - - - - - - - - - - - - -', 2), B('Db3+F3+Ab3 - - - - - - - Gb2+Bb2+Db3 - - - - - - -'), B('C3+E3+G3 - - - - - - - - - - - - - - -'),
+        B('Bb2+Db3+F3 - - - - - - - - - - - - - - -'), B('F2+Ab2+C3 - - - - - - - - - - - - - - -'),
+        B('Db3+F3+Ab3 - - - - - - - - - - - - - - -'), B('C3+E3+G3 - - - - - - - - - - - - - - -'),
+        B('Bb2+Db3+F3 - - - - - - - - - - - - - - -'), B('Db3+F3+Ab3 - - - - - - - - - - - - - - -'),
+        B('Eb3+G3+Bb3 - - - - - - - - - - - - - - -'), B('C3+E3+G3+Bb3 - - - - - - - - - - - - - - -'),
+      ),
+    },
+    { // march: snare drags; the second half stomps
+      kind: 'drum', gain: 1,
+      notes: J(
+        B('kr h h h sc h h h k h k h sc h s s'), B('k h h h sc h h h k h k h sc h h o'),
+        B('k h h h sc h h h k h k h sc h s s'), B('k h h h sc h h h k h k h sc s s s'),
+        B('kr h h h sc h h h k h k h sc h s s'), B('k h h h sc h h h k h k h sc h h o'),
+        B('k h h h sc h h h k h k h sc h s s'), B('k s s s k s s s ks s ks s ks s ks s'),
+        B('kr h k h sc h k h k h k h sc h k k'), B('k h k h sc h k h k h k h sc h h o'),
+        B('kr h k h sc h k h k h k h sc h k k'), B('k h k h sc h k h k h k h sc s s s'),
+        B('kr h k h sc h k h k h k h sc h k k'), B('k h k h sc h k h k h k h sc h h o'),
+        B('k h k h sc h k h k h k h sc h k k'), B('kt t kt t ks s ks s ks s ks s ks ks ks o'),
+      ),
+    },
+    { kind: 'riser', gain: 0.2, notes: J(R('. . . . . . . . . . . . . . . .', 7), B('r - - - - - - - - - - - - - - -'), R('. . . . . . . . . . . . . . . .', 7), B('r - - - - - - - - - - - - - - -')) },
+  ],
+};
+
 // --------------------------------------------------------------- VICTORY
 const victory = {
   bpm: 170, grid: 16, kit: 'modern', loop: false, length: 64,
@@ -721,7 +1136,8 @@ const nap = {
 export const TRACKS = {
   battle, boss, title, board, victory, nap, czernobog,
   'battle-castle': battleCastle, 'battle-fishing-pier': battlePier, 'battle-bog-shack': battleBog, 'battle-haunted-forest': battleForest,
+  'battle-skull-cove': battleSkullCove, 'battle-pumpkin-patch': battlePumpkinPatch, 'battle-grandmas-woods': battleGrandmasWoods, 'battle-star-bridge': battleStarBridge,
 };
 
-// Which battle track an arena plays (bedroom and the new four's future arenas fall back to 'battle').
+// Which battle track an arena plays (an arena without its own track falls back to 'battle').
 export const battleTrackFor = (arenaId, boss) => (boss ? 'boss' : TRACKS[`battle-${arenaId}`] ? `battle-${arenaId}` : 'battle');
