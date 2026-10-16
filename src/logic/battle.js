@@ -22,6 +22,11 @@
 // child can act on. All numbers are per learning pathway in RULES.stakes;
 // a battle keeps the pathway it was created with (s.pathway).
 //
+// Loadouts (v6 Phase 4, logic/gear.js): a toy's equipped armor and move styles arrive as a
+// "kitted" character def. A move may carry quickDmg / energyGain (quick), powerDelta / healOn
+// (power), guardFactor / reflect (guard) and energyCost (special); def.startEnergy is the energy
+// the hero starts with. Absent fields mean the plain rules below, so unkitted toys play as before.
+//
 // When the hero's health reaches 0 the battle is lost (result 'lose'); nothing
 // here rescues it. Losing never touches stars, XP or progress (logic/outcome.js).
 
@@ -91,7 +96,8 @@ export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss =
     round: 1,
     turn: 'hero',
     result: null,
-    hero: { hp: h.maxHp, maxHp: h.maxHp, energy: 0, guard: null, shield: false },
+    hero: { hp: h.maxHp, maxHp: h.maxHp, energy: Math.max(0, Math.min(RULES.maxEnergy - 1, h.startEnergy | 0)), guard: null, shield: false,
+      specialCost: Math.max(1, Math.min(RULES.maxEnergy, (moveFor(h, 'special') || {}).energyCost || RULES.maxEnergy)) },
     boss,
     foe: { hp: foeHp, maxHp: foeHp, charged: false, dizzy: false, step: 0, meter: 0, windup: false, windupFresh: false },
     stats: { indep: 0, hint: 0, support: 0, turns: 0 },
@@ -101,7 +107,7 @@ export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss =
 export function canAct(s, action) {
   if (!s || s.result || s.turn !== 'hero') return false;
   const slot = slotOf(action);
-  if (slot === 'special') return s.hero.energy >= RULES.maxEnergy;
+  if (slot === 'special') return s.hero.energy >= (s.hero.specialCost || RULES.maxEnergy);
   // a guard can't be used twice in a row (otherwise a dodger could never be hit)
   if (slot === 'guard') return s.hero.lastSlot !== 'guard';
   return slot === 'quick' || slot === 'power';
@@ -151,9 +157,11 @@ function chargeMeter(s, quality, ev) {
 // What the HUD draws: pips lit, meter size, and whether the foe is winding up.
 export const meterOf = (s) => ({ meter: s.foe.meter || 0, max: stakesFor(s).pips, windup: !!s.foe.windup });
 
-function setGuard(s, type, ev, from) {
+function setGuard(s, type, ev, from, move = {}) {
   s.hero.guard = type;
   s.hero.shield = true;
+  s.hero.guardFactor = move.guardFactor ?? null;
+  s.hero.reflect = move.reflect ?? null;
   ev.push({ type: 'shield', on: true, guard: type, from });
 }
 
@@ -173,20 +181,27 @@ export function heroAct(s0, action, quality, chars) {
   ev.push({ type: 'action', who: 'hero', action: slot, quality, move: move.id });
 
   if (slot === 'quick') {
-    damage(s, 'foe', RULES.quick + bonus, ev, { kind: 'quick', quality });
-    if (!s.result) gainEnergy(s, RULES.energy.quick, ev, 'hit');
+    damage(s, 'foe', (move.quickDmg ?? RULES.quick) + bonus, ev, { kind: 'quick', quality });
+    if (!s.result) gainEnergy(s, move.energyGain ?? RULES.energy.quick, ev, 'hit');
   } else if (slot === 'power') {
-    damage(s, 'foe', RULES.power[quality] + bonus, ev, { kind: 'power', quality });
+    damage(s, 'foe', Math.max(1, RULES.power[quality] + ((move.powerDelta || {})[quality] || 0) + bonus), ev, { kind: 'power', quality });
+    const heal = (move.healOn || {})[quality] || 0;
+    if (heal && !s.result && s.hero.hp < s.hero.maxHp) {
+      const before = s.hero.hp;
+      s.hero.hp = Math.min(s.hero.maxHp, s.hero.hp + heal);
+      ev.push({ type: 'heal', target: 'hero', amount: s.hero.hp - before, hp: s.hero.hp, maxHp: s.hero.maxHp });
+    }
     if (!s.result) {
       const extra = quality === 'indep' ? RULES.energy.powerIndepBonus : 0;
       gainEnergy(s, RULES.energy.power + extra, ev, extra ? 'bonus' : 'hit');
     }
   } else if (slot === 'guard') {
-    setGuard(s, move.guard || 'block', ev);
+    setGuard(s, move.guard || 'block', ev, undefined, move);
     gainEnergy(s, RULES.energy.guard, ev, 'defend');
   } else if (slot === 'special') {
-    s.hero.energy = 0;
-    ev.push({ type: 'energy', gained: -RULES.maxEnergy, energy: 0, reason: 'spent' });
+    const cost = s.hero.specialCost || RULES.maxEnergy;
+    s.hero.energy = Math.max(0, s.hero.energy - cost);
+    ev.push({ type: 'energy', gained: -cost, energy: s.hero.energy, reason: 'spent' });
     const sp = move;
     const dmg = RULES.special[quality] * (sp.power || 1);
     damage(s, 'foe', dmg, ev, { kind: 'special', quality, big: true, hits: sp.hits || 1 });
@@ -263,9 +278,9 @@ export function foeAct(s0, chars) {
       damage(s, 'hero', 0, ev, { kind, blocked: true, dodged: true, perfect: big, big, charged });
     } else {
       const blocked = !!guard;
-      const amount = blocked ? Math.max(1, Math.round(base * RULES.guardFactor)) : base;
+      const amount = blocked ? Math.max(1, Math.round(base * (s.hero.guardFactor ?? RULES.guardFactor))) : base;
       damage(s, 'hero', amount, ev, { kind, blocked, perfect: blocked && big, big, guard, charged });
-      if (guard === 'reflect' && !s.result) damage(s, 'foe', RULES.reflect, ev, { kind: 'reflect' });
+      if (guard === 'reflect' && !s.result) damage(s, 'foe', s.hero.reflect ?? RULES.reflect, ev, { kind: 'reflect' });
     }
     if (guard && big && !s.result) gainEnergy(s, RULES.energy.perfect, ev, 'perfect');
     if (charged) {
@@ -279,6 +294,8 @@ export function foeAct(s0, chars) {
   if (s.hero.guard || s.hero.shield) {
     s.hero.guard = null;
     s.hero.shield = false;
+    s.hero.guardFactor = null;
+    s.hero.reflect = null;
     ev.push({ type: 'shield', on: false });
   }
   if (!s.result) {

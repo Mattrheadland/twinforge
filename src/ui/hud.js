@@ -74,7 +74,8 @@ export class Hud {
       },
       h('span', { class: 'move-ico', html: ICON[move.icon] || ICON.fist }),
       h('span', { class: 'move-name' }, pixelLabel(move.name, 14, '#ffffff', { maxW: 150 })),
-      q ? h('span', { class: `move-q move-q-${slot}` }, q) : null);
+      q ? h('span', { class: `move-q move-q-${slot}` }, q) : null,
+      move.tag ? h('span', { class: 'move-tag' }, move.tag) : null); // loadout style (logic/gear.js)
       b.dataset.slot = slot;
       onTap(b, () => this.handlers.action && this.handlers.action(slot), 400);
       return b;
@@ -84,7 +85,9 @@ export class Hud {
     for (const slot of ['quick', 'power', 'guard', 'special']) {
       this.btn[slot] = mk(moves[slot] || { slot, name: slot, icon: 'fist' });
     }
-    this.ring = h('div', { class: 'special-ring' }, ...Array.from({ length: RULES.maxEnergy }, (_, i) => h('i', { style: { '--i': i } })));
+    // a FAST special (loadout) is ready with fewer pips: the ring shows how many it needs
+    this.specialCost = Math.max(1, Math.min(RULES.maxEnergy, (moves.special && moves.special.energyCost) || RULES.maxEnergy));
+    this.ring = h('div', { class: 'special-ring' }, ...Array.from({ length: this.specialCost }, (_, i) => h('i', { style: { '--i': i } })));
     this.btn.special.appendChild(this.ring);
     this.actions = h('div', { class: 'actions moves hidden' }, this.btn.quick, this.btn.power, this.btn.guard, this.btn.special);
     this.hand = h('div', { class: 'tut-hand hidden', html: ICON.hand });
@@ -144,7 +147,7 @@ export class Hud {
       }
     }
     [...this.ring.children].forEach((seg, i) => seg.classList.toggle('on', i < n));
-    const full = n >= RULES.maxEnergy;
+    const full = n >= this.specialCost;
     this.btn.special.classList.toggle('ready', full);
     this.btn.special.classList.toggle('locked', !full);
   }

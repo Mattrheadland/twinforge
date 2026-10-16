@@ -8,7 +8,8 @@ import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, moveFor, learn
 import { settleBattle } from '../logic/outcome.js';
 import { pickQuestion } from '../logic/question-picker.js';
 import { recordResult, playLevel, bandFor } from '../logic/difficulty.js';
-import { awardXp, xpForAnswer } from '../logic/progression.js';
+import { awardXp, xpForAnswer, xpForWin } from '../logic/progression.js';
+import { awardToyXp, levelOf } from '../logic/gear.js';
 import { recordAnswer, noteLevel } from '../logic/learning-log.js';
 import { Rng } from '../logic/rng.js';
 import { Hud } from '../ui/hud.js';
@@ -41,6 +42,8 @@ export class BattleController {
     this.currentChallenge = null;
     this.fails = 0;
     this.xpStart = this.save.data.player?.xp || 0; // for the level-up celebration afterwards
+    const toy = (this.save.data.toys || {})[this.state.heroId] || {};
+    this.toyStart = { xp: toy.xp || 0, level: levelOf(toy) }; // this toy's own level (logic/gear.js)
   }
 
   get learning() {
@@ -207,6 +210,7 @@ export class BattleController {
       recordAnswer(L, ch, quality, this.challenge.lastStats || {});
       noteLevel(L, skillKey, lvl, playLevel(this.save.data.skills[skillKey], pathway), 'auto');
       this.save.data.player = awardXp(this.save.data.player, xpForAnswer(quality)).player;
+      this.save.data.toys = awardToyXp(this.save.data.toys, this.state.heroId, xpForAnswer(quality)).toys; // the toy learns with you
     }
 
     this.setPhase(PHASE.HERO_ANIM);
@@ -227,10 +231,16 @@ export class BattleController {
     const move = moveFor(this.chars[this.state.heroId], kind) || { slot: kind, name: kind, color: '#FFC914' };
     const dmg = events.find((e) => e.type === 'damage');
     const applyHit = () => dmg && this.hud.setHP('foe', dmg.hp, dmg.maxHp);
-    if (kind === 'quick' || kind === 'power') await d.attack(hero, foe, move, { quality, applyHit });
-    else if (kind === 'guard') await d.guardUp(hero, move);
+    if (kind === 'quick' || kind === 'power') {
+      await d.attack(hero, foe, move, { quality, applyHit });
+      const heal = kind === 'power' && events.find((e) => e.type === 'heal'); // HEAL power style (logic/gear.js)
+      if (heal) {
+        this.hud.setHP('hero', heal.hp, heal.maxHp);
+        if (heal.amount > 0) d.healGlow(hero, heal.amount, 'HEAL!');
+      }
+    } else if (kind === 'guard') await d.guardUp(hero, move);
     else if (kind === 'special') {
-      this.hud.setEnergy(0);
+      this.hud.setEnergy(this.state.hero.energy); // a FAST special leaves the extra pip
       await d.special(hero, foe, move, { quality, applyHit });
       const dz = events.find((e) => e.type === 'dizzy');
       if (dz) {
@@ -255,7 +265,7 @@ export class BattleController {
         if (e.reason === 'bonus') this.stage.fx.word('BONUS!', hero.center().x, hero.center().y - 150, { size: 40, color: '#FFC914' });
         await d.energyOrbs(e.gained, (i) => this.app.toStage(this.hud.energyAnchor(i)), start);
         this.hud.setEnergy(e.energy, true);
-        if (e.energy >= RULES.maxEnergy) this.audio.sfx('ready');
+        { const c = this.state.hero.specialCost || RULES.maxEnergy; if (e.gained > 0 && e.energy >= c && e.energy - e.gained < c) this.audio.sfx('ready'); }
       }
       // charge meter: wrong taps light flames, a first-try answer puts one out
       if (e.type === 'meter') {
@@ -308,7 +318,7 @@ export class BattleController {
       if (e.type === 'energy' && e.gained > 0) {
         await d.energyOrbs(e.gained, (i) => this.app.toStage(this.hud.energyAnchor(i)), e.energy - e.gained);
         this.hud.setEnergy(e.energy, true);
-        if (e.energy >= RULES.maxEnergy) this.audio.sfx('ready');
+        { const c = this.state.hero.specialCost || RULES.maxEnergy; if (e.gained > 0 && e.energy >= c && e.energy - e.gained < c) this.audio.sfx('ready'); }
       }
       if (e.type === 'shield' && !e.on) d.shieldOff(this.stage.fighters.hero);
     }
@@ -329,6 +339,7 @@ export class BattleController {
     const p = Object.assign(this.save.data.progress, settled.progress);
     this.save.data.player = settled.player;
     const stars = settled.stars;
+    if (s.result === 'win') this.save.data.toys = awardToyXp(this.save.data.toys, s.heroId, xpForWin(stars)).toys;
     this.save.data.battle = null;
     this.save.save();
     // a broken victory dance must never cost the stars or the results screen
@@ -342,7 +353,9 @@ export class BattleController {
     }
     this.app.wakeLock(false);
     if (this.phase !== PHASE.END) return;
-    this.app.onBattleEnd({ win: s.result === 'win', stars, total: p.stars, state: s, xpStart: this.xpStart });
+    const toyNow = (this.save.data.toys || {})[s.heroId] || {};
+    this.app.onBattleEnd({ win: s.result === 'win', stars, total: p.stars, state: s, xpStart: this.xpStart,
+      toy: { id: s.heroId, from: this.toyStart, to: { xp: toyNow.xp || 0, level: levelOf(toyNow) } } });
   }
 
   pause() {
