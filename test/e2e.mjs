@@ -387,12 +387,15 @@ check('campaign board: a 3D island diorama, five worlds, Czernobog giant at the 
 // hold the auto-fight so this roll can't race the next step
 await page.evaluate(() => { const a = window.__tbb.app; a._bf = a.boardFight; a.boardFight = () => { a._fought = true; }; });
 await tap('.board-die', { wait: 3200 });
-await page.evaluate(() => { const a = window.__tbb.app; a.boardFight = a._bf; });
+// the roll's auto-fight fires 650 ms after the hops end, which a slow box pushes past any fixed wait;
+// so wait the roll out and keep the stub until goBoard() below has replaced this board (the stale
+// timer then fails its boardView === api guard instead of starting a fight over the next step)
+await within(15000, () => page.evaluate(() => !window.__tbb.app.boardView.busy));
 await shot('24-board-rolled');
 const after = await page.evaluate(() => window.__tbb.app.save.data.campaign);
 check('rolling the die moves the token 1–3 spaces and saves', after.pos >= 1 && after.pos <= 3 && after.rolls === 1);
 // stand on the first wild-creature fight and play it
-await page.evaluate(() => { const a = window.__tbb.app; const c = a.save.data.campaign; c.pos = 1; c.cleared = [0]; a.goBoard(); });
+await page.evaluate(() => { const a = window.__tbb.app; const c = a.save.data.campaign; c.pos = 1; c.cleared = [0]; a.goBoard(); a.boardFight = a._bf; });
 await sleep(800);
 { const fb = await page.evaluate(() => ({ f: document.querySelector('.board-fight')?.className, d: document.querySelector('.board-die')?.className, n: document.querySelectorAll('.board-screen').length, c: JSON.stringify(window.__tbb.app.save.data.campaign) })); check('an unfought creature shows the FIGHT button instead of the die', fb.f === 'board-fight' && fb.d === 'board-die hidden', JSON.stringify(fb)); }
 await tap('.board-fight');
