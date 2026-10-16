@@ -290,7 +290,7 @@ export class UI {
     const d = save.data;
     const st = d.settings;
     const slider = (label, key) => {
-      const input = h('input', { type: 'range', min: 0, max: 100, value: Math.round(st[key] * 100) });
+      const input = h('input', { type: 'range', min: 0, max: 100, value: Math.round((st[key] ?? 1) * 100) });
       input.addEventListener('input', () => { st[key] = input.value / 100; onChange(); });
       return h('label', { class: 'row' }, h('span', {}, label), input);
     };
@@ -376,6 +376,8 @@ export class UI {
         h('section', {}, h('h3', {}, 'Learning'),
           toggle('Learning questions', 'learning', 'On: power moves ask a math question, specials ask a reading one. Off: just battle.'),
           toggle('Read questions aloud', 'readAloud', 'The phone reads each question to him (tap the speaker on the card to hear it again)'),
+          slider('Voice', 'voice'),
+          toggle('Slower voice', 'voiceSlow', 'Reads a little slower, for the youngest. The music dips while it talks.'),
           level('Math (power moves)', 'math', MATH),
           level('Reading (specials)', 'letters', LET),
           h('p', { class: 'note' }, 'Auto moves up after 3 right-first-try answers in a row, and down if he needs full help twice in his last 4. Answers with a hint never move it up.'),

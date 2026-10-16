@@ -32,7 +32,10 @@ export class Audio {
       this.comp.connect(this.master);
       this.musicBus = c.createGain();
       this.musicBus.gain.value = this.musicVol * 0.55;
-      this.musicBus.connect(this.comp);
+      // the music dips while the voice reads a question (duck), on its own gain so the volume setting is untouched
+      this.duckGain = c.createGain();
+      this.musicBus.connect(this.duckGain);
+      this.duckGain.connect(this.comp);
       this.sfxBus = c.createGain();
       this.sfxBus.gain.value = this.sfxVol;
       this.sfxBus.connect(this.comp);
@@ -60,6 +63,15 @@ export class Audio {
   }
   resume() {
     if (this.ctx && this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+  }
+
+  // Music down to about a third while the narrator talks, back up gently afterwards (audio/speech.js onSpeaking).
+  duck(on) {
+    this.ducked = !!on;
+    if (!this.ctx || !this.duckGain) return;
+    const now = this.ctx.currentTime;
+    this.duckGain.gain.cancelScheduledValues(now);
+    this.duckGain.gain.setTargetAtTime(on ? 0.32 : 1, now, on ? 0.06 : 0.35);
   }
 
   setVolumes(music, sfx) {

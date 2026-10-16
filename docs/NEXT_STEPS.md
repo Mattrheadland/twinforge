@@ -71,3 +71,22 @@
 2. Send Astra the new-four packs; Hunyuan for each toy as the painted sheets come back. Wanda and Czernobog too (ASTRA_REQUESTS.md).
 2. ~~Arenas for the new four~~ done 2026-10-15 10 PM: Skull Cove, Midnight Pumpkin Patch, Grandma's Woods, Star Fortress Bridge are live (READY_NEW_ARENAS in arenas.js; Star Bridge floor cropped to whole hex repeats so it tiles). Optional: per-arena battle tracks for them (TRACKS[`battle-<id>`]).
 3. Matt plays the new modes with Luca, then sends the learning report ("Copy as text") plus what felt too hard, too long or confusing, and any moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Czernobog.
+
+## v6 Phase 1 visual benchmark, rest of the slice (branch v6/slice, on top of the new-four bodies)
+The directive's benchmark is one redesigned character + one arena + combat + lighting + HUD + effects + music + narration.
+Jack-Knife's rebuild is the character (v6/new-four-bodies). This branch adds the rest, on his home arena.
+- **Arena: Midnight Pumpkin Patch** (`look` in `src/data/arenas-new-four.js`, drawn by `src/render3d/arena-image.js`):
+  three drifting mist banks, ~40 fireflies wandering and blinking, coloured light pools under the lantern and the big
+  pumpkins, the lantern and signpost swaying in a breeze. All additive and kept off the toys and the question card.
+- **Lighting** (`setLighting` in `src/render3d/toon.js`): each arena can set a mood tint and a hard cel rim light on the
+  toys' edges (green lantern light here). Arenas without a `look` keep exactly the old shading; the campaign board too.
+- **Combat:** every hit lights both toys in the move's colour for a moment (`stage.lightPulse`), a shockwave runs along
+  the floor from the target's feet with a kick of dust, and big hits punch the camera in. Reduced motion tones these down.
+- **HUD:** light sweep along the health bars, the frame flashes on a hit, full energy breathes. Same '80s arcade frame.
+- **Narration** (`src/audio/speech.js`): numbers and sums are spoken as words, each sentence is its own phrase (natural
+  pauses), the music dips while the voice talks, grown-up settings get a **Voice** volume and **Slower voice**. Fixed a
+  reveal: level-5 "spell from sound" used to read the letters out loud; it now says only the word.
+  `test/narration.test.mjs` checks 900+ generated questions so no reading or spelling question gives its answer away.
+- **Music:** not rewritten here. The battle tracks from 2026-10-15 (Pumpkin Patch has its own) are the representative
+  soundtrack, still waiting on Matt's listen; this branch adds the ducking under the narrator.
+- Captures: docs/v6/slice-before-after.jpg, slice-hit-before.jpg, slice-hit-after.jpg. Browser test: `node test/slice-e2e.mjs`.

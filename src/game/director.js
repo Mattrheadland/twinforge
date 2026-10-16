@@ -243,6 +243,14 @@ export class Director {
     this.fx.burst(hx, hy, { count: big ? 26 : Math.round(14 * power), speed: big ? 480 : 320, size: big ? 13 : 10 });
     this.fx.ring(hx, hy, { rx: 10, ry: 10, grow: big ? 140 : 90, color: '#fff', width: 7 });
     this.fx.word(word, hx, hy - 80, { size: big ? 72 : 50 * Math.max(0.8, power), color: color || '#ffd23f' });
+    // v6 combat feel: the hit lights the toys in the move's colour, a shockwave runs along the floor from the
+    // target's feet with a kick of dust, and a big hit punches the camera in for a moment
+    this.stage.lightPulse && this.stage.lightPulse(color || '#FFC914', big ? 1 : 0.55, big ? 420 : 260);
+    this.fx.ring(def.x, def.y + 2, { rx: 26, ry: 7, grow: big ? 230 : 130, color: color || '#ffffff', width: big ? 6 : 4, life: big ? 520 : 380 });
+    this.fx.puff(def.x - 26 * def.flip, def.y, big ? 10 : 5, '#CFC6BE');
+    if (big && !this.stage.reduced && Math.abs(this.stage.cam.zoom - 1) < 0.02) {
+      this.stage.zoomTo(1.07, 70).then(() => this.stage.zoomTo(1, 280));
+    }
     // reaction
     def.flash = 1;
     def.eyes = 'squint';

@@ -13,6 +13,7 @@ import { Stage, VH } from '../render/stage.js';
 import { Fighter } from '../render/fighter.js';
 import { setArtScale } from '../render/pixel.js';
 import { buildRig } from './rigs.js';
+import { setLighting, lighting } from './toon.js';
 import { modelReady, modelInfo } from './models.js';
 import { Room3D } from './room.js';
 import { ImageArena3D } from './arena-image.js';
@@ -279,6 +280,7 @@ export class Stage3D extends Stage {
     this.room.dispose && this.room.dispose();
     this.room = def.built ? new Room3D() : new ImageArena3D(def);
     this.arenaId = def.id;
+    setLighting(def.look || {}); // v6: the arena's mood and rim light (off where the arena has no look)
     this.scene.add(this.room.group);
     if (this.frontHalfW) this.room.placeFront(this.frontHalfW);
   }
@@ -287,8 +289,26 @@ export class Stage3D extends Stage {
   // It goes away by itself once its screen leaves the page.
   setBoard(board, owner = null) {
     if (this.board) this.board.dispose();
+    setLighting(board ? {} : (ARENAS[this.arenaId] || {}).look || {}); // the board keeps the classic look
     this.board = board;
     this.boardOwner = owner;
+  }
+
+  // A hit lights the cast in its colour for a moment, then the arena's own rim light comes back.
+  lightPulse(color, k = 0.8, ms = 300) {
+    if (this.reduced) k *= 0.4;
+    this.pulse = { color: new THREE.Color(color), k, ms, t0: this.clock.time };
+  }
+
+  applyPulse(t) {
+    const base = (ARENAS[this.arenaId] || {}).look || {};
+    const L = lighting;
+    if (!this.pulse || this.board) return;
+    const u = (t - this.pulse.t0) / this.pulse.ms;
+    if (u >= 1) { this.pulse = null; L.uRim.value.set(base.rim ?? 0xffffff); L.uRimK.value = base.rimK || 0; return; }
+    const w = (1 - u) * (1 - u);
+    L.uRim.value.set(base.rim ?? 0xffffff).lerp(this.pulse.color, w);
+    L.uRimK.value = Math.max(base.rimK || 0, this.pulse.k * w);
   }
 
   // opts.foeBig: scale for a GIANT foe (game/modes.js)
@@ -315,6 +335,7 @@ export class Stage3D extends Stage {
     this.room.excite = this.arena.excite || 0;
     this.room.update(t);
     for (const f of fs) f.sync(t);
+    this.applyPulse(t);
 
     // 3D: the same pan/zoom as the 2D layer, as a crop of the camera image
     const z = cam.zoom, fx = cam.fx * W, fy = cam.fy * VH;

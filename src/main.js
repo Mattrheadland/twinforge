@@ -9,7 +9,7 @@ import { SaveStore } from './save.js';
 import { UI } from './ui/screens.js';
 import { BattleController } from './game/battle-controller.js';
 import { buzz, setHaptics } from './haptics.js';
-import { setSpeech, unlockSpeech } from './audio/speech.js';
+import { setSpeech, unlockSpeech, onSpeaking } from './audio/speech.js';
 import { showReport, showPreview } from './ui/learning-report.js';
 import { newRun, winStop, current, recordRun, BOSS_SCALE } from './game/modes.js';
 import { buildBoard, move, rollDie, winSpace, stopFor, newCampaign } from './game/campaign.js';
@@ -32,6 +32,7 @@ class App {
     if (this.stage.is3D) preloadModels(Object.values(CHARACTERS));
     preloadFxSprites();
     this.audio = new Audio();
+    onSpeaking((on) => this.audio.duck(on)); // the music dips while the narrator reads
     this.save = new SaveStore(CHARACTERS);
     this.ui = new UI(this.layerEl, this);
     this.battle = null;
@@ -226,7 +227,7 @@ class App {
   applySettings() {
     const st = this.save.data.settings;
     this.audio.setVolumes(st.music, st.sfx);
-    setSpeech(st.readAloud !== false, Math.min(1, st.sfx * 1.15));
+    setSpeech(st.readAloud !== false, st.voice ?? 1, st.voiceSlow ? 'slow' : 'normal');
     this.stage.setReduced(!!st.reducedMotion);
     setHaptics(st.haptics);
     this.fpsEl && this.fpsEl.classList.toggle('hidden', !st.showFps);

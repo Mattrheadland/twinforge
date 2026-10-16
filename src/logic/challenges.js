@@ -409,7 +409,7 @@ function letterChoices(word, pos, rng) {
 //          by letter, the letter he's on lit up in the printed word
 //   peek  (level 4):    the word shows for a moment, then hides; a wrong tap
 //          shows it again briefly
-//   sound (level 5):    picture only; the phone says the word and its sounds
+//   sound (level 5):    picture only; the phone says the word (not its letters)
 // Words: 3 letters at level 2, 3–4 at levels 3–4, 3–5 at level 5.
 export const SPELL_MODE = { 1: 'copy', 2: 'copy', 3: 'copy', 4: 'peek', 5: 'sound' };
 export const spellBank = (lv) => (lv <= 2 ? SPELL : lv <= 4 ? [...SPELL, ...SPELL_LONG] : [...SPELL, ...SPELL_LONG, ...SPELL_LONGER]);
@@ -421,7 +421,8 @@ function makeSpell(lv, rng) {
   const text = {
     copy: { prompt: 'Copy the word.', say: `${word}. Copy the word ${word}. Find each letter: ${letters}.` },
     peek: { prompt: 'Look, then spell it.', say: `Look at the word ${word}. Now spell ${word}.` },
-    sound: { prompt: 'Listen, then spell it.', reveal: `Spell “${word}”`, say: `Spell ${word}. ${letters}... ${word}.` },
+    // the word only, never its letters: saying them would give the spelling away (directive §5, test/narration.test.mjs)
+    sound: { prompt: 'Listen, then spell it.', reveal: `Spell “${word}”`, say: `Listen: ${word}. Spell ${word}.` },
   }[mode];
   return checked({
     kind: 'spell', level: lv, mode, ...text, optType: 'letter',

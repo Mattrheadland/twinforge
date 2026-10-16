@@ -98,6 +98,7 @@ export class Stage {
     this.flashA = this.reduced ? Math.min(a, 0.2) : a;
     this.flashColor = color;
   }
+  lightPulse() {} // 3D stage only (render3d/stage3d.js): toys lit in a hit's colour for a moment
   hitStop(ms) {
     this.clock.freeze(ms);
   }
