@@ -6,7 +6,8 @@ import { battleTrackFor } from '../audio/music.js';
 import { BOSS_SCALE } from './modes.js';
 import { createBattle, heroAct, foeAct, canAct, foeIntent, RULES, starsFor, moveFor, learningFor } from '../logic/battle.js';
 import { pickQuestion } from '../logic/question-picker.js';
-import { recordResult } from '../logic/difficulty.js';
+import { recordResult, playLevel, bandFor } from '../logic/difficulty.js';
+import { awardXp, xpForAnswer, xpForWin } from '../logic/progression.js';
 import { recordAnswer, noteLevel } from '../logic/learning-log.js';
 import { Rng } from '../logic/rng.js';
 import { Hud } from '../ui/hud.js';
@@ -37,6 +38,7 @@ export class BattleController {
     this.log = []; // phase history, used by tests
     this.currentChallenge = null;
     this.fails = 0;
+    this.xpStart = this.save.data.player?.xp || 0; // for the level-up celebration afterwards
   }
 
   get learning() {
@@ -178,7 +180,8 @@ export class BattleController {
     if (domain) {
       this.setPhase(PHASE.CHALLENGE);
       const skillKey = domain === 'math' ? 'math' : 'letters';
-      const lvl = this.save.data.skills[skillKey].level;
+      const pathway = this.save.pathway;
+      const lvl = playLevel(this.save.data.skills[skillKey], pathway);
       const force = window.__TBB_FORCE__ || {};
       const off = this.save.data.settings.offKinds;
       const L = this.save.data.learning;
@@ -189,9 +192,10 @@ export class BattleController {
       this.currentChallenge = null;
       this.stage.dim = 0;
       if (tok !== this.token) return;
-      this.save.data.skills[skillKey] = recordResult(this.save.data.skills[skillKey], quality);
+      this.save.data.skills[skillKey] = recordResult(this.save.data.skills[skillKey], quality, bandFor(pathway));
       recordAnswer(L, ch, quality, this.challenge.lastStats || {});
-      noteLevel(L, skillKey, lvl, this.save.data.skills[skillKey].level, 'auto');
+      noteLevel(L, skillKey, lvl, playLevel(this.save.data.skills[skillKey], pathway), 'auto');
+      this.save.data.player = awardXp(this.save.data.player, xpForAnswer(quality)).player;
     }
 
     this.setPhase(PHASE.HERO_ANIM);
@@ -301,6 +305,7 @@ export class BattleController {
       stars = starsFor(s);
       p.wins++;
       p.stars += stars;
+      this.save.data.player = awardXp(this.save.data.player, xpForWin(stars)).player;
     }
     this.save.data.battle = null;
     this.save.save();
@@ -315,7 +320,7 @@ export class BattleController {
     }
     this.app.wakeLock(false);
     if (this.phase !== PHASE.END) return;
-    this.app.onBattleEnd({ win: s.result === 'win', stars, total: p.stars, state: s });
+    this.app.onBattleEnd({ win: s.result === 'win', stars, total: p.stars, state: s, xpStart: this.xpStart });
   }
 
   pause() {

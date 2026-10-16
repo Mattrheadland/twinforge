@@ -20,6 +20,7 @@ import { Board3D } from './render3d/board3d.js';
 import { Director } from './game/director.js';
 import { h } from './ui/dom.js';
 import { loadWords } from './logic/words.js';
+import { awardXp, XP } from './logic/progression.js';
 
 const BUILD = typeof __BUILD__ !== 'undefined' ? __BUILD__ : 'dev';
 const MIN_W = 976; // narrowest UI world (the select grid + GO button); the iPhone landscape is ~978 wide, so it is never scaled
@@ -332,6 +333,7 @@ class App {
     this.audio.play('title');
     this.ui.showTitle({
       stars: d.progress.stars,
+      player: d.player,
       hasBattle: !!d.battle,
       showInstallTip: this.isIOS && !this.standalone && !this.debug,
       onPlay: () => {
@@ -426,6 +428,7 @@ class App {
       records: this.records,
       campaign: this.save.data.campaign,
       chars: CHARACTERS,
+      player: this.save.data.player,
       onPick: (mode) => {
         this.audio.sfx('select');
         buzz('light');
@@ -563,23 +566,26 @@ class App {
   }
 
   // Called by the battle when it's over.
-  onBattleEnd({ win, stars, total, state }) {
+  // xpStart: the player's XP when the battle began (a level gained since then is celebrated)
+  onBattleEnd({ win, stars, total, state, xpStart = null }) {
     const home = () => this.goModes();
+    const result = (opts) => showRunResult(this.ui, { ...opts, xp: { from: xpStart ?? this.save.data.player.xp, to: this.save.data.player.xp } });
     // campaign board fight
     const c = this.save.data.campaign;
     if (state.from === 'campaign' && c && !c.done && c.pos === state.at && c.heroId === state.heroId) {
       const board = buildBoard(c.heroId);
-      if (!win) return showRunResult(this.ui, { win, stars, total, onAgain: () => this.boardFight(), onHome: () => this.goBoard() });
+      if (!win) return result({ win, stars, total, onAgain: () => this.boardFight(), onHome: () => this.goBoard() });
       const next = winSpace(c, board, stars);
+      if (!c.cleared.includes(c.pos)) this.save.data.player = awardXp(this.save.data.player, XP.space).player;
       this.save.data.campaign = next;
       if (next.done) this.save.data.records = recordRun(this.records, { mode: 'campaign', done: true, heroId: next.heroId });
       this.save.save();
       if (next.done) {
         this.stage.fx.confetti(this.stage.W, 450);
         this.audio.sfx('perfect');
-        return showRunResult(this.ui, { win, stars, total, onNext: () => showTrophy(this.ui, { mode: 'campaign', heroDef: CHARACTERS[next.heroId], stars: next.stars, onHome: () => { this.save.data.campaign = null; this.save.save(); home(); } }), onHome: home });
+        return result({ win, stars, total, onNext: () => showTrophy(this.ui, { mode: 'campaign', heroDef: CHARACTERS[next.heroId], stars: next.stars, onHome: () => { this.save.data.campaign = null; this.save.save(); home(); } }), onHome: home });
       }
-      return showRunResult(this.ui, { win, stars, total, onNext: () => this.goBoard(), onHome: home });
+      return result({ win, stars, total, onNext: () => this.goBoard(), onHome: home });
     }
     const runs = this.save.data.runs;
     const fits = (r) => { const st = current(r); return r && st && st.foeId === state.foeId && r.heroId === state.heroId; };
@@ -588,17 +594,17 @@ class App {
     const run = mode && runs[mode];
     const inRun = state.from === 'run' && fits(run);
     if (!inRun) {
-      return showRunResult(this.ui, { win, stars, total, onAgain: () => this.startBattle(state.heroId, state.foeId), onHome: home });
+      return result({ win, stars, total, onAgain: () => this.startBattle(state.heroId, state.foeId), onHome: home });
     }
     if (run.mode === 'arcade') {
       if (win) {
         this.save.data.records = recordRun(this.records, winStop(run, stars));
         this.save.save();
       }
-      return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop('arcade'), onHome: home });
+      return result({ win, stars, total, onAgain: () => this.playStop('arcade'), onHome: home });
     }
     // tournament
-    if (!win) return showRunResult(this.ui, { win, stars, total, onAgain: () => this.playStop('tournament'), onHome: home });
+    if (!win) return result({ win, stars, total, onAgain: () => this.playStop('tournament'), onHome: home });
     const next = winStop(run, stars);
     runs.tournament = next.done ? null : next;
     this.save.data.records = recordRun(this.records, next);
@@ -606,9 +612,9 @@ class App {
     if (next.done) {
       this.stage.fx.confetti(this.stage.W, 450);
       this.audio.sfx('perfect');
-      return showRunResult(this.ui, { win, stars, total, onNext: () => showTrophy(this.ui, { mode: next.mode, heroDef: CHARACTERS[next.heroId], stars: next.stars, onHome: home }), onHome: home });
+      return result({ win, stars, total, onNext: () => showTrophy(this.ui, { mode: next.mode, heroDef: CHARACTERS[next.heroId], stars: next.stars, onHome: home }), onHome: home });
     }
-    return showRunResult(this.ui, { win, stars, total, onNext: () => this.showRunMap(), onHome: home });
+    return result({ win, stars, total, onNext: () => this.showRunMap(), onHome: home });
   }
 
   // Hero pick (the 8-card select screen).
