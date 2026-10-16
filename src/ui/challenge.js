@@ -335,7 +335,7 @@ export class ChallengeUI {
         await wait(420);
         b.classList.add('gone');
         if (stepWrongs === 1) {
-          if (countable) await this.pulseItems(items);
+          if (countable) this.pulseItems(items); // hint plays while the card stays tappable (no 3 s dead tap at level 5)
           else if (coverEl) flashFor(ch.ms);
           else if (target) {
             target.classList.remove('wiggle');
