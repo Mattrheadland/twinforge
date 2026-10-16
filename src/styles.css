@@ -698,3 +698,21 @@ html.reduced #tv::after { animation: none; }
 .sound-pos i { width: 18px; height: 18px; border-radius: 50%; background: #C9BFD8; border: 3px solid var(--ink); }
 .sound-pos.end i:last-child { width: 28px; height: 28px; background: var(--yellow); }
 .ch-ends .pic-card { margin-bottom: 34px; }
+
+/* ---------------- player profiles (ui/profiles-ui.js) ---------------- */
+.profiles-screen .mode-card { width: 190px; }
+.profile-face canvas { border: 4px solid #FFC914; box-shadow: 0 0 0 3px var(--ink); display: block; }
+.profile-card.active { box-shadow: 0 0 0 4px var(--ink), 0 0 0 9px #FFC914, 4px 9px 0 9px rgba(10, 6, 30, 0.6); }
+.profile-card.empty { --c: #3a3560 !important; opacity: 0.8; border-style: dashed; }
+.profile-card.empty .hold-ring {
+  position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(var(--yellow) calc(var(--hold, 0) * 360deg), transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%); mask: radial-gradient(circle, transparent 62%, #000 64%);
+}
+.profile-editor .parent-card input[type="text"], .profile-editor .parent-card select { font: inherit; font-size: 16px; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 10px; min-width: 210px; }
+.profile-editor .del-confirm { flex-wrap: wrap; }
+.parent-card .pbtn[disabled] { opacity: 0.4; }
+.profile-plus { position: relative; width: 72px; height: 72px; filter: drop-shadow(0 4px 0 rgba(10, 6, 30, 0.6)); }
+.profile-plus::before, .profile-plus::after { content: ''; position: absolute; left: 50%; top: 50%; background: #FFC914; box-shadow: 0 0 0 3px var(--ink); }
+.profile-plus::before { width: 72px; height: 16px; margin: -8px 0 0 -36px; }
+.profile-plus::after { width: 16px; height: 72px; margin: -36px 0 0 -8px; }

@@ -14,6 +14,7 @@ import { showReport, showPreview } from './ui/learning-report.js';
 import { newRun, winStop, current, recordRun, BOSS_SCALE } from './game/modes.js';
 import { buildBoard, move, rollDie, winSpace, stopFor, newCampaign } from './game/campaign.js';
 import { showModes, showArenaPick, showLadder, showRunResult, showTrophy, showGallery } from './ui/modes-ui.js';
+import { showProfiles, showProfileEditor, playersSection } from './ui/profiles-ui.js';
 import { showBoard } from './ui/board-ui.js';
 import { Board3D } from './render3d/board3d.js';
 import { Director } from './game/director.js';
@@ -336,12 +337,76 @@ class App {
       onPlay: () => {
         this.audio.sfx('select');
         buzz('light');
-        if (this.save.data.battle) this.resumeBattle();
-        else this.goModes();
+        this.goPlayers();
       },
       onParent: () => this.openParent(),
     });
     this.ui.warmSelect(CHARACTERS, ROSTER);
+  }
+
+  // ---------------- players (save.js profiles, ui/profiles-ui.js) ----------------
+  // With one player, Play goes straight on as before. Once a second player exists,
+  // Play asks who's playing first, then resumes that player's own unfinished battle.
+  goPlayers() {
+    const playOn = () => (this.save.data.battle ? this.resumeBattle() : this.goModes());
+    const list = this.save.profiles();
+    if (list.filter((p) => !p.empty).length < 2) return playOn();
+    this.leaveGallery();
+    this.stage.setArena('bedroom');
+    this.stage.setFighters(null, null);
+    this.stage.dim = 0.3;
+    showProfiles(this.ui, {
+      profiles: list,
+      chars: CHARACTERS,
+      roster: ROSTER,
+      onPick: (slot) => {
+        this.usePlayer(slot);
+        playOn();
+      },
+      onCreate: (slot) => this.editPlayer(slot, () => this.goPlayers()),
+      onHome: () => this.goTitle(),
+    });
+  }
+
+  usePlayer(slot) {
+    if (slot === this.save.slot) return;
+    this.save.switchTo(slot);
+    this.applySettings();
+    if (this.save.recovered) this.ui.toast('Save restored from backup');
+  }
+
+  // grown-up editor for one slot (new player when the slot is empty); `back` runs after
+  editPlayer(slot, back) {
+    const profile = this.save.index.profiles[slot];
+    const count = this.save.index.profiles.filter(Boolean).length;
+    showProfileEditor(this.ui.layer, {
+      slot,
+      profile,
+      chars: CHARACTERS,
+      roster: ROSTER,
+      canDelete: count > 1,
+      onSave: (changes) => {
+        try {
+          if (profile) this.save.updateProfile(slot, changes);
+          else this.save.createProfile(slot, changes);
+          this.ui.toast(profile ? 'Player saved' : 'Player added');
+        } catch {
+          this.ui.toast('Couldn’t save that player (storage full?)');
+        }
+        back();
+      },
+      onDelete: (typed) => {
+        try {
+          this.save.deleteProfile(slot, typed);
+          this.applySettings();
+          this.ui.toast('Player deleted');
+        } catch {
+          this.ui.toast('Player not deleted');
+        }
+        back();
+      },
+      onClose: back,
+    });
   }
 
   // ---------------- game modes (game/modes.js, game/campaign.js) ----------------
@@ -670,8 +735,19 @@ class App {
 
   openParent() {
     this.audio.sfx('tap');
+    const reopen = () => { this.ui.layer.querySelector('.overlay.parent')?.remove(); this.openParent(); };
+    const players = playersSection({
+      profiles: this.save.profiles(),
+      onEdit: (slot) => this.editPlayer(slot, reopen),
+      onAdd: (slot) => this.editPlayer(slot, reopen),
+      onSwitch: (slot) => {
+        this.usePlayer(slot);
+        reopen();
+      },
+    });
     this.ui.showParent({
       save: this.save,
+      players,
       build: BUILD,
       storageOk: this.save.available,
       onChange: () => {

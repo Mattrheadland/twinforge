@@ -286,7 +286,7 @@ export class UI {
   }
 
   // ---------------- parent panel ----------------
-  showParent({ save, onChange, onExport, onImport, onReset, onClose, onReport, onPreview, build, storageOk }) {
+  showParent({ save, players, onChange, onExport, onImport, onReset, onClose, onReport, onPreview, build, storageOk }) {
     const d = save.data;
     const st = d.settings;
     const slider = (label, key) => {
@@ -361,7 +361,7 @@ export class UI {
         close();
       } else {
         resetBtn.dataset.armed = '1';
-        resetBtn.textContent = 'Tap again to erase stars & progress';
+        resetBtn.textContent = 'Tap again to erase this player’s stars & progress';
         setTimeout(() => { delete resetBtn.dataset.armed; resetBtn.textContent = 'Reset progress…'; }, 4000);
       }
     });
@@ -372,6 +372,7 @@ export class UI {
     const scr = h('div', { class: 'overlay parent' },
       h('div', { class: 'parent-card' },
         h('h2', {}, 'Grown-up settings'),
+        players || null,
         h('section', {}, h('h3', {}, 'Sound'), slider('Music', 'music'), slider('Effects', 'sfx')),
         h('section', {}, h('h3', {}, 'Learning'),
           toggle('Learning questions', 'learning', 'On: power moves ask a math question, specials ask a reading one. Off: just battle.'),
@@ -386,7 +387,7 @@ export class UI {
           toggle('Retro resolution', 'pixelArt', 'Chunky low-res 3D like an early arcade game (off = sharp)'),
           toggle('TV look', 'tvLook', 'Scanlines, like an old arcade screen'),
           toggle('Show FPS', 'showFps', 'Frame-rate readout for testing')),
-        h('section', {}, h('h3', {}, 'Progress'),
+        h('section', {}, h('h3', {}, save.profile ? `Progress: ${save.profile.name}` : 'Progress'),
           h('p', { class: 'note' }, `${p.stars} stars · ${p.wins} wins · ${p.battles} battles`),
           storageOk ? null : h('p', { class: 'note warn' }, 'Storage is unavailable here (private browsing?). Progress won’t be kept.'),
           h('div', { class: 'pbtns' }, exportBtn, importBtn, resetBtn), file),
