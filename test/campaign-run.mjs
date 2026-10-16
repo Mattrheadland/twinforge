@@ -395,7 +395,14 @@ async function runCampaign(browser, { hero, vp }) {
             const sel = `.challenge.in .opt[data-value="${CSS_ESC(a)}"]:not(.gone):not(.right)`;
             await page.waitForSelector(sel, { visible: true, timeout: 6000 });
             await sleep(info.steps ? 250 : 0);
-            await tap(sel, { label: 'opt-right' });
+            // after a wrong pick the card ignores taps while it pulses the items (150 ms each, ~3 s
+            // for a level-5 count of 18): a child taps again, so does the bot, until it takes
+            const el = await page.$(sel);
+            for (let k = 0; k < 6; k++) {
+              await tap(sel, { label: 'opt-right' });
+              const took = await page.waitForFunction((n) => !n.isConnected || n.classList.contains('right') || !document.querySelector('.challenge.in'), { timeout: 1500, polling: 50 }, el).then(() => true, () => false);
+              if (took) break;
+            }
             if (info.steps) await sleep(450);
           }
           cur.questions++;
