@@ -425,7 +425,7 @@ export const SFX = {
     a.tone(120, 1.0, { type: 'sawtooth', slide: 60, slideTime: 0.9, gain: 0.08, lp: 300, attack: 0.1, delay: 1.2 });
   },
 
-  // Commander Payne (no breathing sounds, by design)
+  // Galactic Hunter (no breathing sounds, by design)
   halberdHum: (a) => { // a low hum: detuned saws with a slow wobble, then the sweep
     [0, 7, -7].forEach((dt) => a.tone(110, 0.5, { type: 'sawtooth', gain: 0.084, lp: 700, detune: dt, attack: 0.05 }));
     a.tone(110, 0.3, { type: 'sawtooth', slide: 330, slideTime: 0.25, gain: 0.112, lp: 1400, delay: 0.4 });

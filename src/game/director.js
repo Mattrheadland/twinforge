@@ -417,7 +417,7 @@ export class Director {
     att.mouth = 'smile';
   }
 
-  // Commander Payne: raises a hand and a gravity well opens over the foe,
+  // Galactic Hunter: raises a hand and a gravity well opens over the foe,
   // pulling it in, then snaps shut.
   async gravityGrip(att, def, move, onHit) {
     att.mouth = 'grit';
@@ -917,7 +917,7 @@ export class Director {
     att.eyes = 'open';
   }
 
-  // Commander Payne: halberd up, a reticle locks onto the foe through three
+  // Galactic Hunter: halberd up, a reticle locks onto the foe through three
   // countdown beeps, then the beam drops from orbit. Sound: 'orbitalStrike'
   // (beeps at 0, 0.25, 0.5 s; beam at 0.95 s).
   async spOrbitalStrike(att, def, move, q, ev, applyHit) {

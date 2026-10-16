@@ -63,7 +63,7 @@ export const NEW_FOUR = {
   // space-villain star commander of the Iron Halo (dark armor, crimson cape, red V-visor); rival of Young Arthur
   payne: {
     id: 'payne',
-    name: 'Commander Payne',
+    name: 'Galactic Hunter',
     color: '#3A3358',
     accent: '#FF2A44',
     maxHp: 118,

@@ -1,5 +1,5 @@
 // Code-built low-poly rigs for the four new original toys (handoff 2026-10-14):
-// Capt'n Crookhook, Jack-Knife, Big Bad Wolfgang and Commander Payne.
+// Capt'n Crookhook, Jack-Knife, Big Bad Wolfgang and Galactic Hunter (was Commander Payne).
 // Conventions as in roster-rigs.js: ~190 units tall, feet at y = 0, facing +x,
 // camera side is +z, posed by the same values the battle choreography animates
 // (armF/armB, headBob, eyes, mouth, pose, t). They stand in until Astra's
@@ -441,7 +441,7 @@ export function buildWolfgang(flash) {
   return rig;
 }
 
-// ======================= Commander Payne =======================
+// ======================= Galactic Hunter (was Commander Payne) =======================
 // Space villain (Matt, 2026-10-15): dark violet starship armor, crimson cape with a
 // tall collar, swept-back helmet horns and crest, angry red V-visor, cyan reactor
 // core in the chest, jet pack. An original design: no black dome, no breathing grille.

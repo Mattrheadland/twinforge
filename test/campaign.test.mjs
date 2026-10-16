@@ -8,7 +8,7 @@ import { Rng } from '../src/logic/rng.js';
 import { ICON } from '../src/ui/icons.js';
 
 // The campaign board's worlds belong to the original eight; arcade-only toys
-// (Capt'n Crookhook, Jack-Knife, Wolfgang, Commander Payne) have no world or creature.
+// (Capt'n Crookhook, Jack-Knife, Wolfgang, Galactic Hunter) have no world or creature.
 const BOARD = ROSTER.filter((id) => !C[id].arcadeOnly);
 
 test('every main character has at least one wild creature, with 4 moves and icons', () => {

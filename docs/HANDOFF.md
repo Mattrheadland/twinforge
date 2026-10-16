@@ -17,6 +17,7 @@ Paste this:
 - **Spelling**: real 3–5 letter words, not letter matching (done: the spelling ladder).
 - **Portraits**: all aligned, Billy Bass no longer cut off (done).
 - **Official poster (8:51 PM)**: `docs/art/official-poster.png` is the visual reference for the cast, with two exceptions: Ragin' Rockfish stays the silver striped bass mech (as in the game), and Commander Payne is a space villain, not a knight. Done and live (build 202610160100): Crookhook (big tricorn, eyepatch, white beard, epaulets, silver hook), Jack-Knife (orange glow, vest, curved cape with collar, striped socks, boots), Wolfgang (red long coat, gray fur, snarl), Payne (dark violet armor, crimson cape, horned helmet, red eyes, cyan reactor). Concept turnarounds re-rendered by `scratch/turnaround-sheet.mjs`; Astra text rewritten. `stage.snapshot()` takes an optional `yaw`.
+- **Name changes (9:39 PM)**: Wanda Wickwhistle is now **Wicked Wanda**; Commander Payne is now **Galactic Hunter**. Display names only: ids (`witch`, `payne`), asset folders (`wanda-wickwhistle`, `commander-payne`) and the GLB name stay, so saves and the pipeline are untouched. Use the new names in all new copy, prompts and docs.
 - **Models in worker chats**: use Opus 5.5 (Sonnet 5.5 for light chores). Stay off Fable; Matt's Fable allowance is nearly used up.
 - Matt wants **constant status updates** and plain "blocked" calls. Helper agents: he now says to split into multiple agents (a "digital game studio") where it saves time; his permission prompt may still decline them, so ask once and fall back to solo.
 

@@ -454,7 +454,7 @@ function buildArthur(flash) {
   return rig;
 }
 
-// ======================= Wanda Wickwhistle (original witch) =======================
+// ======================= Wicked Wanda (original witch; was Wanda Wickwhistle) =======================
 function buildWitch(flash) {
   const P = maker(flash);
   const root = new THREE.Group();

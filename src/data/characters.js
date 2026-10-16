@@ -128,7 +128,7 @@ export const CHARACTERS = {
   },
   witch: {
     id: 'witch',
-    name: 'Wanda Wickwhistle',
+    name: 'Wicked Wanda',
     color: '#6A3FA0',
     accent: '#2E9E44',
     maxHp: 95,
