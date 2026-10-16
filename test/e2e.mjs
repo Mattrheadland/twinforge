@@ -118,6 +118,7 @@ check('title renders', await page.$('.title-screen .big-play'), errors.join(' | 
 
 // ---------- select ----------
 await tap('.big-play', { wait: 700 });
+await tap('.profile-card.active', { wait: 700 });
 check('audio unlocked by first tap', await page.evaluate(() => window.__tbb.app.audio.ctx && window.__tbb.app.audio.ctx.state), await page.evaluate(() => window.__tbb.app.audio.ctx?.state));
 await shot('02a-modes');
 check('four modes to pick', (await page.$$('.mode-card')).length === 4);
@@ -134,7 +135,11 @@ check('arcade: pick the opponent from the other eleven or SURPRISE', (await page
 await tap('.pick-card:nth-child(1)', { wait: 400 });
 await tap('.go-btn', { wait: 300 });
 await shot('03b-arenas');
-check('arena pick shows four arenas, the bedroom and surprise', (await page.$$('.arena-card')).length === 6);
+{ // every arena (the original five, the new four's homes) plus SURPRISE; was a fixed 6 before the new arenas landed
+  const names = await page.$$eval('.arena-card', (els) => els.map((e) => e.getAttribute('aria-label')));
+  const want = ['Bedroom Block Fortress', 'Castle Courtyard', 'Fishing Pier', 'Haunted Forest', 'Bog Shack', 'Skull Cove', 'Midnight Pumpkin Patch', "Grandma's Woods", 'Star Fortress Bridge', 'Surprise me'];
+  check('arena pick shows every arena and surprise', want.every((n) => names.includes(n)) && names.length === want.length, JSON.stringify(names));
+}
 await tap('.arena-card:nth-child(2)', { wait: 300 });
 await sleep(400);
 await shot('04-vs');
@@ -195,6 +200,7 @@ await page.reload({ waitUntil: 'load' });
 await sleep(1400);
 check('title shows resume badge', await page.$('.big-play.resume'));
 await tap('.big-play');
+await tap('.profile-card.active');
 check('resumed battle reaches player turn', await waitPhase('choose'));
 const st2 = await page.evaluate(() => window.__tbb.app.battle.state);
 check('resumed with same HP', st2.foe.hp === st1.foe.hp && st2.hero.hp === saved.hero.hp, `foe ${st2.foe.hp}`);
@@ -293,6 +299,7 @@ check('home from pause returns to title', await page.$('.title-screen'));
 await page.evaluate(() => { const a = window.__tbb.app; a.save.data.battle = null; a.save.save(); a.goTitle(); });
 await sleep(600);
 await tap('.big-play', { wait: 700 });
+await tap('.profile-card.active', { wait: 700 });
 await tap('.mode-tournament', { wait: 600 });
 await tap('.pick-card:nth-child(1)', { wait: 500 });
 await tap('.go-btn', { wait: 600 });
@@ -324,7 +331,11 @@ await page.evaluate(() => { const a = window.__tbb.app; a.save.data.battle = nul
 await sleep(800);
 await page.keyboard.press('Enter');
 await sleep(700);
-check('keyboard: Enter on the title opens the modes', !!(await page.$('.modes-screen')));
+check('keyboard: Enter on the title asks who is playing', !!(await page.$('.profiles-screen')));
+await sleep(400);
+await page.keyboard.press('Enter');
+await sleep(700);
+check('keyboard: Enter on who is playing opens the modes', !!(await page.$('.modes-screen:not(.profiles-screen)')));
 await page.keyboard.press('ArrowRight');
 check('keyboard: arrows focus a mode card', await page.evaluate(() => document.activeElement.classList.contains('mode-card')));
 await tap('.mode-arcade', { wait: 600 });
@@ -372,6 +383,7 @@ await page.evaluate(() => { window.__tbb.app.save.data.settings.learning = true;
 await page.evaluate(() => { const a = window.__tbb.app; a.save.data.battle = null; a.save.save(); a.goTitle(); });
 await sleep(600);
 await tap('.big-play', { wait: 700 });
+await tap('.profile-card.active', { wait: 700 });
 
 // campaign board
 await tap('.mode-campaign', { wait: 600 });
@@ -439,6 +451,7 @@ check('Home while the die rolls onto a fight stays home (no surprise battle)', a
 await page.evaluate(() => { Math.random = window.__rnd; delete window.__tbb.app.startBattle; });
 await tap('.home-btn', { wait: 600 });
 await tap('.big-play', { wait: 700 });
+await tap('.profile-card.active', { wait: 700 });
 await tap('.mode-gallery', { wait: 900 });
 await shot('21-gallery');
 check('gallery shows a toy with its four moves', (await page.$$('.gal-moves .act')).length === 4 && (await page.evaluate(() => !!window.__tbb.app.stage.fighters.hero)));

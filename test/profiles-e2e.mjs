@@ -47,12 +47,17 @@ const boot = async () => {
   await page.waitForSelector('.title-screen .big-play', { timeout: 30000 });
 };
 
-// 1. a first run (and every pre-profile save) is one player: Play goes straight to the modes
+// 1. a first run (and every pre-profile save) is one player: Play still asks who's playing
 await boot();
 await app(() => localStorage.clear());
 await boot();
 await tap('.big-play');
-check('one player: Play opens the modes directly', await page.$('.modes-screen:not(.profiles-screen)'));
+check('one player: Play shows who’s playing', await page.$('.profiles-screen'));
+check('one player card and two open slots', await app(() => document.querySelectorAll('.profile-card:not(.empty)').length === 1 && document.querySelectorAll('.profile-card.empty').length === 2));
+await sleep(500);
+await shot('0-one-player');
+await tap('.profile-card.active');
+check('picking the only player opens the modes', await page.$('.modes-screen:not(.profiles-screen)'));
 
 // 2. player 1 has progress; a grown-up adds Sam from settings
 await app(() => { const a = window.__tbb.app; a.save.data.progress.stars = 5; a.save.save(); a.goTitle(); a.openParent(); });

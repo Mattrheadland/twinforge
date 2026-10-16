@@ -127,7 +127,7 @@ class App {
   // the focused one (or the main one), Escape pauses.
   keyboard() {
     const GROUPS = '.challenge .opt:not(.gone), .actions:not(.hidden) .move, .pick-card, .mode-card, .arena-card, .gal-arrow, .gal-moves .act, .result-btns .round-btn, .overlay.pause button';
-    const MAIN = ['.overlay.pause .big-play', '.result-btns .round-btn.again', '.go-btn:not(.hidden)', '.board-fight:not(.hidden)', '.board-die:not(.hidden)', '.title-screen .big-play'];
+    const MAIN = ['.profiles-screen .profile-card.active', '.overlay.pause .big-play', '.result-btns .round-btn.again', '.go-btn:not(.hidden)', '.board-fight:not(.hidden)', '.board-die:not(.hidden)', '.title-screen .big-play'];
     const shown = (el) => el && el.getClientRects().length && !el.closest('.hidden');
     const press = (el) => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'mouse', button: 0 }));
     document.addEventListener('keydown', (e) => {
@@ -345,12 +345,11 @@ class App {
   }
 
   // ---------------- players (save.js profiles, ui/profiles-ui.js) ----------------
-  // With one player, Play goes straight on as before. Once a second player exists,
-  // Play asks who's playing first, then resumes that player's own unfinished battle.
+  // Play always asks who's playing first (Founder, 2026-10-16), then resumes that
+  // player's own unfinished battle or opens the modes.
   goPlayers() {
     const playOn = () => (this.save.data.battle ? this.resumeBattle() : this.goModes());
     const list = this.save.profiles();
-    if (list.filter((p) => !p.empty).length < 2) return playOn();
     this.leaveGallery();
     this.stage.setArena('bedroom');
     this.stage.setFighters(null, null);
