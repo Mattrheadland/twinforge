@@ -38,7 +38,7 @@ const HOME = {
 
 // The new four's arenas join as Astra's art is cut into public/arenas/<id>/ (scripts/build-arenas.py).
 // A toy whose arena isn't ready yet fights in the bedroom (arenaFor's fallback).
-export const READY_NEW_ARENAS = ['skull-cove', 'pumpkin-patch', 'grandmas-woods'];
+export const READY_NEW_ARENAS = ['skull-cove', 'pumpkin-patch', 'grandmas-woods', 'star-bridge'];
 for (const id of READY_NEW_ARENAS) ARENAS[id] = NEW_ARENAS[id];
 
 export function arenaFor(foeId) {
