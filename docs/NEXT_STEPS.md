@@ -69,5 +69,5 @@
 - Czernobog fight extras; fire dancers and shadow peekers (original spin-offs of the Fantasia ghost storm / dancing fire / shadow minions).
 1. Matt reviews the sounds mp3; Luca plays the spelling ladder; tune both.
 2. Send Astra the new-four packs; Hunyuan for each toy as the painted sheets come back. Wanda and Czernobog too (ASTRA_REQUESTS.md).
-2. Arenas for the new four once painted (`scripts/build-arenas.py`, merge `src/data/arenas-new-four.js`).
+2. ~~Arenas for the new four~~ done 2026-10-15 10 PM: Skull Cove, Midnight Pumpkin Patch, Grandma's Woods, Star Fortress Bridge are live (READY_NEW_ARENAS in arenas.js; Star Bridge floor cropped to whole hex repeats so it tiles). Optional: per-arena battle tracks for them (TRACKS[`battle-<id>`]).
 3. Matt plays the new modes with Luca, then sends the learning report ("Copy as text") plus what felt too hard, too long or confusing, and any moves or questions that feel off. Confirm or rename Wanda Wickwhistle and Czernobog.
