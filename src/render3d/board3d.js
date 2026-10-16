@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { part } from './toon.js';
 import { buildRig } from './rigs.js';
 import { modelReady } from './models.js';
+import { buildFireDancer, buildShadowPeeker } from './night-crew.js';
 import { WORLDS } from '../game/campaign.js';
 import { VH } from '../render/stage.js';
 
@@ -107,6 +108,9 @@ export class Board3D {
     // free look: pan (ox along the board, oz toward/away) and zoom, on top of the follow camera
     this.look = { ox: 0, oz: 0, oy: 0, zoom: 1, tx: 0, tz: 0, ty: 0, tzoom: 1, free: false };
     this.amb = { flags: [], beams: [], flies: [], embers: [], bolt: 4000 + Math.random() * 4000 };
+    // Czernobog's night crew: fire dancers on the summit and the forest's dark
+    // edge, shadow peekers rising near the path wherever the gloom has reached
+    this.crew = { dancers: [], peekers: [], spots: [], extra: [], boost: 0, want: -1 };
     this.scene = new THREE.Scene();
     this.sky = new THREE.Color(LOOK.bedroom.sky);
     this.scene.background = this.sky;
@@ -116,6 +120,7 @@ export class Board3D {
     this.pts = board.map((sp, i) => new THREE.Vector3(i * STEP + sp.world * GAP, 0, Math.sin(i * 0.85) * WAVE));
     this.buildWorld();
     this.buildSpaces();
+    this.buildPeekers();
     this.buildToken(pos);
     this.setCleared(cleared);
     this.camX = this.token.position.x;
@@ -298,6 +303,18 @@ export class Board3D {
         this.villain.group.add(this.villain.rig.root);
         this.scene.add(this.villain.group);
       }
+      // fire dancers: a ring of five around the summit just under the peak glow,
+      // and three along the island's dark back edge, all facing the camera
+      const mx = b.x + 60, mz = -420;
+      for (let k = 0; k < 5; k++) {
+        const a = Math.PI / 2 + (k - 2) * 0.62; // spread over the front of the cone (+z faces the camera)
+        const y = 246 + (k % 2) * 22, f = (390 - y) / 400; // the cone is 400 tall, peak at y = 390
+        // 0.96: feet sink a touch into the slope instead of floating off it
+        const d = this.dancer(mx + Math.cos(a) * 320 * f * 0.96, y - 6, mz + Math.sin(a) * 260 * f * 0.96, 1.3, k * 1.7 + 0.3);
+        d.root.rotation.y = (Math.PI / 2 - a) * 0.5;
+      }
+      // the forest's dark back edge, left of the mountain's foot (it covers the right end)
+      for (let k = 0; k < 3; k++) this.dancer(cx - hx * 0.45 + k * hx * 0.26, 2, -206 + (k % 2) * 12, 1.2, 7 + k * 2.3);
       // embers drifting up from the summit
       const emberMat = new THREE.MeshBasicMaterial({ color: 0xff8a3a });
       for (let k = 0; k < 14; k++) {
@@ -317,6 +334,66 @@ export class Board3D {
         this.amb.flies.push(f);
       }
     }
+  }
+
+  // one fire dancer (night-crew.js), feet at y, hopping on its own beat
+  dancer(x, y, z, scale, seed) {
+    const d = buildFireDancer(THREE, part, { seed });
+    d.root.position.set(x, y, z);
+    d.root.scale.setScalar(scale);
+    this.scene.add(d.root);
+    this.crew.dancers.push(d);
+    return d;
+  }
+
+  // Shadow peekers wait buried beside the path (behind it, so the piece is
+  // never covered) and rise where the gloom has reached: round(gloom * 6) of
+  // them, taken from the mountain end first. Two more sit by the piece for the
+  // villain scene. Built once; nothing is allocated per frame.
+  buildPeekers() {
+    const C = this.crew;
+    let rnd = 11;
+    const r = () => ((rnd = (rnd * 16807) % 2147483647) / 2147483647);
+    // candidate spots: the midpoint between two spaces of one world, pushed back from the path
+    for (let i = 0; i < this.pts.length - 1; i++) {
+      if (this.board[i].world !== this.board[i + 1].world) continue; // not on a bridge
+      const a = this.pts[i], b = this.pts[i + 1];
+      C.spots.push({ x: (a.x + b.x) / 2 + (r() - 0.5) * 20, z: (a.z + b.z) / 2 - 74 - r() * 30, world: this.board[i].world, order: r() });
+    }
+    // dealt round-robin from the mountain end, so six peekers spread over the
+    // dark islands instead of piling into the forest; random within a world
+    const by = {};
+    for (const s of C.spots) (by[s.world] ||= []).push(s);
+    const worlds = Object.keys(by).map(Number).sort((a, b) => b - a);
+    for (const w of worlds) by[w].sort((p, q) => p.order - q.order);
+    C.spots = [];
+    for (let round = 0; C.spots.length < 28 && worlds.some((w) => by[w][round]); round++) for (const w of worlds) if (by[w][round]) C.spots.push(by[w][round]);
+    for (let k = 0; k < 6; k++) C.peekers.push(this.peeker(r() * 1000, 3600 + r() * 1800));
+    for (let k = 0; k < 2; k++) C.extra.push(this.peeker(k * 2, 2600));
+  }
+
+  peeker(seed, period) {
+    const s = buildShadowPeeker(THREE, part, { seed, period });
+    const pivot = new THREE.Group(); // the island top; the rig rises out of it
+    pivot.add(s.root);
+    pivot.scale.setScalar(1.25); // reads at the follow camera's distance
+    pivot.visible = false;
+    this.scene.add(pivot);
+    return { rig: s, pivot, ph: seed % 6.283, period };
+  }
+
+  // the villain scene's two extra peekers: one behind each shoulder of the
+  // piece (behind its space, never on it), one rise-look-sink cycle, then gone
+  crewSurge() {
+    const tp = this.token.position, now = performance.now();
+    this.crew.extra.forEach((e, k) => {
+      const x = tp.x + (k ? 92 : -84);
+      let z = tp.z - 62;
+      // step back until clear of every space disc (the path wiggles)
+      for (let n = 0; n < 6 && this.pts.some((p) => Math.hypot(p.x - x, p.z - z) < 76); n++) z -= 22;
+      e.pivot.position.set(x, 2, z);
+      e.t0 = now + k * 260;
+    });
   }
 
   buildSpaces() {
@@ -443,7 +520,7 @@ export class Board3D {
   skipCine() {
     const c = this.cine;
     if (!c) return;
-    if (c.kind === 'villain') this.gloom = this.gloomTarget;
+    if (c.kind === 'villain') { this.gloom = this.gloomTarget; if (!this.crew.extra[0].t0) this.crewSurge(); }
     if (c.hold) {
       const end = this.cineAt(c, 1);
       this.camPos.copy(end.pos); this.camLook.copy(end.look);
@@ -499,7 +576,7 @@ export class Board3D {
       { at: 1, pos: back.pos, look: back.look },
     ];
     const self = this;
-    let struck = false;
+    let struck = false, rose = false;
     return this.startCine('villain', 4200, keys, {
       onTick(k) {
         // he stirs while the camera is on him, and the storm cracks once
@@ -511,6 +588,8 @@ export class Board3D {
           self.audio && self.audio.sfx('thunder');
           self.amb.emberBurst = performance.now();
         }
+        // as the camera swings back to the piece, two shadow peekers rise beside it
+        if (k > 0.8 && !rose) { rose = true; self.crewSurge(); }
         self.gloom += (self.gloomTarget - self.gloom) * (k > 0.4 ? 0.06 : 0);
       },
     });
@@ -598,6 +677,37 @@ export class Board3D {
       const sc = (1 - k) * (3 + u.phase) * (1 + burst);
       e.scale.setScalar(Math.max(0.5, sc));
     }
+    // ---- night crew ----
+    const C = this.crew;
+    const stir = this.villain?.stir || 0;
+    C.boost += ((stir > 0 ? 1 : 0) - C.boost) * Math.min(1, dt / 350);
+    for (const d of C.dancers) {
+      d.animate(now);
+      d.body.position.y *= 1 + C.boost * 1.6; // the villain scene: they leap
+    }
+    // peekers come out as the gloom spreads: round(gloom * 6), mountain end first
+    const want = Math.min(C.peekers.length, Math.round(this.gloom * 6));
+    if (want !== C.want) {
+      C.want = want;
+      // only on islands the darkness has actually reached
+      const open = C.spots.filter((sp) => this.worldX[sp.world].dark > 0.05);
+      C.live = 0;
+      C.peekers.forEach((p, k) => {
+        const spot = k < want ? open[k] : null;
+        p.pivot.visible = !!spot;
+        if (spot) { p.pivot.position.set(spot.x, 2, spot.z); C.live = k + 1; }
+      });
+    }
+    for (let k = 0; k < C.live; k++) { const p = C.peekers[k]; peekAt(p, now + p.ph * 1000); }
+    // the two by the piece run one rise-look-sink cycle after the storm cracks
+    for (const e of C.extra) {
+      if (!e.t0) continue;
+      const s = now - e.t0;
+      if (s < 0) continue; // the second one comes up a beat later
+      if (s > e.period - 20) { e.pivot.visible = false; e.t0 = 0; continue; }
+      e.pivot.visible = true;
+      peekAt(e, s);
+    }
     if (this.rippleTex) { this.rippleTex.offset.x = now / 9000; this.rippleTex.offset.y = Math.sin(now / 4000) * 0.02; }
     if (this.peakGlow) this.peakGlow.scale.setScalar(1 + 0.12 * Math.sin(now / 260) + (this.villain?.stir || 0) * 0.3);
     // Czernobog on the summit: breathing idle, slow turn, wings in the wind; angrier the further Luca gets
@@ -632,6 +742,7 @@ export class Board3D {
         w.topMesh.material.uniforms.uColor.value.copy(w.base.top).lerp(GLOOM.top, d);
         w.sideMesh.material.uniforms.uColor.value.copy(w.base.side).lerp(GLOOM.side, d);
       });
+      this.crew.want = -1; // re-place the peekers on the newly dark islands
     }
     // camera follows the piece, with the free-look pan/zoom on top; the sky shifts with the world
     const x = this.token.position.x;
@@ -677,6 +788,14 @@ export class Board3D {
     disposeTree(this.scene);
     for (const t of Object.values(this.tex)) t.dispose();
   }
+}
+
+// Drive a shadow peeker at `ms` into its own rise-look-sink cycle. The rig's
+// animate(t) computes its cycle position as ((t + ph*300) % period + period) / period,
+// which only lands in 0..1 when t + ph*300 is negative (for positive t it sits in
+// 1..2 and the peeker never rises), so hand it a time in that window.
+function peekAt(p, ms) {
+  p.rig.animate((((ms % p.period) + p.period) % p.period) - p.period - p.ph * 300);
 }
 
 // how far the villain's darkness has spread: by worlds beaten and rolls taken
