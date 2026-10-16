@@ -361,13 +361,13 @@ export class Stage3D extends Stage {
 
   // Renders a toy on a transparent background (portraits, select cards).
   // framing: 'head' or 'full'. Returns a canvas `w`×`h` art pixels.
-  snapshot(def, { w, h, framing = 'full', pose = {} }) {
+  snapshot(def, { w, h, framing = 'full', pose = {}, yaw = -0.95 }) {
     if (this.lost) return blank(w, h);
     const rig = buildRig(def);
     rig.apply({ t: 1000, eyes: 'open', mouth: 'smile', action: pose.eyes === 'happy' ? 'win' : 'idle', ...pose });
     const scene = new THREE.Scene();
     const holder = new THREE.Group();
-    holder.rotation.y = -0.95;
+    holder.rotation.y = yaw;
     holder.add(rig.root);
     scene.add(holder);
     holder.updateMatrixWorld(true);

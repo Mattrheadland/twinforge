@@ -1,5 +1,7 @@
 # TwinForge: Toy Box Tactics: art style guide (v5.1, 2026-10-14)
 
+**Official poster (2026-10-15): `docs/art/official-poster.png` is the cast reference.** Exceptions: Ragin' Rockfish stays the silver striped bass mech, and Commander Payne is a space villain (dark violet armor, crimson cape, red eyes, cyan reactor). Crookhook, Jack-Knife and Wolfgang rigs were rebuilt to match it.
+
 v5 replaces v1–v4; v5.1 adds the campaign board, wild creatures, giants and the learning cards. Target: **chunky 1980s action figures brought to life inside an early-3D arcade engine.** Low-poly faceted models like PS1 / Sega Saturn / Virtua Fighter-era fighters, shaded and inked like a 1980s action cartoon (He-Man, ThunderCats), on a 2.5D stage: the fight stays on a flat line, but the room has real polygon depth. The HUD stays 2D arcade (segmented bars, bitmap lettering, cabinet buttons) with CRT scanlines on top. Motion is modern: 60 fps, eased lunges, squash and stretch, shake, hit-stop, particles. Still made for a 4-year-old: tough, never scary.
 
 ## How it's built

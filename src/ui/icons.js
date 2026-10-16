@@ -62,8 +62,8 @@ export const ICON = {
   // Jack-Knife's pumpkins: a carved jack-o'-lantern with a green glow in the eyes
   pumpkin: S(`<path d="M50 26 Q48 14 56 8" fill="none" stroke-width="7"/><path d="M48 26 Q60 14 70 22 Q60 24 56 30 Z" fill="#2E9E44" stroke-width="5"/>
     <path d="M50 30 Q20 24 12 50 Q10 72 30 88 Q42 94 50 88 Q58 94 70 88 Q90 72 88 50 Q80 24 50 30 Z" fill="#E8762B"/>
-    <path d="M24 60 L44 50 L42 64 Z M76 60 L56 50 L58 64 Z" fill="#5CF2A0" stroke-width="4"/>
-    <path d="M26 70 L38 76 L46 70 L54 76 L62 70 L74 70 L64 84 L36 84 Z" fill="#5CF2A0" stroke-width="4"/>`),
+    <path d="M24 60 L44 50 L42 64 Z M76 60 L56 50 L58 64 Z" fill="#FFB21A" stroke-width="4"/>
+    <path d="M26 70 L38 76 L46 70 L54 76 L62 70 L74 70 L64 84 L36 84 Z" fill="#FFB21A" stroke-width="4"/>`),
   // Wolfgang's huff and puff: a curling gust of wind
   gust: S(`<path d="M10 42 L52 42 Q70 42 70 28 Q70 16 58 16 Q50 16 48 24 M14 62 L66 62 Q88 62 88 78 Q88 90 74 90 Q66 90 64 82" fill="none" stroke="#14111A" stroke-width="13"/>
     <path d="M10 42 L52 42 Q70 42 70 28 Q70 16 58 16 Q50 16 48 24 M14 62 L66 62 Q88 62 88 78 Q88 90 74 90 Q66 90 64 82" fill="none" stroke="#fff" stroke-width="6"/>`),

@@ -27,14 +27,14 @@ export const NEW_FOUR = {
     id: 'jackknife',
     name: 'Jack-Knife',
     color: '#E8762B',
-    accent: '#5CF2A0',
+    accent: '#FFB21A',
     maxHp: 98,
     attackBonus: 3,
     moves: [
       { slot: 'quick', id: 'rattleKick', name: 'Rattle Kick', icon: 'zoom', color: '#EDE6D2', anim: 'lunge', word: 'RATTLE!', sfx: 'boneRattle' },
-      { slot: 'power', id: 'pumpkinToss', name: 'Pumpkin Toss', icon: 'pumpkin', color: '#5CF2A0', anim: 'pumpkinToss', word: 'SPLAT!', sfx: 'giggle', sfxHit: 'pumpkinThonk' },
-      { slot: 'guard', id: 'foldUp', name: 'Fold Up', icon: 'roll', color: '#5CF2A0', guard: 'dodge', sfx: 'snikt' },
-      { slot: 'special', id: 'pumpkinBarrage', name: 'Pumpkin Bomb Barrage', icon: 'pumpkin', color: '#5CF2A0', power: 1.1, effect: 'dizzy', hits: 5, sfx: 'slideWhistle' },
+      { slot: 'power', id: 'pumpkinToss', name: 'Pumpkin Toss', icon: 'pumpkin', color: '#FFB21A', anim: 'pumpkinToss', word: 'SPLAT!', sfx: 'giggle', sfxHit: 'pumpkinThonk' },
+      { slot: 'guard', id: 'foldUp', name: 'Fold Up', icon: 'roll', color: '#FFB21A', guard: 'dodge', sfx: 'snikt' },
+      { slot: 'special', id: 'pumpkinBarrage', name: 'Pumpkin Bomb Barrage', icon: 'pumpkin', color: '#FFB21A', power: 1.1, effect: 'dizzy', hits: 5, sfx: 'slideWhistle' },
     ],
     foePattern: ['power', 'quick', 'charge', 'slam'],
     arcadeOnly: true, // playable everywhere, but no campaign world or wild creature
@@ -45,8 +45,8 @@ export const NEW_FOUR = {
   wolfgang: {
     id: 'wolfgang',
     name: 'Big Bad Wolfgang',
-    color: '#6B7A99',
-    accent: '#D7263D',
+    color: '#7F838D',
+    accent: '#C81E32',
     maxHp: 115,
     attackBonus: 1,
     moves: [
@@ -60,12 +60,12 @@ export const NEW_FOUR = {
     winSfx: 'howl',
     art: { kind: 'procedural', draw: 'wolfgang' },
   },
-  // armored star commander of the Iron Halo; rival of Young Arthur
+  // space-villain star commander of the Iron Halo (dark armor, crimson cape, red V-visor); rival of Young Arthur
   payne: {
     id: 'payne',
     name: 'Commander Payne',
-    color: '#4A5262',
-    accent: '#FFC914',
+    color: '#3A3358',
+    accent: '#FF2A44',
     maxHp: 118,
     attackBonus: 1,
     moves: [

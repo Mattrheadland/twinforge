@@ -580,7 +580,7 @@ export function cannonball({ x0, y0, x1, y1, size = 18, life = 420, delay = 0, a
 }
 
 // Carved pumpkin that lobs in spinning and lands on the target (Pumpkin Bomb Barrage).
-export function pumpkin({ x0, y0, x1, y1, size = 22, glow = '#5CF2A0', life = 560, delay = 0, arc = 220, onHit }) {
+export function pumpkin({ x0, y0, x1, y1, size = 22, glow = '#FFB21A', life = 560, delay = 0, arc = 220, onHit }) {
   const pos = (k) => ({ x: lerp(x0, x1, k), y: lerp(y0, y1, k) - Math.sin(k * Math.PI) * arc });
   return {
     max: life, delay, onDone: onHit,
