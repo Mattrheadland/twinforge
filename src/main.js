@@ -490,6 +490,8 @@ class App {
       const stop = stopFor(sp);
       this.audio.sfx('powerUp');
       await this.ui.showVS(CHARACTERS[c.heroId], CHARACTERS[stop.foeId], { boss: stop.boss });
+      // the board or Home came back during the splash (QA race, 2026-10-15): don't start a stale fight
+      if (this.ui.layer.querySelector('.screen')) return;
       this.startBattle(c.heroId, stop.foeId, null, { ...stop, kind: 'campaign', at: c.pos });
     } finally {
       this._boardFighting = false;
