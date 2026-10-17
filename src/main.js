@@ -22,6 +22,8 @@ import { h } from './ui/dom.js';
 import { loadWords } from './logic/words.js';
 import { awardXp, XP } from './logic/progression.js';
 import { retryStop } from './logic/outcome.js';
+import { kitChars, kitDef, normalizeKit, hasChoices } from './logic/gear.js';
+import { showGear } from './ui/gear-ui.js';
 
 const BUILD = typeof __BUILD__ !== 'undefined' ? __BUILD__ : 'dev';
 const MIN_W = 976; // narrowest UI world (the select grid + GO button); the iPhone landscape is ~978 wide, so it is never scaled
@@ -568,9 +570,10 @@ class App {
 
   // Called by the battle when it's over.
   // xpStart: the player's XP when the battle began (a level gained since then is celebrated)
-  onBattleEnd({ win, stars, total, state, xpStart = null }) {
+  onBattleEnd({ win, stars, total, state, xpStart = null, toy = null }) {
     const home = () => this.goModes();
-    const result = (opts) => showRunResult(this.ui, { ...opts, xp: { from: xpStart ?? this.save.data.player.xp, to: this.save.data.player.xp } });
+    const toyResult = toy && CHARACTERS[toy.id] ? { ...toy, name: CHARACTERS[toy.id].name } : null;
+    const result = (opts) => showRunResult(this.ui, { ...opts, xp: { from: xpStart ?? this.save.data.player.xp, to: this.save.data.player.xp }, toy: toyResult });
     // a lost fight: "Try again" restarts the same fight right away (no VS splash);
     // nothing was taken away, the run or campaign space is still where it was
     const retry = () => this.retryBattle(state);
@@ -632,13 +635,63 @@ class App {
       onPick: async (heroId) => {
         this.save.data.progress.lastHero = heroId;
         this.save.save();
-        if (onHero) return onHero(heroId);
-        this.audio.sfx('powerUp');
-        const foeId = opponentFor(heroId);
-        await this.ui.showVS(CHARACTERS[heroId], CHARACTERS[foeId]);
-        this.startBattle(heroId, foeId);
+        // v6 Phase 4: Choose Character → Choose Armor → Choose Moves → Battle (skipped while the toy has nothing to choose)
+        this.gearUp(heroId, async () => {
+          if (onHero) return onHero(heroId);
+          this.audio.sfx('powerUp');
+          const foeId = opponentFor(heroId);
+          await this.ui.showVS(CHARACTERS[heroId], CHARACTERS[foeId]);
+          this.startBattle(heroId, foeId);
+        }, () => this.goSelect(onHero, onBack));
       },
       onHome: () => (onBack ? onBack() : this.goTitle()),
+    });
+  }
+
+  // ---------------- gear (v6 Phase 4) ----------------
+  toyRec(id) {
+    const t = this.save.data.toys || {};
+    return t[id] && typeof t[id] === 'object' ? t[id] : {};
+  }
+
+  saveKit(id, kit) {
+    const toys = this.save.data.toys || (this.save.data.toys = {});
+    toys[id] = { ...(toys[id] || { xp: 0, level: 1 }), kit };
+    this.save.save();
+  }
+
+  // The gear-up screen for one toy. next(): carry on to the fight; back(): the previous screen.
+  // preview: from the Toy Box (no fight, just DONE). Without anything to choose yet, go straight on.
+  gearUp(heroId, next, back, { preview = false } = {}) {
+    const rec = this.toyRec(heroId);
+    if (!preview && !hasChoices(rec)) return next();
+    this.endBattle();
+    this.stage.setArena('bedroom');
+    this.stage.dim = 0.1;
+    this.stage.cam.drift = 0;
+    const cam = this.stage.cam;
+    cam.zoom = 1.3; cam.fx = 0.5; cam.fy = 0.52;
+    this.stage.showcase = { yaw: -0.6, x: -200 };
+    const show = (kit) => this.stage.setFighters(kitDef(CHARACTERS[heroId], normalizeKit(kit, rec), rec), null);
+    const leave = () => {
+      this.stage.showcase = null;
+      cam.zoom = 1; cam.fx = 0.5; cam.fy = 0.55;
+      this.stage.setFighters(null, null);
+    };
+    let shown = null;
+    showGear(this.ui, {
+      def: CHARACTERS[heroId],
+      rec,
+      preview,
+      onChange: (kit) => {
+        const key = JSON.stringify(kit);
+        if (key === shown) return;
+        shown = key;
+        this.saveKit(heroId, kit);
+        show(kit);
+      },
+      onGo: () => { leave(); next(); },
+      onBack: () => { leave(); back(); },
     });
   }
 
@@ -649,7 +702,11 @@ class App {
     this.stage.cam.drift = 0;
     this.stage.cam.zoom = 1;
     this.stage.dim = 0;
-    this.battle = new BattleController({ app: this, chars: CHARACTERS, heroId, foeId, resume, stop });
+    // the hero fights in its equipped armor and move styles (logic/gear.js); a resumed battle keeps the kit it began with
+    const rec = this.toyRec(heroId);
+    const kit = normalizeKit(resume && resume.kit ? resume.kit : rec.kit, rec);
+    this.battle = new BattleController({ app: this, chars: kitChars(CHARACTERS, heroId, kit, rec), heroId, foeId, resume, stop });
+    if (!resume) this.battle.state.kit = kit;
     if (stop && !resume) {
       // remember where this fight came from (saved with the battle, so a resume knows too)
       this.battle.state.from = stop.kind;
@@ -673,7 +730,7 @@ class App {
   }
 
   // ---------------- toy gallery ----------------
-  goGallery() {
+  goGallery(startId = null) {
     this.endBattle();
     this.stage.setArena('bedroom');
     this.stage.dim = 0;
@@ -682,13 +739,15 @@ class App {
     cam.zoom = 1.3; cam.fx = 0.5; cam.fy = 0.52;
     this.stage.showcase = { yaw: -0.6 };
     this.gallery = { director: new Director(this.stage, this.audio), busy: false };
-    const lastHero = this.save.data.progress.lastHero;
+    const lastHero = startId || this.save.data.progress.lastHero;
+    const kitted = (id) => kitChars(CHARACTERS, id, this.toyRec(id).kit, this.toyRec(id))[id];
     showGallery(this.ui, {
       roster: ROSTER,
-      chars: CHARACTERS,
+      chars: Object.fromEntries(ROSTER.map((id) => [id, kitted(id)])),
       index: Math.max(0, ROSTER.indexOf(lastHero)),
+      onGear: (id) => { this.leaveGallery(); this.gearUp(id, null, () => this.goGallery(id), { preview: true }); },
       onShow: (id) => {
-        this.stage.setFighters(CHARACTERS[id], null);
+        this.stage.setFighters(kitted(id), null);
         this.gallery.busy = false;
         this.audio.sfx('select');
       },

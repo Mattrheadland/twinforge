@@ -7,6 +7,7 @@ import { portrait } from './hud.js';
 import { pixelLabel } from '../render/pixel.js';
 import { ARENAS } from '../data/arenas.js';
 import { levelBadge, xpResult } from './level-badge.js';
+import { toyResult } from './gear-ui.js';
 
 const bg = (id) => (ARENAS[id] ? `arenas/${id}/backdrop.jpg` : '');
 
@@ -90,7 +91,7 @@ export function showLadder(ui, { run, chars, onGo, onHome }) {
 // ---------------- run results ----------------
 // win: stars + NEXT (or AGAIN for a single fight); lose: nap + AGAIN.
 // xp: { from, to } player XP before and after the battle (ui/level-badge.js)
-export function showRunResult(ui, { win, stars, total, streak = null, best = null, xp = null, onNext, onAgain, onHome }) {
+export function showRunResult(ui, { win, stars, total, streak = null, best = null, xp = null, toy = null, onNext, onAgain, onHome }) {
   ui.clear();
   const home = h('button', { class: 'round-btn home', 'aria-label': 'Home', html: ICON.home });
   const btns = [home];
@@ -125,6 +126,7 @@ export function showRunResult(ui, { win, stars, total, streak = null, best = nul
         : h('div', { class: 'nap-sub' }, pixelLabel('TRY AGAIN?', 18, '#ffffff')));
   }
   if (xp) body.appendChild(xpResult(ui, xp));
+  if (toy) { const t = toyResult(ui, toy); if (t) body.appendChild(t); }
   ui.layer.appendChild(h('div', { class: 'overlay result' }, body, h('div', { class: 'result-btns' }, ...btns)));
 }
 
@@ -147,7 +149,7 @@ export function showTrophy(ui, { mode, heroDef, stars, onHome }) {
 // ---------------- toy gallery ----------------
 // The toy stands center stage on its turntable. Drag to spin it; arrows switch
 // toys; the four move buttons show off its moves.
-export function showGallery(ui, { roster, chars, index, onShow, onMove, onSpin, onHome }) {
+export function showGallery(ui, { roster, chars, index, onShow, onMove, onSpin, onHome, onGear = null }) {
   ui.clear();
   let i = index;
   const name = h('div', { class: 'gal-name' });
@@ -176,6 +178,9 @@ export function showGallery(ui, { roster, chars, index, onShow, onMove, onSpin, 
   const end = () => { lastX = null; };
   spin.addEventListener('pointerup', end);
   spin.addEventListener('pointercancel', end);
-  ui.layer.appendChild(h('div', { class: 'screen gallery-screen' }, spin, name, prev, next, moves, homeBtn(onHome)));
+  // v6 Phase 4: open the toy's armor and moves (preview, no fight)
+  const gear = onGear ? h('button', { class: 'corner-btn gal-gear', 'aria-label': 'Armor and moves', html: ICON.armor }) : null;
+  if (gear) onTap(gear, () => onGear(roster[i]), 600);
+  ui.layer.appendChild(h('div', { class: 'screen gallery-screen' }, spin, name, prev, next, moves, homeBtn(onHome), gear));
   render();
 }

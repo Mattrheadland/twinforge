@@ -413,6 +413,11 @@ html.reduced #tv::after { animation: none; }
   font: 900 11px var(--font); letter-spacing: 1px; color: var(--ink); background: #FFC914;
 }
 .move-q-special { background: #A8EE8C; }
+/* v6 Phase 4: a loadout style rides on its move button (ZIPPY, HEAVY, HEAL, COUNTER, FAST, SUPER) */
+.move-tag {
+  position: absolute; left: 44px; bottom: -9px; padding: 0 5px; border: 2px solid var(--ink); border-radius: 4px;
+  font: 900 10px var(--font); letter-spacing: 1px; color: #fff; background: #3A2E6E;
+}
 .move-special.locked { filter: saturate(0.25) brightness(0.7); }
 .move-special.ready { animation: pulse 0.9s ease-in-out infinite; }
 .move-special.ready::before {
@@ -751,3 +756,53 @@ html.reduced #tv::after { animation: none; }
 .lvl-badge.leveled .lvl-num { animation: pop-in 0.5s both; filter: drop-shadow(0 0 12px rgba(255, 201, 20, 0.95)); }
 html.reduced .lvl-up, html.reduced .lvl-badge.leveled .lvl-num, html.reduced .corner-lvl { animation: none; }
 html.reduced .xp-bar i { transition: none; }
+
+/* ---------- v6 Phase 4: gear-up (armor + moves) ---------- */
+.gear-screen .gear-spin { position: absolute; left: 70px; top: 70px; width: 300px; bottom: 40px; touch-action: none; }
+.gear-panel {
+  position: absolute; right: calc(var(--sr) + 112px); top: 8px; width: 456px; padding: 8px 12px 8px; display: flex; flex-direction: column; gap: 4px;
+  background: rgba(14, 10, 34, 0.86); border: 4px solid var(--ink); border-radius: 10px; box-shadow: 0 0 0 3px #E8E0C8, 0 0 0 6px var(--ink), 4px 9px 0 6px rgba(10, 6, 30, 0.55);
+  animation: drop-in 0.35s both;
+}
+.gear-head { display: flex; align-items: center; gap: 10px; }
+.gear-head .toy-lvl { flex: none; }
+.evo-chip { padding: 2px 6px; background: #FFC914; border: 2px solid var(--ink); border-radius: 5px; }
+.gear-h { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.gear-h span { width: 18px; height: 18px; display: block; }
+.gear-row { display: flex; gap: 8px; }
+.gear-tile {
+  position: relative; width: 80px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border: 3px solid var(--ink); border-radius: 8px; background: color-mix(in srgb, var(--gc) 55%, #1A1440); box-shadow: 0 0 0 2px #E8E0C8; transition: transform 0.12s;
+}
+.gear-tile .gear-ico { width: 28px; height: 28px; display: block; background: #FFF3D6; border-radius: 50%; padding: 4px; border: 2px solid var(--ink); }
+.gear-tile.on { transform: translateY(-3px); box-shadow: 0 0 0 3px #FFC914, 0 0 14px 3px rgba(255, 201, 20, 0.8); }
+.gear-tile.locked, .gear-chip.locked { filter: saturate(0.15) brightness(0.65); }
+.gear-moves { display: flex; flex-direction: column; gap: 4px; }
+.gear-move { display: flex; align-items: center; gap: 6px; }
+.gear-move-ico { flex: none; width: 30px; height: 30px; display: block; background: var(--mc); border-radius: 50%; padding: 4px; border: 2px solid var(--ink); }
+.gear-chip {
+  position: relative; height: 30px; padding: 0 9px; display: flex; align-items: center; gap: 4px; border: 2px solid var(--ink); border-radius: 6px;
+  background: #2C2458; box-shadow: 0 0 0 2px #6B63A8;
+}
+.gear-chip.on { background: var(--mc); box-shadow: 0 0 0 2px #FFC914, 0 0 10px 2px rgba(255, 201, 20, 0.6); }
+.gear-chip .chip-lock { width: 14px; height: 14px; display: block; }
+.gear-head .gear-forms { margin-left: auto; gap: 5px; }
+.gear-forms .gear-form { height: 30px; min-width: 34px; padding: 0 8px; display: flex; align-items: center; justify-content: center; gap: 3px; border: 2px solid var(--ink); border-radius: 6px; background: #2C2458; }
+.gear-form.on { background: #FFC914; }
+.gear-form i.gem { width: 10px; height: 14px; background: #7FE3FF; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.gear-form i.dot { width: 10px; height: 10px; border-radius: 50%; background: #E8E0C8; }
+.gear-caption { min-height: 18px; }
+.gear-next { display: flex; align-items: center; gap: 5px; opacity: 0.9; }
+.gear-next span { width: 14px; height: 14px; display: block; }
+.gear-screen .gear-go { top: auto; bottom: calc(var(--sb) + 14px); right: calc(var(--sr) + 2px); margin-top: 0; }
+.gear-screen .gear-go.done { --b: var(--go); --l: #8CF29B; --d: #157A33; }
+/* the gallery's door to the gear screen */
+.gal-gear { position: absolute; top: 12px; right: calc(var(--sr) + 10px); width: 64px; height: 64px; padding: 12px; --b: #7A3FC8; --l: #B58CFF; --d: #3E1880; }
+.toy-result { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; margin-top: 2px; }
+.toy-result .evo-shout { display: block; animation: pop-in 0.5s 2.4s both; }
+.toy-result .toy-new { flex-basis: 100%; display: flex; justify-content: center; gap: 8px; animation: drop-in 0.4s 2.2s both; }
+/* a toy line under the player's level: keep the whole result on a phone screen */
+.result-card:has(.toy-result) { padding-top: 8px; padding-bottom: 10px; }
+.result-card:has(.toy-result) .star-slot { width: 58px; height: 58px; }
+.result-card:has(.toy-result) .star-total { margin-top: 2px; }
+.overlay.result:has(.toy-result) { gap: 10px; }
