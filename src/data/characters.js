@@ -67,7 +67,7 @@ export const CHARACTERS = {
       armScale: 0.6,
       joints: {
         armF: { pivot: [0, 108, 26], box: [[-30, 92, 27], [30, 155, 70]] },
-        armB: { pivot: [0, 95, -24], box: [[-30, 45, -70], [30, 115, -24]] },
+        armB: { pivot: [0, 95, -24], box: [[-30, 45, -70], [30, 115, -27]] },
       },
     },
   },
