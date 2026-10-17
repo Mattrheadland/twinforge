@@ -14,6 +14,7 @@ import { showReport, showPreview } from './ui/learning-report.js';
 import { newRun, winStop, current, recordRun, BOSS_SCALE } from './game/modes.js';
 import { buildBoard, move, rollDie, winSpace, stopFor, newCampaign } from './game/campaign.js';
 import { showModes, showArenaPick, showLadder, showRunResult, showTrophy, showGallery } from './ui/modes-ui.js';
+import { showProfiles, showProfileEditor, playersSection } from './ui/profiles-ui.js';
 import { showBoard } from './ui/board-ui.js';
 import { Board3D } from './render3d/board3d.js';
 import { Director } from './game/director.js';
@@ -126,7 +127,7 @@ class App {
   // the focused one (or the main one), Escape pauses.
   keyboard() {
     const GROUPS = '.challenge .opt:not(.gone), .actions:not(.hidden) .move, .pick-card, .mode-card, .arena-card, .gal-arrow, .gal-moves .act, .result-btns .round-btn, .overlay.pause button';
-    const MAIN = ['.overlay.pause .big-play', '.result-btns .round-btn.again', '.go-btn:not(.hidden)', '.board-fight:not(.hidden)', '.board-die:not(.hidden)', '.title-screen .big-play'];
+    const MAIN = ['.profiles-screen .profile-card.active', '.overlay.pause .big-play', '.result-btns .round-btn.again', '.go-btn:not(.hidden)', '.board-fight:not(.hidden)', '.board-die:not(.hidden)', '.title-screen .big-play'];
     const shown = (el) => el && el.getClientRects().length && !el.closest('.hidden');
     const press = (el) => el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerType: 'mouse', button: 0 }));
     document.addEventListener('keydown', (e) => {
@@ -336,12 +337,75 @@ class App {
       onPlay: () => {
         this.audio.sfx('select');
         buzz('light');
-        if (this.save.data.battle) this.resumeBattle();
-        else this.goModes();
+        this.goPlayers();
       },
       onParent: () => this.openParent(),
     });
     this.ui.warmSelect(CHARACTERS, ROSTER);
+  }
+
+  // ---------------- players (save.js profiles, ui/profiles-ui.js) ----------------
+  // Play always asks who's playing first (Founder, 2026-10-16), then resumes that
+  // player's own unfinished battle or opens the modes.
+  goPlayers() {
+    const playOn = () => (this.save.data.battle ? this.resumeBattle() : this.goModes());
+    const list = this.save.profiles();
+    this.leaveGallery();
+    this.stage.setArena('bedroom');
+    this.stage.setFighters(null, null);
+    this.stage.dim = 0.3;
+    showProfiles(this.ui, {
+      profiles: list,
+      chars: CHARACTERS,
+      roster: ROSTER,
+      onPick: (slot) => {
+        this.usePlayer(slot);
+        playOn();
+      },
+      onCreate: (slot) => this.editPlayer(slot, () => this.goPlayers()),
+      onHome: () => this.goTitle(),
+    });
+  }
+
+  usePlayer(slot) {
+    if (slot === this.save.slot) return;
+    this.save.switchTo(slot);
+    this.applySettings();
+    if (this.save.recovered) this.ui.toast('Save restored from backup');
+  }
+
+  // grown-up editor for one slot (new player when the slot is empty); `back` runs after
+  editPlayer(slot, back) {
+    const profile = this.save.index.profiles[slot];
+    const count = this.save.index.profiles.filter(Boolean).length;
+    showProfileEditor(this.ui.layer, {
+      slot,
+      profile,
+      chars: CHARACTERS,
+      roster: ROSTER,
+      canDelete: count > 1,
+      onSave: (changes) => {
+        try {
+          if (profile) this.save.updateProfile(slot, changes);
+          else this.save.createProfile(slot, changes);
+          this.ui.toast(profile ? 'Player saved' : 'Player added');
+        } catch {
+          this.ui.toast('Couldn’t save that player (storage full?)');
+        }
+        back();
+      },
+      onDelete: (typed) => {
+        try {
+          this.save.deleteProfile(slot, typed);
+          this.applySettings();
+          this.ui.toast('Player deleted');
+        } catch {
+          this.ui.toast('Player not deleted');
+        }
+        back();
+      },
+      onClose: back,
+    });
   }
 
   // ---------------- game modes (game/modes.js, game/campaign.js) ----------------
@@ -670,8 +734,19 @@ class App {
 
   openParent() {
     this.audio.sfx('tap');
+    const reopen = () => { this.ui.layer.querySelector('.overlay.parent')?.remove(); this.openParent(); };
+    const players = playersSection({
+      profiles: this.save.profiles(),
+      onEdit: (slot) => this.editPlayer(slot, reopen),
+      onAdd: (slot) => this.editPlayer(slot, reopen),
+      onSwitch: (slot) => {
+        this.usePlayer(slot);
+        reopen();
+      },
+    });
     this.ui.showParent({
       save: this.save,
+      players,
       build: BUILD,
       storageOk: this.save.available,
       onChange: () => {

@@ -45,6 +45,8 @@ await page.waitForSelector('.title-screen .big-play', { timeout: 20000 });
 await sleep(1500);
 await tap('.big-play');
 await sleep(800);
+await tap('.profile-card.active');
+await sleep(800);
 await tap('.mode-arcade');
 await sleep(900);
 await page.screenshot({ path: `${SHOTS}/select.png` });
