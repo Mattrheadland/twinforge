@@ -83,6 +83,11 @@ for (const [name, width, height, dpr, phone] of SIZES) {
   check(`${name} no rotate overlay`, await page.$eval('#rotate', (e) => getComputedStyle(e).display === 'none'));
   await problems('title', '.title-screen .big-play, .title-screen .gear, .star-count, .logo, .push-start');
 
+  await page.evaluate(() => window.__tbb.app.goPlayers());
+  await sleep(1200);
+  await shot('1b-players');
+  await problems('players', '.profile-card, .home-btn');
+
   await page.evaluate(() => window.__tbb.app.goSelect(() => {}, () => {}));
   await sleep(1400);
   await click('.pick-card:nth-child(1)');

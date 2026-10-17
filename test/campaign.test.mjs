@@ -97,7 +97,8 @@ test('every hero beats every wild creature quickly, even a giant one', () => {
         if (!s.result) s = foeAct(s, C).state;
       }
       assert.equal(s.result, 'win', `${h} vs ${m}`);
-      assert.ok(turns <= (boss ? 7 : 5), `${h} vs ${boss ? 'giant ' : ''}${m} took ${turns}`);
+      // v6: foes have more health (RULES.stakes.early.foeHp), one more turn or so
+      assert.ok(turns <= (boss ? 8 : 6), `${h} vs ${boss ? 'giant ' : ''}${m} took ${turns}`);
       void foeIntent;
     }
   }

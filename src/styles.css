@@ -67,6 +67,7 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 .round-btn.again { --b: var(--go); --l: #8CF29B; --d: #157A33; }
 .round-btn.home { --b: var(--blue); --l: #6F9BFF; --d: #0B2A85; width: 76px; height: 76px; padding: 14px; }
 .round-btn.small { width: 64px; height: 64px; padding: 12px; }
+.round-btn.big { width: 128px; height: 128px; padding: 24px; }
 .round-btn.pulse { animation: pop-in 0.45s both, pulse 1.2s ease-in-out 0.6s infinite; }
 .corner-btn {
   position: absolute; top: 12px; width: 56px; height: 56px; border-radius: 50%; padding: 10px;
@@ -219,6 +220,13 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 .pip { width: 22px; height: 22px; opacity: 0.3; filter: grayscale(1); transition: opacity 0.2s, filter 0.2s; }
 .pip.on { opacity: 1; filter: drop-shadow(0 0 4px rgba(255, 201, 20, 0.9)); }
 .pip.pop { animation: pop-in 0.45s; }
+/* the foe's charge meter (wrong answers light a flame; full = a charged attack is coming) */
+.charge-meter { display: flex; gap: 3px; margin-top: 4px; padding: 2px 4px; border-radius: 6px; }
+.cpip { width: 22px; height: 22px; opacity: 0.25; filter: grayscale(1); transition: opacity 0.25s, filter 0.25s; }
+.cpip.on { opacity: 1; filter: drop-shadow(0 0 4px rgba(244, 96, 54, 0.95)); }
+.cpip.pop { animation: pop-in 0.45s; }
+.charge-meter.full { background: rgba(215, 38, 61, 0.45); box-shadow: 0 0 0 2px #D7263D, 0 0 12px #F46036; animation: pulse 0.6s infinite; }
+html.reduced .charge-meter.full { animation: none; }
 .status { display: flex; gap: 4px; margin-top: 3px; }
 .st { width: 28px; height: 28px; animation: pop-in 0.3s both; background: #120E26; border: 3px solid var(--ink); padding: 3px; box-shadow: 0 0 0 2px #E8B83A; }
 .st-fire { animation: pop-in 0.3s both, pulse 0.6s infinite; }
@@ -405,6 +413,11 @@ html.reduced #tv::after { animation: none; }
   font: 900 11px var(--font); letter-spacing: 1px; color: var(--ink); background: #FFC914;
 }
 .move-q-special { background: #A8EE8C; }
+/* v6 Phase 4: a loadout style rides on its move button (ZIPPY, HEAVY, HEAL, COUNTER, FAST, SUPER) */
+.move-tag {
+  position: absolute; left: 44px; bottom: -9px; padding: 0 5px; border: 2px solid var(--ink); border-radius: 4px;
+  font: 900 10px var(--font); letter-spacing: 1px; color: #fff; background: #3A2E6E;
+}
 .move-special.locked { filter: saturate(0.25) brightness(0.7); }
 .move-special.ready { animation: pulse 0.9s ease-in-out infinite; }
 .move-special.ready::before {
@@ -713,3 +726,98 @@ html.reduced #tv::after { animation: none; }
 .energy:has(.pip.on:last-child) .pip.on { animation: pip-ready 1s ease-in-out infinite; }
 @keyframes pip-ready { 50% { filter: drop-shadow(0 0 9px rgba(255, 201, 20, 1)) brightness(1.25); } }
 html.reduced .hp-fill::after, html.reduced .energy .pip.on { animation: none; }
+
+/* ---------------- player profiles (ui/profiles-ui.js) ---------------- */
+.profiles-screen .mode-card { width: 190px; }
+.profile-face canvas { border: 4px solid #FFC914; box-shadow: 0 0 0 3px var(--ink); display: block; }
+.profile-card.active { box-shadow: 0 0 0 4px var(--ink), 0 0 0 9px #FFC914, 4px 9px 0 9px rgba(10, 6, 30, 0.6); }
+.profile-card.empty { --c: #3a3560 !important; opacity: 0.8; border-style: dashed; }
+.profile-card.empty .hold-ring {
+  position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(var(--yellow) calc(var(--hold, 0) * 360deg), transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%); mask: radial-gradient(circle, transparent 62%, #000 64%);
+}
+.profile-editor .parent-card input[type="text"], .profile-editor .parent-card select { font: inherit; font-size: 16px; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 10px; min-width: 210px; }
+.profile-editor .del-confirm { flex-wrap: wrap; }
+.parent-card .pbtn[disabled] { opacity: 0.4; }
+.profile-plus { position: relative; width: 72px; height: 72px; filter: drop-shadow(0 4px 0 rgba(10, 6, 30, 0.6)); }
+.profile-plus::before, .profile-plus::after { content: ''; position: absolute; left: 50%; top: 50%; background: #FFC914; box-shadow: 0 0 0 3px var(--ink); }
+.profile-plus::before { width: 72px; height: 16px; margin: -8px 0 0 -36px; }
+.profile-plus::after { width: 16px; height: 72px; margin: -36px 0 0 -8px; }
+
+/* ---------------- player level + XP bar (ui/level-badge.js) ---------------- */
+.lvl-badge { display: flex; align-items: center; }
+.lvl-num {
+  position: relative; z-index: 1; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 34% 30%, #6F9BFF 0 22%, var(--blue) 23%); border: 3px solid #FFC914; box-shadow: 0 0 0 3px var(--ink), 2px 4px 0 3px rgba(10, 6, 30, 0.6);
+}
+.xp-bar {
+  position: relative; width: 96px; height: 16px; margin-left: -14px; padding-left: 12px; background: #120E26; border: 3px solid #FFC914;
+  box-shadow: 0 0 0 3px var(--ink); overflow: hidden;
+}
+.xp-bar i { display: block; height: 100%; min-width: 4px; background: linear-gradient(180deg, #9CF56B, var(--go) 55%, #1E7A33); transition: width 0.7s ease-out; }
+.xp-bar::after { /* segments, like the HUD health bars */
+  content: ''; position: absolute; top: 0; bottom: 0; right: 0; left: 12px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 10px, rgba(18, 14, 38, 0.85) 10px 12px);
+}
+.lvl-badge.big .lvl-num { width: 54px; height: 54px; border-width: 4px; }
+.lvl-badge.big .xp-bar { width: 150px; height: 22px; margin-left: -18px; padding-left: 16px; }
+.lvl-badge.big .xp-bar::after { left: 16px; }
+.title-lvl { position: absolute; left: var(--sl); top: 66px; }
+.corner-lvl { position: absolute; right: var(--sr); top: 12px; animation: pop-in 0.4s both; }
+.result-xp { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.lvl-up { animation: pop-in 0.45s both, pulse 0.9s ease-in-out 0.45s 3; }
+.lvl-up.waiting { visibility: hidden; animation: none; }
+.lvl-badge.leveled .lvl-num { animation: pop-in 0.5s both; filter: drop-shadow(0 0 12px rgba(255, 201, 20, 0.95)); }
+html.reduced .lvl-up, html.reduced .lvl-badge.leveled .lvl-num, html.reduced .corner-lvl { animation: none; }
+html.reduced .xp-bar i { transition: none; }
+
+/* ---------- v6 Phase 4: gear-up (armor + moves) ---------- */
+.gear-screen .gear-spin { position: absolute; left: 70px; top: 70px; width: 300px; bottom: 40px; touch-action: none; }
+.gear-panel {
+  position: absolute; right: calc(var(--sr) + 112px); top: 8px; width: 456px; padding: 8px 12px 8px; display: flex; flex-direction: column; gap: 4px;
+  background: rgba(14, 10, 34, 0.86); border: 4px solid var(--ink); border-radius: 10px; box-shadow: 0 0 0 3px #E8E0C8, 0 0 0 6px var(--ink), 4px 9px 0 6px rgba(10, 6, 30, 0.55);
+  animation: drop-in 0.35s both;
+}
+.gear-head { display: flex; align-items: center; gap: 10px; }
+.gear-head .toy-lvl { flex: none; }
+.evo-chip { padding: 2px 6px; background: #FFC914; border: 2px solid var(--ink); border-radius: 5px; }
+.gear-h { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.gear-h span { width: 18px; height: 18px; display: block; }
+.gear-row { display: flex; gap: 8px; }
+.gear-tile {
+  position: relative; width: 80px; height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border: 3px solid var(--ink); border-radius: 8px; background: color-mix(in srgb, var(--gc) 55%, #1A1440); box-shadow: 0 0 0 2px #E8E0C8; transition: transform 0.12s;
+}
+.gear-tile .gear-ico { width: 28px; height: 28px; display: block; background: #FFF3D6; border-radius: 50%; padding: 4px; border: 2px solid var(--ink); }
+.gear-tile.on { transform: translateY(-3px); box-shadow: 0 0 0 3px #FFC914, 0 0 14px 3px rgba(255, 201, 20, 0.8); }
+.gear-tile.locked, .gear-chip.locked { filter: saturate(0.15) brightness(0.65); }
+.gear-moves { display: flex; flex-direction: column; gap: 4px; }
+.gear-move { display: flex; align-items: center; gap: 6px; }
+.gear-move-ico { flex: none; width: 30px; height: 30px; display: block; background: var(--mc); border-radius: 50%; padding: 4px; border: 2px solid var(--ink); }
+.gear-chip {
+  position: relative; height: 30px; padding: 0 9px; display: flex; align-items: center; gap: 4px; border: 2px solid var(--ink); border-radius: 6px;
+  background: #2C2458; box-shadow: 0 0 0 2px #6B63A8;
+}
+.gear-chip.on { background: var(--mc); box-shadow: 0 0 0 2px #FFC914, 0 0 10px 2px rgba(255, 201, 20, 0.6); }
+.gear-chip .chip-lock { width: 14px; height: 14px; display: block; }
+.gear-head .gear-forms { margin-left: auto; gap: 5px; }
+.gear-forms .gear-form { height: 30px; min-width: 34px; padding: 0 8px; display: flex; align-items: center; justify-content: center; gap: 3px; border: 2px solid var(--ink); border-radius: 6px; background: #2C2458; }
+.gear-form.on { background: #FFC914; }
+.gear-form i.gem { width: 10px; height: 14px; background: #7FE3FF; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.gear-form i.dot { width: 10px; height: 10px; border-radius: 50%; background: #E8E0C8; }
+.gear-caption { min-height: 18px; }
+.gear-next { display: flex; align-items: center; gap: 5px; opacity: 0.9; }
+.gear-next span { width: 14px; height: 14px; display: block; }
+.gear-screen .gear-go { top: auto; bottom: calc(var(--sb) + 14px); right: calc(var(--sr) + 2px); margin-top: 0; }
+.gear-screen .gear-go.done { --b: var(--go); --l: #8CF29B; --d: #157A33; }
+/* the gallery's door to the gear screen */
+.gal-gear { position: absolute; top: 12px; right: calc(var(--sr) + 10px); width: 64px; height: 64px; padding: 12px; --b: #7A3FC8; --l: #B58CFF; --d: #3E1880; }
+.toy-result { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 8px; margin-top: 2px; }
+.toy-result .evo-shout { display: block; animation: pop-in 0.5s 2.4s both; }
+.toy-result .toy-new { flex-basis: 100%; display: flex; justify-content: center; gap: 8px; animation: drop-in 0.4s 2.2s both; }
+/* a toy line under the player's level: keep the whole result on a phone screen */
+.result-card:has(.toy-result) { padding-top: 8px; padding-bottom: 10px; }
+.result-card:has(.toy-result) .star-slot { width: 58px; height: 58px; }
+.result-card:has(.toy-result) .star-total { margin-top: 2px; }
+.overlay.result:has(.toy-result) { gap: 10px; }

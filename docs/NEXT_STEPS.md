@@ -90,3 +90,18 @@ Jack-Knife's rebuild is the character (v6/new-four-bodies). This branch adds the
 - **Music:** not rewritten here. The battle tracks from 2026-10-15 (Pumpkin Patch has its own) are the representative
   soundtrack, still waiting on Matt's listen; this branch adds the ducking under the narrator.
 - Captures: docs/v6/slice-before-after.jpg, slice-hit-before.jpg, slice-hit-after.jpg. Browser test: `node test/slice-e2e.mjs`.
+## v6 Phase 4 (branch v6/evolution, stacked on v6/challenge): toy levels, evolutions, armor, move styles
+- **Every toy has its own level** per player (`save.toys[id] = { xp, level, kit }`), separate from the player level and
+  the learning levels. A toy earns the XP the player earns in the battles it fights. Curve in `src/logic/gear.js`:
+  Evolution I at toy level 15 (about 25 battles with one toy), II at 35 (~125), Ultimate at 65 (~400).
+- **Armor** (5): Classic, Tough (lv 8: more health, softer hits), Speedy (lv 15: starts with an energy pip, less health),
+  Mighty (lv 35: hits harder, less health), Legend (lv 65). **Move styles** keep each toy's own move and animation and
+  change its numbers: ZIPPY quick (lv 5), HEAVY (10) and HEAL (25) power, COUNTER guard (20), FAST (30) and SUPER (35)
+  special. Every choice stays within 10 points of the plain toy's win rate in the battle simulator (test/gear.test.mjs).
+- **Flow:** Choose toy → gear-up screen (armor + moves, toy turning on its stand) → fight. Skipped while a toy has nothing
+  to choose yet, so a brand-new player's flow is unchanged. Toy Box has a gear button that opens the same screen as a
+  preview. Picks are saved per toy and per player; a battle keeps the kit it started with (resume-safe).
+- **Results:** under the player's level, the toy's own level, LEVEL UP!, EVOLVED!, and what just unlocked.
+- **Evolution looks are placeholders for the Founder's call:** a glowing floor ring in the armor colour and one floating gem
+  per evolution tier, slightly bigger toy. Bodies never change, so a wolf stays a wolf. Real evolved art per toy is Phase 6.
+- Captures: docs/v6/phase4-*.jpg. Browser test: `node test/gear-e2e.mjs` (19 checks).

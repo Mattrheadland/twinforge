@@ -51,6 +51,12 @@ class Fighter3D extends Fighter {
     // power-up aura: flame rays behind the toy
     this.auraMesh = makeAura();
     stage.scene.add(this.auraMesh);
+    // v6 Phase 4: evolution and armor look (logic/gear.js). Added AROUND the toy, never replacing its
+    // body: a glowing ring on the floor in the armor colour and one floating gem per evolution tier.
+    const look = (def.evolution && def.evolution.look) || null;
+    this.evoScale = (look && look.scale) || 1;
+    this.gear = makeGearLook(def, look);
+    if (this.gear) stage.scene.add(this.gear);
   }
 
   setPx(px) { this.px = px; }
@@ -82,14 +88,15 @@ class Fighter3D extends Fighter {
     this.rig.apply(p);
     const r = this.root;
     const show = this.stage3.showcase && this.side === 'hero' ? this.stage3.showcase : null;
-    if (show && !this.showSpot) {
-      this.showSpot = this.stage3.spotOf(new THREE.Vector3(0, 0, SHOW_Z));
+    const showX = (show && show.x) || 0; // the gear-up screen stands the toy left of its panel
+    if (show && (!this.showSpot || this.showSpot.at !== showX)) {
+      this.showSpot = { ...this.stage3.spotOf(new THREE.Vector3(showX, 0, SHOW_Z)), at: showX };
       this.x = this.showSpot.x;
       this.y = this.showSpot.y;
     }
-    const big = this.big || 1;
+    const big = (this.big || 1) * this.evoScale;
     const z = show ? SHOW_Z : this.home3.z;
-    r.position.set((show ? 0 : this.home3.x) + (this.ox + (this.jitter || 0)) * this.k3, -this.oy * this.k3, z);
+    r.position.set((show ? showX : this.home3.x) + (this.ox + (this.jitter || 0)) * this.k3, -this.oy * this.k3, z);
     r.rotation.z = -this.rot * this.flip;
     r.scale.set(this.sx * big, this.sy * big, this.sx * big);
     this.facing.rotation.y = show ? show.yaw : this.side === 'hero' ? -TURN : TURN;
@@ -101,6 +108,20 @@ class Fighter3D extends Fighter {
     this.shadow.position.set(r.position.x, 5.4, z);
     this.shadow.position.x = r.position.x;
     this.shadow.scale.set(78 * k * this.sx * big, 30 * k * big, 1);
+    if (this.gear) {
+      const gl = this.gear;
+      gl.position.set(r.position.x, 6, z);
+      gl.rotation.y = t / 1600;
+      const halo = gl.userData.halo;
+      if (halo) halo.material.opacity = gl.userData.haloK * (0.55 + 0.25 * Math.sin(t / 260));
+      const top = this.rig.anchors.head ? this.rig.anchors.head.y + (this.rig.headR || 20) + 26 : 190;
+      gl.userData.gems.forEach((g, i, all) => {
+        const a = t / 700 + (i / all.length) * Math.PI * 2;
+        g.position.set(Math.cos(a) * 34, (top - this.oy * this.k3) * big + Math.sin(t / 300 + i) * 4, Math.sin(a) * 34);
+        g.rotation.y = t / 300;
+      });
+      gl.visible = r.visible !== false && (this.alpha == null || this.alpha > 0.2);
+    }
     // aura
     const a = this.aura;
     this.auraMesh.visible = a > 0.01;
@@ -142,7 +163,7 @@ class Fighter3D extends Fighter {
   drawAura() {}
 
   dispose() {
-    for (const o of [this.root, this.shadow, this.auraMesh]) {
+    for (const o of [this.root, this.shadow, this.auraMesh, this.gear].filter(Boolean)) {
       this.stage3.scene.remove(o);
       disposeTree(o);
     }
@@ -161,6 +182,33 @@ function disposeTree(o) {
 }
 
 export { modelInfo };
+
+// The evolution / armor look around a toy (see Fighter3D). Null for a base-form toy in classic armor.
+function makeGearLook(def, look) {
+  const armorColor = def.kit && def.kit.armorColor;
+  const tier = (def.evolution && def.evolution.tier) || 0;
+  if (!armorColor && !tier) return null;
+  const g = new THREE.Group();
+  const color = new THREE.Color(armorColor || def.accent || def.color || '#FFC914');
+  const haloK = armorColor ? Math.max(0.6, (look && look.halo) || 0) : (look && look.halo) || 0;
+  if (haloK > 0) {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(62, 80, 40), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.renderOrder = 2;
+    g.add(ring);
+    g.userData.halo = ring;
+  }
+  g.userData.haloK = haloK;
+  g.userData.gems = [];
+  const gemColor = new THREE.Color(def.accent || '#FFC914');
+  for (let i = 0; i < ((look && look.sparkle) || 0); i++) {
+    const gem = new THREE.Mesh(new THREE.OctahedronGeometry(7, 0), new THREE.MeshBasicMaterial({ color: i === 2 ? new THREE.Color('#FFC914') : gemColor }));
+    gem.scale.y = 1.5;
+    g.add(gem);
+    g.userData.gems.push(gem);
+  }
+  return g;
+}
 
 function makeAura() {
   const rays = 12, pos = [], core = [];

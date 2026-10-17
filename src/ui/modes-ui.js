@@ -6,6 +6,8 @@ import { ICON } from './icons.js';
 import { portrait } from './hud.js';
 import { pixelLabel } from '../render/pixel.js';
 import { ARENAS } from '../data/arenas.js';
+import { levelBadge, xpResult } from './level-badge.js';
+import { toyResult } from './gear-ui.js';
 
 const bg = (id) => (ARENAS[id] ? `arenas/${id}/backdrop.jpg` : '');
 
@@ -16,7 +18,8 @@ function homeBtn(onHome) {
 }
 
 // ---------------- mode pick ----------------
-export function showModes(ui, { records, campaign, chars, onPick, onHome }) {
+// player: the active player's { xp, level }, shown top left
+export function showModes(ui, { records, campaign, chars, player = null, onPick, onHome }) {
   ui.clear();
   const card = (mode, icon, label, color, badge, i) => {
     const b = h('button', { class: `mode-card mode-${mode}`, style: { '--c': color, '--d': i * 90 + 'ms' }, 'aria-label': label },
@@ -37,6 +40,7 @@ export function showModes(ui, { records, campaign, chars, onPick, onHome }) {
       card('tournament', 'trophy', 'TOURNAMENT', '#1B4FD8', cupBadge, 1),
       card('arcade', 'fist', 'ARCADE', '#2E9E44', null, 2),
       card('gallery', 'gallery', 'TOY BOX', '#6A3FA0', null, 3)),
+    player ? levelBadge(player, { size: 'big', cls: 'corner-lvl' }) : null,
     homeBtn(onHome));
   ui.layer.appendChild(scr);
 }
@@ -86,7 +90,8 @@ export function showLadder(ui, { run, chars, onGo, onHome }) {
 
 // ---------------- run results ----------------
 // win: stars + NEXT (or AGAIN for a single fight); lose: nap + AGAIN.
-export function showRunResult(ui, { win, stars, total, streak = null, best = null, onNext, onAgain, onHome }) {
+// xp: { from, to } player XP before and after the battle (ui/level-badge.js)
+export function showRunResult(ui, { win, stars, total, streak = null, best = null, xp = null, toy = null, onNext, onAgain, onHome }) {
   ui.clear();
   const home = h('button', { class: 'round-btn home', 'aria-label': 'Home', html: ICON.home });
   const btns = [home];
@@ -98,7 +103,8 @@ export function showRunResult(ui, { win, stars, total, streak = null, best = nul
     onTap(next, guard(onNext), 800);
     btns.push(next);
   } else if (onAgain) {
-    const again = h('button', { class: `round-btn again ${win ? '' : 'pulse'}`, 'aria-label': 'Play again', html: ICON.retry });
+    // after a loss: one big pulsing "Try again" that restarts the same fight
+    const again = h('button', { class: `round-btn again ${win ? '' : 'pulse big'}`, 'aria-label': win ? 'Play again' : 'Try again', html: ICON.retry });
     onTap(again, guard(onAgain), 800);
     btns.push(again);
   }
@@ -119,6 +125,8 @@ export function showRunResult(ui, { win, stars, total, streak = null, best = nul
         ? h('div', { class: 'streak' }, h('span', { html: ICON.flame }), pixelLabel(String(streak), 26, '#FF9A3A'), best != null ? h('span', { class: 'best' }, h('i', { html: ICON.crown }), pixelLabel(String(best), 18, '#FFC914')) : null)
         : h('div', { class: 'nap-sub' }, pixelLabel('TRY AGAIN?', 18, '#ffffff')));
   }
+  if (xp) body.appendChild(xpResult(ui, xp));
+  if (toy) { const t = toyResult(ui, toy); if (t) body.appendChild(t); }
   ui.layer.appendChild(h('div', { class: 'overlay result' }, body, h('div', { class: 'result-btns' }, ...btns)));
 }
 
@@ -141,7 +149,7 @@ export function showTrophy(ui, { mode, heroDef, stars, onHome }) {
 // ---------------- toy gallery ----------------
 // The toy stands center stage on its turntable. Drag to spin it; arrows switch
 // toys; the four move buttons show off its moves.
-export function showGallery(ui, { roster, chars, index, onShow, onMove, onSpin, onHome }) {
+export function showGallery(ui, { roster, chars, index, onShow, onMove, onSpin, onHome, onGear = null }) {
   ui.clear();
   let i = index;
   const name = h('div', { class: 'gal-name' });
@@ -170,6 +178,9 @@ export function showGallery(ui, { roster, chars, index, onShow, onMove, onSpin, 
   const end = () => { lastX = null; };
   spin.addEventListener('pointerup', end);
   spin.addEventListener('pointercancel', end);
-  ui.layer.appendChild(h('div', { class: 'screen gallery-screen' }, spin, name, prev, next, moves, homeBtn(onHome)));
+  // v6 Phase 4: open the toy's armor and moves (preview, no fight)
+  const gear = onGear ? h('button', { class: 'corner-btn gal-gear', 'aria-label': 'Armor and moves', html: ICON.armor }) : null;
+  if (gear) onTap(gear, () => onGear(roster[i]), 600);
+  ui.layer.appendChild(h('div', { class: 'screen gallery-screen' }, spin, name, prev, next, moves, homeBtn(onHome), gear));
   render();
 }

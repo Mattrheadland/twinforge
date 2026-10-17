@@ -238,6 +238,10 @@ async function runCampaign(browser, { hero, vp }) {
     await audit('title');
     await shot('title');
     await tap('.big-play');
+    await page.waitForSelector('.profile-card.active', { visible: true });
+    await sleep(500);
+    await audit('players');
+    await tap('.profile-card.active');
     await page.waitForSelector('.mode-campaign', { visible: true });
     await sleep(900);
     await audit('modes');

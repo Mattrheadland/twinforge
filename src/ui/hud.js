@@ -74,7 +74,8 @@ export class Hud {
       },
       h('span', { class: 'move-ico', html: ICON[move.icon] || ICON.fist }),
       h('span', { class: 'move-name' }, pixelLabel(move.name, 14, '#ffffff', { maxW: 150 })),
-      q ? h('span', { class: `move-q move-q-${slot}` }, q) : null);
+      q ? h('span', { class: `move-q move-q-${slot}` }, q) : null,
+      move.tag ? h('span', { class: 'move-tag' }, move.tag) : null); // loadout style (logic/gear.js)
       b.dataset.slot = slot;
       onTap(b, () => this.handlers.action && this.handlers.action(slot), 400);
       return b;
@@ -84,7 +85,9 @@ export class Hud {
     for (const slot of ['quick', 'power', 'guard', 'special']) {
       this.btn[slot] = mk(moves[slot] || { slot, name: slot, icon: 'fist' });
     }
-    this.ring = h('div', { class: 'special-ring' }, ...Array.from({ length: RULES.maxEnergy }, (_, i) => h('i', { style: { '--i': i } })));
+    // a FAST special (loadout) is ready with fewer pips: the ring shows how many it needs
+    this.specialCost = Math.max(1, Math.min(RULES.maxEnergy, (moves.special && moves.special.energyCost) || RULES.maxEnergy));
+    this.ring = h('div', { class: 'special-ring' }, ...Array.from({ length: this.specialCost }, (_, i) => h('i', { style: { '--i': i } })));
     this.btn.special.appendChild(this.ring);
     this.actions = h('div', { class: 'actions moves hidden' }, this.btn.quick, this.btn.power, this.btn.guard, this.btn.special);
     this.hand = h('div', { class: 'tut-hand hidden', html: ICON.hand });
@@ -102,7 +105,7 @@ export class Hud {
     const hp = h('div', { class: 'hp' }, h('div', { class: 'hp-track' }, chip, fill));
     const pips = side === 'hero'
       ? h('div', { class: 'energy' }, ...Array.from({ length: RULES.maxEnergy }, () => h('span', { class: 'pip', html: ICON.bolt })))
-      : null;
+      : h('div', { class: 'charge-meter', 'aria-label': 'Charge' }); // filled by setMeter
     const status = h('div', { class: 'status' });
     const root = h('div', { class: `panel panel-${side}` },
       h('div', { class: 'portrait' }, portrait(def, 62, px * 1.2)),
@@ -144,9 +147,32 @@ export class Hud {
       }
     }
     [...this.ring.children].forEach((seg, i) => seg.classList.toggle('on', i < n));
-    const full = n >= RULES.maxEnergy;
+    const full = n >= this.specialCost;
     this.btn.special.classList.toggle('ready', full);
     this.btn.special.classList.toggle('locked', !full);
+  }
+
+  // The foe's charge meter: one flame per pip, lit by wrong answers. Full = the
+  // foe is winding up (the meter pulses). pulse: pop newly lit flames.
+  setMeter({ meter, max, windup }, pulse = false) {
+    const el = this.panels.foe.pips;
+    while (el.children.length < max) el.appendChild(h('span', { class: 'cpip', html: ICON.flame }));
+    while (el.children.length > max) el.lastChild.remove();
+    [...el.children].forEach((p, i) => {
+      const was = p.classList.contains('on');
+      p.classList.toggle('on', i < meter);
+      if (pulse && !was && i < meter) {
+        p.classList.remove('pop');
+        void p.offsetWidth;
+        p.classList.add('pop');
+      }
+    });
+    el.classList.toggle('full', !!windup);
+  }
+
+  meterAnchor() {
+    const r = this.toVirtual(this.panels.foe.pips.getBoundingClientRect());
+    return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
   }
 
   setStatus(side, st) {

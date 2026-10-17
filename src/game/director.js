@@ -554,6 +554,33 @@ export class Director {
     this.to(foe, { aura: 0.45 }, 300);
   }
 
+  // The charge meter filled (wrong answers): the foe winds up for a charged attack.
+  // Sparks fly from the meter (`from`, stage coords) into the foe, which glows and
+  // keeps its red "!" bubble until it attacks. Shake and zoom are toned down by
+  // the stage when reducedMotion is on.
+  async foeWindup(color, from) {
+    const { foe } = this;
+    this.audio.sfx('charge');
+    foe.auraColor = color || '#F46036';
+    foe.eyes = 'angry';
+    foe.mouth = 'grit';
+    const c = foe.center();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const x = from ? from.x : c.x + Math.cos(a) * 140, y = from ? from.y : c.y + Math.sin(a) * 110;
+      this.fx.orb(x, y, c.x, c.y, foe.auraColor, i * 60);
+    }
+    this.stage.zoomTo(1.07, 400, foe.x, foe.y - 100);
+    await this.to(foe, { aura: 1, sy: 0.9, sx: 1.08 }, 600, Ease.outQuad);
+    foe.charged = true;
+    this.audio.sfx('warn');
+    buzz('medium');
+    this.stage.shake(0.2);
+    await this.to(foe, { sy: 1, sx: 1 }, 300, Ease.outBack);
+    await this.stage.zoomTo(1, 350);
+    this.to(foe, { aura: 0.6 }, 300);
+  }
+
   async foeDizzySkip() {
     const { foe } = this;
     this.audio.sfx('dizzy');
