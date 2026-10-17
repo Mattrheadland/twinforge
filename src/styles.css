@@ -716,3 +716,30 @@ html.reduced #tv::after { animation: none; }
 .profile-plus::before, .profile-plus::after { content: ''; position: absolute; left: 50%; top: 50%; background: #FFC914; box-shadow: 0 0 0 3px var(--ink); }
 .profile-plus::before { width: 72px; height: 16px; margin: -8px 0 0 -36px; }
 .profile-plus::after { width: 16px; height: 72px; margin: -36px 0 0 -8px; }
+
+/* ---------------- player level + XP bar (ui/level-badge.js) ---------------- */
+.lvl-badge { display: flex; align-items: center; }
+.lvl-num {
+  position: relative; z-index: 1; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 34% 30%, #6F9BFF 0 22%, var(--blue) 23%); border: 3px solid #FFC914; box-shadow: 0 0 0 3px var(--ink), 2px 4px 0 3px rgba(10, 6, 30, 0.6);
+}
+.xp-bar {
+  position: relative; width: 96px; height: 16px; margin-left: -14px; padding-left: 12px; background: #120E26; border: 3px solid #FFC914;
+  box-shadow: 0 0 0 3px var(--ink); overflow: hidden;
+}
+.xp-bar i { display: block; height: 100%; min-width: 4px; background: linear-gradient(180deg, #9CF56B, var(--go) 55%, #1E7A33); transition: width 0.7s ease-out; }
+.xp-bar::after { /* segments, like the HUD health bars */
+  content: ''; position: absolute; top: 0; bottom: 0; right: 0; left: 12px; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 10px, rgba(18, 14, 38, 0.85) 10px 12px);
+}
+.lvl-badge.big .lvl-num { width: 54px; height: 54px; border-width: 4px; }
+.lvl-badge.big .xp-bar { width: 150px; height: 22px; margin-left: -18px; padding-left: 16px; }
+.lvl-badge.big .xp-bar::after { left: 16px; }
+.title-lvl { position: absolute; left: var(--sl); top: 66px; }
+.corner-lvl { position: absolute; right: var(--sr); top: 12px; animation: pop-in 0.4s both; }
+.result-xp { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.lvl-up { animation: pop-in 0.45s both, pulse 0.9s ease-in-out 0.45s 3; }
+.lvl-up.waiting { visibility: hidden; animation: none; }
+.lvl-badge.leveled .lvl-num { animation: pop-in 0.5s both; filter: drop-shadow(0 0 12px rgba(255, 201, 20, 0.95)); }
+html.reduced .lvl-up, html.reduced .lvl-badge.leveled .lvl-num, html.reduced .corner-lvl { animation: none; }
+html.reduced .xp-bar i { transition: none; }

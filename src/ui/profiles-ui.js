@@ -6,6 +6,7 @@ import { ICON } from './icons.js';
 import { portrait } from './hud.js';
 import { pixelLabel } from '../render/pixel.js';
 import { NAME_MAX, PATHWAYS } from '../save.js';
+import { levelBadge } from './level-badge.js';
 
 export const PATHWAY_LABEL = {
   early: 'Early learner, 3–5',
@@ -32,6 +33,7 @@ export function showProfiles(ui, { profiles, chars, roster, onPick, onCreate, on
     const b = h('button', { class: `mode-card profile-card${p.active ? ' active' : ''}`, style, 'aria-label': `Play as ${p.name}` },
       h('span', { class: 'profile-face' }, portrait(avatarOf(p, i, chars, roster), 96, ui.app.px)),
       h('span', { class: 'mode-name' }, pixelLabel(p.name.toUpperCase(), 17, '#FFC914', { maxW: 150 })),
+      levelBadge({ xp: p.xp || 0, level: p.level || 1 }),
       h('span', { class: 'mode-badge' }, h('i', { html: ICON.star }), pixelLabel(String(p.stars), 12, '#ffffff')));
     onTap(b, () => {
       if (busy) return;
@@ -91,7 +93,7 @@ export function showProfileEditor(layer, { slot, profile, chars, roster, canDele
       h('section', {},
         h('label', { class: 'row' }, h('span', {}, 'Name', h('small', {}, 'A first name or nickname is plenty. It stays on this device.')), name),
         h('label', { class: 'row' }, h('span', {}, 'Picture', h('small', {}, 'The toy shown on their player card')), avatar),
-        h('label', { class: 'row' }, h('span', {}, 'Learning pathway', h('small', {}, 'Where their questions start. Each subject still moves up or down with how they do.')), pathway)),
+        h('label', { class: 'row' }, h('span', {}, 'Learning pathway', h('small', {}, 'Where their questions start and how far they go. Math and reading each still move up or down with how they do. Changing it never erases progress.')), pathway)),
       del,
       h('div', { class: 'pbtns' }, cancel),
       save));
@@ -117,7 +119,7 @@ export function playersSection({ profiles, onEdit, onAdd, onSwitch }) {
       btns.unshift(sw);
     }
     return h('div', { class: 'row' },
-      h('span', {}, `${p.name}${p.active ? ' (playing now)' : ''}`, h('small', {}, `${PATHWAY_LABEL[p.pathway]} · ${p.stars} stars`)),
+      h('span', {}, `${p.name}${p.active ? ' (playing now)' : ''}`, h('small', {}, `${PATHWAY_LABEL[p.pathway]} · level ${p.level} · ${p.stars} stars`)),
       h('div', { class: 'pbtns' }, ...btns));
   });
   return h('section', {}, h('h3', {}, 'Players'),

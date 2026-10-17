@@ -4,7 +4,7 @@ import { h } from './dom.js';
 import { ChallengeUI } from './challenge.js';
 import { buildReport, reportText, KIND_LABEL, KIND_ORDER } from '../logic/learning-log.js';
 import { KINDS, kindsAt, makeMath, makeReading } from '../logic/challenges.js';
-import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
+import { MIN_LEVEL, MAX_LEVEL, playLevel } from '../logic/difficulty.js';
 import { Rng } from '../logic/rng.js';
 
 const STATUS = {
@@ -37,7 +37,12 @@ export function showReport(layer, opts) {
   const render = () => {
     const d = save.data;
     const off = d.settings.offKinds || (d.settings.offKinds = []);
-    const R = buildReport(d.learning, d.skills, off);
+    // levels as played on this player's pathway (logic/difficulty.js)
+    const played = {
+      math: { ...d.skills.math, level: playLevel(d.skills.math, save.pathway) },
+      letters: { ...d.skills.letters, level: playLevel(d.skills.letters, save.pathway) },
+    };
+    const R = buildReport(d.learning, played, off);
     const copy = h('button', { class: 'pbtn' }, 'Copy as text');
     copy.addEventListener('click', () => opts.showText('Learning report', reportText(R)));
     const prev = h('button', { class: 'pbtn' }, 'Preview questions');
@@ -118,7 +123,7 @@ export function showPreview(layer, opts) {
   const rng = new Rng((Date.now() ^ 0xbeef) >>> 0);
   let domain = 'math';
   let kind = 'mix';
-  let level = save.data.skills.math.level;
+  let level = playLevel(save.data.skills.math, save.pathway);
   const scr = h('div', { class: 'overlay preview' });
   const stage = h('div', { class: 'pv-stage' });
   const ui = new ChallengeUI(stage, opts.audio, opts.buzz);
@@ -155,7 +160,7 @@ export function showPreview(layer, opts) {
   };
   domainSel.addEventListener('change', () => {
     domain = domainSel.value;
-    level = save.data.skills[domain === 'math' ? 'math' : 'letters'].level;
+    level = playLevel(save.data.skills[domain === 'math' ? 'math' : 'letters'], save.pathway);
     lvVal.textContent = String(level);
     kind = 'mix';
     fillKinds();

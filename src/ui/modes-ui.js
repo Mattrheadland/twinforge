@@ -6,6 +6,7 @@ import { ICON } from './icons.js';
 import { portrait } from './hud.js';
 import { pixelLabel } from '../render/pixel.js';
 import { ARENAS } from '../data/arenas.js';
+import { levelBadge, xpResult } from './level-badge.js';
 
 const bg = (id) => (ARENAS[id] ? `arenas/${id}/backdrop.jpg` : '');
 
@@ -16,7 +17,8 @@ function homeBtn(onHome) {
 }
 
 // ---------------- mode pick ----------------
-export function showModes(ui, { records, campaign, chars, onPick, onHome }) {
+// player: the active player's { xp, level }, shown top left
+export function showModes(ui, { records, campaign, chars, player = null, onPick, onHome }) {
   ui.clear();
   const card = (mode, icon, label, color, badge, i) => {
     const b = h('button', { class: `mode-card mode-${mode}`, style: { '--c': color, '--d': i * 90 + 'ms' }, 'aria-label': label },
@@ -37,6 +39,7 @@ export function showModes(ui, { records, campaign, chars, onPick, onHome }) {
       card('tournament', 'trophy', 'TOURNAMENT', '#1B4FD8', cupBadge, 1),
       card('arcade', 'fist', 'ARCADE', '#2E9E44', null, 2),
       card('gallery', 'gallery', 'TOY BOX', '#6A3FA0', null, 3)),
+    player ? levelBadge(player, { size: 'big', cls: 'corner-lvl' }) : null,
     homeBtn(onHome));
   ui.layer.appendChild(scr);
 }
@@ -86,7 +89,8 @@ export function showLadder(ui, { run, chars, onGo, onHome }) {
 
 // ---------------- run results ----------------
 // win: stars + NEXT (or AGAIN for a single fight); lose: nap + AGAIN.
-export function showRunResult(ui, { win, stars, total, streak = null, best = null, onNext, onAgain, onHome }) {
+// xp: { from, to } player XP before and after the battle (ui/level-badge.js)
+export function showRunResult(ui, { win, stars, total, streak = null, best = null, xp = null, onNext, onAgain, onHome }) {
   ui.clear();
   const home = h('button', { class: 'round-btn home', 'aria-label': 'Home', html: ICON.home });
   const btns = [home];
@@ -119,6 +123,7 @@ export function showRunResult(ui, { win, stars, total, streak = null, best = nul
         ? h('div', { class: 'streak' }, h('span', { html: ICON.flame }), pixelLabel(String(streak), 26, '#FF9A3A'), best != null ? h('span', { class: 'best' }, h('i', { html: ICON.crown }), pixelLabel(String(best), 18, '#FFC914')) : null)
         : h('div', { class: 'nap-sub' }, pixelLabel('TRY AGAIN?', 18, '#ffffff')));
   }
+  if (xp) body.appendChild(xpResult(ui, xp));
   ui.layer.appendChild(h('div', { class: 'overlay result' }, body, h('div', { class: 'result-btns' }, ...btns)));
 }
 

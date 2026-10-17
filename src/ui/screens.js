@@ -4,7 +4,8 @@ import { h, onTap, onHold } from './dom.js';
 import { ICON } from './icons.js';
 import { portrait } from './hud.js';
 import { drawToy } from '../render/toys.js';
-import { MIN_LEVEL, MAX_LEVEL } from '../logic/difficulty.js';
+import { bandFor, playLevel } from '../logic/difficulty.js';
+import { levelBadge } from './level-badge.js';
 import { noteLevel } from '../logic/learning-log.js';
 import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
 import { get3D } from '../render3d/stage3d.js';
@@ -96,7 +97,7 @@ export class UI {
   }
 
   // ---------------- title ----------------
-  showTitle({ stars, hasBattle, onPlay, onParent, showInstallTip }) {
+  showTitle({ stars, player = null, hasBattle, onPlay, onParent, showInstallTip }) {
     this.clear();
     const logoTop = h('div', { class: 'logo-row' }, pixelLabel('TWINFORGE', 66, '#FFC914', { chunk: 3, cls: 'logo-word' }));
     const banner = h('div', { class: 'logo-banner' }, pixelLabel('TOY BOX TACTICS', 25, '#ffffff', { chunk: 1, ramp: ['#ffffff', '#ffffff', '#FFE7A0', '#FFC914'] }));
@@ -107,6 +108,7 @@ export class UI {
     onHold(gear, 1500, onParent);
     const starBox = h('div', { class: 'star-count' }, h('span', { html: ICON.star }), pixelLabel(String(stars).padStart(2, '0'), 20, '#FFC914'));
     const kids = [h('div', { class: 'logo' }, logoTop, banner), play, push, starBox, gear];
+    if (player) kids.push(levelBadge(player, { size: 'big', cls: 'title-lvl' }));
     if (showInstallTip) {
       const tip = h('div', { class: 'install-tip' },
         h('b', {}, 'Grown-ups: '), 'tap Share, then “Add to Home Screen” so TwinForge opens full-screen and keeps its save.');
@@ -300,15 +302,18 @@ export class UI {
       input.addEventListener('change', () => { st[key] = input.checked; onChange(); });
       return h('label', { class: 'row' }, h('span', {}, label, note ? h('small', {}, note) : null), input);
     };
+    // the level shown and stepped is the one played on this player's pathway
+    const pathway = save.pathway;
+    const band = bandFor(pathway);
     const level = (label, domain, desc) => {
       const sk = d.skills[domain];
-      const val = h('b', {}, String(sk.level));
+      const val = h('b', {}, String(playLevel(sk, pathway)));
       const auto = h('input', { type: 'checkbox' });
       auto.checked = sk.auto;
       auto.addEventListener('change', () => { sk.auto = auto.checked; onChange(); });
       const bump = (n) => {
-        const from = sk.level;
-        sk.level = Math.max(MIN_LEVEL, Math.min(MAX_LEVEL, sk.level + n));
+        const from = playLevel(sk, pathway);
+        sk.level = Math.max(band.min, Math.min(band.max, from + n));
         if (d.learning) noteLevel(d.learning, domain, from, sk.level, 'manual');
         sk.streak = 0; sk.recent = [];
         val.textContent = String(sk.level);
@@ -319,7 +324,7 @@ export class UI {
       const plus = h('button', { class: 'mini' }, '+');
       minus.addEventListener('click', () => bump(-1));
       plus.addEventListener('click', () => bump(1));
-      const desc_ = h('small', {}, desc[sk.level]);
+      const desc_ = h('small', {}, desc[playLevel(sk, pathway)]);
       return h('div', { class: 'row level' },
         h('span', {}, label, desc_),
         h('div', { class: 'stepper' }, minus, val, plus),
@@ -380,6 +385,7 @@ export class UI {
           level('Math (power moves)', 'math', MATH),
           level('Reading (specials)', 'letters', LET),
           h('p', { class: 'note' }, 'Auto moves up after 3 right-first-try answers in a row, and down if he needs full help twice in his last 4. Answers with a hint never move it up.'),
+          h('p', { class: 'note' }, `Math and reading move on their own: doing well at one never changes the other. The learning pathway (${pathway === 'growing' ? 'Growing learner' : 'Early learner'}, set under Players → Edit) keeps both between level ${band.min} and ${band.max}; changing it never erases progress. Player level ${d.player?.level || 1} (${d.player?.xp || 0} XP) comes from right answers, wins and campaign spaces.`),
           h('div', { class: 'pbtns' }, reportBtn, previewBtn)),
         h('section', {}, h('h3', {}, 'Comfort'),
           toggle('Reduced motion', 'reducedMotion', 'No screen shake or big flashes'),

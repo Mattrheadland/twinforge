@@ -14,7 +14,8 @@
 // keeps unknown fields, so they read and write a v6 save without losing the new data. The new
 // player fields (xp, toys) are additive and tagged `rev: 2`. Older builds ignore tbb.profiles
 // and simply keep playing as player 1.
-import { defaultSkills } from './logic/difficulty.js';
+import { defaultSkills, MIN_LEVEL as MIN_SKILL, MAX_LEVEL as MAX_SKILL } from './logic/difficulty.js';
+import { levelForXp } from './logic/progression.js';
 import { isValidBattle } from './logic/battle.js';
 import { defaultRecords, isValidRun } from './game/modes.js';
 import { defaultLearning, normalizeLearning } from './logic/learning-log.js';
@@ -104,6 +105,8 @@ export function migrate(raw, chars) {
       letters: { ...base.skills.letters, ...(raw.skills?.letters || {}) },
     },
   };
+  // math and reading mastery stay two separate 1–5 levels (logic/difficulty.js)
+  for (const k of ['math', 'letters']) out.skills[k].level = int(out.skills[k].level, MIN_SKILL, MAX_SKILL);
   out.learning = normalizeLearning(raw.learning);
   if (!Array.isArray(out.settings.offKinds)) out.settings.offKinds = [];
   if (out.battle && !isValidBattle(out.battle, chars)) out.battle = null;
@@ -119,8 +122,10 @@ export function migrate(raw, chars) {
   const rec = raw.records || {};
   out.records = { ...defaultRecords(), trophies: rec.trophies || 0, arcadeWins: rec.arcadeWins || 0, campaignCleared: { ...(rec.campaignCleared || {}) } };
   out.progress.stars = Math.max(0, Math.floor(out.progress.stars || 0));
+  // player level follows XP (logic/progression.js) but a stored level is never lowered
   const pl = isObj(raw.player) ? raw.player : {};
-  out.player = { ...pl, xp: int(pl.xp, 0, Number.MAX_SAFE_INTEGER), level: int(pl.level || 1, 1, MAX_PLAYER_LEVEL) };
+  const xp = int(pl.xp, 0, Number.MAX_SAFE_INTEGER);
+  out.player = { ...pl, xp, level: Math.max(int(pl.level || 1, 1, MAX_PLAYER_LEVEL), levelForXp(xp)) };
   out.toys = normalizeToys(raw.toys, chars);
   return out;
 }
@@ -228,6 +233,11 @@ export class SaveStore {
     return this.index.profiles[this.slot];
   }
 
+  // the active player's learning pathway (sets the question band, logic/difficulty.js)
+  get pathway() {
+    return this.profile?.pathway || PATHWAYS[0];
+  }
+
   profiles() {
     return this.index.profiles.map((p, slot) => {
       if (!p) return { slot, empty: true };
@@ -239,6 +249,7 @@ export class SaveStore {
         ...p,
         stars: d?.progress?.stars || 0,
         level: d?.player?.level || 1,
+        xp: d?.player?.xp || 0,
       };
     });
   }
