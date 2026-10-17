@@ -42,7 +42,7 @@ const HOME = {
 export const READY_NEW_ARENAS = ['skull-cove', 'pumpkin-patch', 'grandmas-woods', 'star-bridge'];
 for (const id of READY_NEW_ARENAS) ARENAS[id] = NEW_ARENAS[id];
 
-// v6 looks live in arena-looks.js; arenas without one get no `look` property at all.
+// v6 looks live in arena-looks.js and take precedence over any inline `look`; arenas with neither get no `look` property.
 for (const def of Object.values(ARENAS)) {
   const look = getArenaLook(def.id);
   if (look) def.look = look;

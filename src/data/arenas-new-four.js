@@ -13,7 +13,15 @@ export const NEW_ARENAS = {
     id: 'pumpkin-patch', name: 'Midnight Pumpkin Patch', horizon: 0.62, floorTile: 180, tint: 0xe6e0ff,
     // 1 pumpkin pile · 2 hay bale · 3 signpost · 4 fence · 5 big pumpkin · 6 green lantern
     props: [[4, 'backL', 90], [6, 'backR', 180], [2, 'backL2', 80], [3, 'backR2', 130], [1, 'frontL', 85], [5, 'frontR', 95]],
-    // its v6 look lives in arena-looks.js
+    // v6 Phase 1 visual benchmark (directive §5): moonlit mood tint, a green-lantern rim light on the toys,
+    // drifting purple mist, fireflies, a light pool under the lantern, the lantern and signpost swaying
+    look: {
+      rim: 0xB4FF7A, rimK: 0.7, tint: 0xEAE4FF,
+      mist: 0xB89CFF, mistK: 0.42,
+      fireflies: { count: 44, colors: ['#D6FF6A', '#FFC15A', '#A6FF8A'], size: 34 },
+      pools: [{ slot: 'backR', color: 0x7DFF5A, r: 170, k: 0.6 }, { slot: 'frontR', color: 0xFF9A3A, r: 120, k: 0.5 }, { slot: 'frontL', color: 0xFF8A2A, r: 110, k: 0.45 }],
+      sway: { 6: 0.05, 3: 0.02 },
+    },
   },
   'grandmas-woods': {
     id: 'grandmas-woods', name: "Grandma's Woods", horizon: 0.64, floorTile: 190, tint: 0xffffff,
