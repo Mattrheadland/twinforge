@@ -51,6 +51,8 @@ export function defaultSave() {
       tvLook: true,
       learning: true,
       readAloud: true, // the phone's voice reads each question (audio/speech.js)
+      voice: 1, // narration volume (0–1), separate from the effects
+      voiceSlow: false, // a slower narrator for the youngest
       pixelArt: true,
       offKinds: [], // question types switched off in the learning report
     },

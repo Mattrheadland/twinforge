@@ -29,6 +29,9 @@ const FRAG = /* glsl */ `
   uniform float uShiny;
   uniform float uOpacity;
   uniform float uBright;
+  uniform vec3 uRim;
+  uniform float uRimK;
+  uniform vec3 uTint;
   varying vec3 vView;
   void main() {
     // faceted normal from screen-space derivatives: every polygon is flat
@@ -44,6 +47,10 @@ const FRAG = /* glsl */ `
       float s = dot(reflect(-uLight, n), v);
       if (s > 0.94) c = vec3(1.0);
     }
+    // v6 lighting: the arena's mood tint and a hard cel rim light on the toy's edges (setLighting)
+    float rim = 1.0 - abs(dot(n, normalize(-vView)));
+    if (uRimK > 0.0 && rim > 0.58) c = mix(c, uRim, uRimK * (rim > 0.8 ? 1.0 : 0.5));
+    c *= uTint;
     c = mix(c, vec3(1.0), uFlash);
     gl_FragColor = vec4(c, uOpacity);
   }`;
@@ -58,13 +65,29 @@ const HULL_FRAG = /* glsl */ `
   uniform vec3 uInk;
   void main() { gl_FragColor = vec4(uInk, 1.0); }`;
 
-const shared = { uLight: { value: LIGHT } };
+// Shared by every toy material, so one call relights the whole cast (arena mood, hit flashes).
+const shared = {
+  uLight: { value: LIGHT },
+  uRim: { value: new THREE.Color(0xffffff) },
+  uRimK: { value: 0 },
+  uTint: { value: new THREE.Color(1, 1, 1) },
+};
+// rim: rim-light colour; rimK: 0 (off, the pre-v6 look) … 1; tint: a multiply for the arena's mood
+export function setLighting({ rim = 0xffffff, rimK = 0, tint = 0xffffff } = {}) {
+  shared.uRim.value.set(rim);
+  shared.uRimK.value = rimK;
+  shared.uTint.value.set(tint);
+}
+export const lighting = shared;
 
 export function toonMat(color, opts = {}) {
   const m = new THREE.ShaderMaterial({
     uniforms: {
       uColor: { value: new THREE.Color(color) },
       uLight: shared.uLight,
+      uRim: shared.uRim,
+      uRimK: shared.uRimK,
+      uTint: shared.uTint,
       uFlash: opts.flash || { value: 0 },
       uShiny: { value: opts.shiny ? 1 : 0 },
       uOpacity: { value: 1 },
@@ -148,6 +171,9 @@ const MODEL_FRAG = /* glsl */ `
   uniform float uSat;
   uniform float uSteps;
   uniform sampler2D uMap;
+  uniform vec3 uRim;
+  uniform float uRimK;
+  uniform vec3 uTint;
   varying vec3 vView;
   varying vec2 vUv;
   void main() {
@@ -166,6 +192,9 @@ const MODEL_FRAG = /* glsl */ `
       vec3 v = normalize(-vView);
       if (dot(reflect(-uLight, n), v) > 0.94) c = vec3(1.0);
     }
+    float rim = 1.0 - abs(dot(n, normalize(-vView)));
+    if (uRimK > 0.0 && rim > 0.58) c = mix(c, uRim, uRimK * (rim > 0.8 ? 1.0 : 0.5));
+    c *= uTint;
     c = mix(c, vec3(1.0), uFlash);
     gl_FragColor = vec4(c, 1.0);
   }`;
@@ -175,6 +204,9 @@ export function modelMat({ color = 0xffffff, map = null, flash, shiny = false, s
     uniforms: {
       uColor: { value: new THREE.Color(color) },
       uLight: shared.uLight,
+      uRim: shared.uRim,
+      uRimK: shared.uRimK,
+      uTint: shared.uTint,
       uFlash: flash || { value: 0 },
       uShiny: { value: shiny ? 1 : 0 },
       uHasMap: { value: map ? 1 : 0 },

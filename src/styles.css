@@ -712,6 +712,21 @@ html.reduced #tv::after { animation: none; }
 .sound-pos.end i:last-child { width: 28px; height: 28px; background: var(--yellow); }
 .ch-ends .pic-card { margin-bottom: 34px; }
 
+/* ---------- v6 Phase 1: HUD polish (same '80s arcade frame, more life) ---------- */
+/* a light sweep runs along each health bar now and then, and a hit makes the frame flash */
+.hp-fill::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: hp-sheen 3.6s ease-in-out infinite;
+}
+.panel-foe .hp-fill::after { animation-delay: 1.8s; }
+@keyframes hp-sheen { 0%, 70% { left: -40%; } 100% { left: 130%; } }
+.panel.hit .hp-track { box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px var(--ink), 0 0 16px 6px rgba(255, 255, 255, 0.55); }
+/* full energy breathes so the special reads as ready from across the room */
+.energy:has(.pip.on:last-child) .pip.on { animation: pip-ready 1s ease-in-out infinite; }
+@keyframes pip-ready { 50% { filter: drop-shadow(0 0 9px rgba(255, 201, 20, 1)) brightness(1.25); } }
+html.reduced .hp-fill::after, html.reduced .energy .pip.on { animation: none; }
+
 /* ---------------- player profiles (ui/profiles-ui.js) ---------------- */
 .profiles-screen .mode-card { width: 190px; }
 .profile-face canvas { border: 4px solid #FFC914; box-shadow: 0 0 0 3px var(--ink); display: block; }

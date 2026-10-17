@@ -28,6 +28,66 @@ function tex(url, onReady) {
   return t;
 }
 
+// A soft round glow (canvas gradient), shared by fireflies, light pools and mist.
+let glowTex = null;
+function glow() {
+  if (glowTex) return glowTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, 'rgba(255,255,255,1)');
+  r.addColorStop(0.25, 'rgba(255,255,255,0.75)');
+  r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = r;
+  g.fillRect(0, 0, 64, 64);
+  glowTex = new THREE.CanvasTexture(c);
+  return glowTex;
+}
+
+// v6 arena atmosphere (def.look, data/arenas*.js): low mist banks drifting between the backdrop and the
+// toys, fireflies wandering and blinking, coloured light pools on the floor under the lamps. Everything
+// is additive and kept away from the toys' faces and the question card (the directive: no clutter).
+function buildAtmosphere(group, look) {
+  const out = { mist: [], flies: null, pools: [] };
+  if (look.mist) {
+    for (let i = 0; i < 3; i++) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1500, 210), new THREE.MeshBasicMaterial({ map: glow(), color: look.mist, transparent: true, opacity: look.mistK ?? 0.3, depthWrite: false, blending: THREE.AdditiveBlending }));
+      // low banks at three depths: behind the back props, mid-field, and just behind the toys' feet
+      m.position.set((i - 1) * 700, 18 + i * 6, BACK_Z + 90 + i * 150);
+      m.renderOrder = 3;
+      group.add(m);
+      out.mist.push({ m, x0: m.position.x, ph: i * 2.1, sp: 0.00006 + i * 0.00002 });
+    }
+  }
+  if (look.fireflies) {
+    const n = look.fireflies.count || 30, cols = (look.fireflies.colors || ['#C8FF6A']).map((c) => new THREE.Color(c));
+    const pos = new Float32Array(n * 3), col = new Float32Array(n * 3);
+    const seeds = [];
+    for (let i = 0; i < n; i++) {
+      const c = cols[i % cols.length];
+      col.set([c.r, c.g, c.b], i * 3);
+      // spread across the arena, mostly behind and above the toys
+      seeds.push({ x: (Math.random() * 2 - 1) * 900, y: 60 + Math.random() * 300, z: BACK_Z + Math.random() * 520, a: Math.random() * 6.28, b: Math.random() * 6.28, s: 0.4 + Math.random() * 0.8 });
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const pts = new THREE.Points(g, new THREE.PointsMaterial({ map: glow(), size: look.fireflies.size || 22, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true }));
+    pts.renderOrder = 4;
+    group.add(pts);
+    out.flies = { pts, pos, col, base: col.slice(), seeds };
+  }
+  for (const p of look.pools || []) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(p.r * 2.6, p.r * 1.1), new THREE.MeshBasicMaterial({ map: glow(), color: p.color, transparent: true, opacity: p.k ?? 0.5, depthWrite: false, blending: THREE.AdditiveBlending }));
+    m.rotation.x = -Math.PI / 2;
+    m.renderOrder = 2;
+    group.add(m);
+    out.pools.push({ m, slot: p.slot, k: p.k ?? 0.5, ph: Math.random() * 6 });
+  }
+  return out;
+}
+
 export class ImageArena3D {
   constructor(def) {
     this.def = def;
@@ -68,8 +128,9 @@ export class ImageArena3D {
         card.position.y = h / 2;
         card.visible = true;
       });
-      return { card, holder, slot, h, phase: i * 1.7 };
+      return { card, holder, slot, h, phase: i * 1.7, sway: (def.look && def.look.sway || {})[n] || 0 };
     });
+    this.atmos = def.look ? buildAtmosphere(this.group, def.look) : null;
   }
 
   // halfW = visible half-width at z = FRONT_Z for the current screen shape.
@@ -94,6 +155,11 @@ export class ImageArena3D {
       // face the camera
       p.holder.lookAt(p.holder.position.x * 0.15, 0, CAM_Z);
     }
+    // light pools sit on the floor under their prop's slot
+    for (const pl of (this.atmos && this.atmos.pools) || []) {
+      const [k, z] = slots[pl.slot] || [0, BACK_Z];
+      pl.m.position.set(k * hw(z), 1.2, z + 20);
+    }
   }
 
   update(t) {
@@ -101,8 +167,25 @@ export class ImageArena3D {
     for (const p of this.props) {
       const hop = ex > 0.05 ? Math.abs(Math.sin(t / 85 + p.phase)) * ex * 16 : 0;
       p.holder.position.y = hop;
-      p.card.rotation.z = ex > 0.05 ? Math.sin(t / 70 + p.phase) * ex * 0.08 : 0;
+      // a gentle breeze for props that hang or stand tall (look.sway), plus the shake from big hits
+      p.card.rotation.z = (ex > 0.05 ? Math.sin(t / 70 + p.phase) * ex * 0.08 : 0) + (p.sway ? Math.sin(t / 900 + p.phase) * p.sway : 0);
     }
+    const a = this.atmos;
+    if (!a) return;
+    for (const m of a.mist) m.m.position.x = m.x0 + Math.sin(t * m.sp + m.ph) * 260;
+    if (a.flies) {
+      const { pos, col, base, seeds, pts } = a.flies;
+      seeds.forEach((s, i) => {
+        pos[i * 3] = s.x + Math.sin(t / 2100 * s.s + s.a) * 70;
+        pos[i * 3 + 1] = s.y + Math.sin(t / 1300 * s.s + s.b) * 40;
+        pos[i * 3 + 2] = s.z + Math.cos(t / 2500 * s.s + s.a) * 40;
+        const blink = 0.35 + 0.65 * Math.max(0, Math.sin(t / 380 * s.s + s.b * 3));
+        col[i * 3] = base[i * 3] * blink; col[i * 3 + 1] = base[i * 3 + 1] * blink; col[i * 3 + 2] = base[i * 3 + 2] * blink;
+      });
+      pts.geometry.attributes.position.needsUpdate = true;
+      pts.geometry.attributes.color.needsUpdate = true;
+    }
+    for (const pl of a.pools) pl.m.material.opacity = pl.k * (0.8 + 0.2 * Math.sin(t / 420 + pl.ph)) * (1 + ex * 0.6);
   }
 
   dispose() {
