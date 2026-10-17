@@ -20,7 +20,7 @@ export const NEW_FOUR = {
     foePattern: ['quick', 'power', 'charge', 'slam'],
     arcadeOnly: true, // playable everywhere, but no campaign world or wild creature
     winSfx: 'squeezebox', // three notes on a squeezebox
-    art: { kind: 'procedural', draw: 'crookhook', portrait: { y: 12, r: 54 } },
+    art: { kind: 'procedural', draw: 'crookhook', portrait: { x: 10, y: -6, r: 46 } },
   },
   // pumpkin-headed toy skeleton who folds up like a pocketknife; rival of Spooky Tree
   jackknife: {
@@ -39,7 +39,7 @@ export const NEW_FOUR = {
     foePattern: ['power', 'quick', 'charge', 'slam'],
     arcadeOnly: true, // playable everywhere, but no campaign world or wild creature
     winSfx: 'giggle',
-    art: { kind: 'procedural', draw: 'jackknife', portrait: { y: 6, r: 48 } },
+    art: { kind: 'procedural', draw: 'jackknife', portrait: { y: 2, r: 34 } },
   },
   // the storybook wolf who huffs and puffs; rival of Remy Roo
   wolfgang: {
@@ -77,7 +77,7 @@ export const NEW_FOUR = {
     foePattern: ['power', 'charge', 'slam', 'quick'],
     arcadeOnly: true, // playable everywhere, but no campaign world or wild creature
     winSfx: 'servoStep',
-    art: { kind: 'procedural', draw: 'payne', portrait: { y: 10, r: 52 } },
+    art: { kind: 'procedural', draw: 'payne', portrait: { x: 4, y: -3, r: 32 } },
   },
 };
 
