@@ -151,12 +151,16 @@ const MODEL_VERT = /* glsl */ `
   #include <common>
   #include <skinning_pars_vertex>
   varying vec3 vView;
+  varying vec3 vNormal;
   varying vec2 vUv;
   void main() {
+    #include <beginnormal_vertex>
     #include <skinbase_vertex>
+    #include <skinnormal_vertex>
     #include <begin_vertex>
     #include <skinning_vertex>
     vUv = uv;
+    vNormal = normalize(normalMatrix * objectNormal);
     vec4 mv = modelViewMatrix * vec4(transformed, 1.0);
     vView = mv.xyz;
     gl_Position = projectionMatrix * mv;
@@ -174,10 +178,36 @@ const MODEL_FRAG = /* glsl */ `
   uniform vec3 uRim;
   uniform float uRimK;
   uniform vec3 uTint;
+  uniform float uSmooth;
+  uniform float uSoft;
+  uniform float uHasNormalMap;
+  uniform sampler2D uNormalMap;
+  uniform float uNormalK;
   varying vec3 vView;
+  varying vec3 vNormal;
   varying vec2 vUv;
+  // tangent-space normal map without tangents (cotangent frame from derivatives)
+  vec3 perturb(vec3 n, vec3 p, vec2 uv, vec3 m) {
+    vec3 dp1 = dFdx(p), dp2 = dFdy(p);
+    vec2 du1 = dFdx(uv), du2 = dFdy(uv);
+    vec3 dp2p = cross(dp2, n), dp1p = cross(n, dp1);
+    vec3 T = dp2p * du1.x + dp1p * du2.x;
+    vec3 B = dp2p * du1.y + dp1p * du2.y;
+    float k = inversesqrt(max(dot(T, T), dot(B, B)));
+    return normalize(mat3(T * k, B * k, n) * m);
+  }
   void main() {
-    vec3 n = normalize(cross(dFdx(vView), dFdy(vView)));
+    vec3 fN = normalize(cross(dFdx(vView), dFdy(vView)));
+    vec3 n = fN;
+    if (uSmooth > 0.5) {
+      n = normalize(vNormal);
+      if (!gl_FrontFacing) n = -n;
+    }
+    if (uHasNormalMap > 0.5) {
+      vec3 m = texture2D(uNormalMap, vUv).xyz * 2.0 - 1.0;
+      m.xy *= uNormalK;
+      n = perturb(n, vView, vUv, normalize(m));
+    }
     float d = dot(n, uLight);
     vec4 tex = uHasMap > 0.5 ? texture2D(uMap, vUv) : vec4(1.0);
     if (tex.a < 0.4) discard;
@@ -187,19 +217,33 @@ const MODEL_FRAG = /* glsl */ `
     if (uSteps > 0.5) base = floor(base * uSteps + 0.5) / uSteps;
     vec3 shadow = base * vec3(0.56, 0.5, 0.78);
     vec3 light = mix(base, vec3(1.0), 0.24);
-    vec3 c = d > 0.62 ? light : (d > 0.08 ? base : shadow);
+    vec3 c;
+    if (uSoft > 0.5) {
+      // soft toon: two bands with a narrow ramp between them, a gentler shadow
+      vec3 sh = base * vec3(0.66, 0.6, 0.84);
+      c = mix(sh, base, smoothstep(0.02, 0.14, d));
+      c = mix(c, mix(base, vec3(1.0), 0.14), smoothstep(0.7, 0.8, d) * 0.6);
+    } else {
+      c = d > 0.62 ? light : (d > 0.08 ? base : shadow);
+    }
     if (uShiny > 0.5) {
       vec3 v = normalize(-vView);
       if (dot(reflect(-uLight, n), v) > 0.94) c = vec3(1.0);
     }
     float rim = 1.0 - abs(dot(n, normalize(-vView)));
     if (uRimK > 0.0 && rim > 0.58) c = mix(c, uRim, uRimK * (rim > 0.8 ? 1.0 : 0.5));
+    // soft toon carries its own thin cool rim so the silhouette reads without heavy ink
+    if (uSoft > 0.5) c = mix(c, mix(base, vec3(0.85, 0.9, 1.0), 0.55), smoothstep(0.62, 0.78, rim) * 0.45);
     c *= uTint;
     c = mix(c, vec3(1.0), uFlash);
     gl_FragColor = vec4(c, 1.0);
   }`;
 
-export function modelMat({ color = 0xffffff, map = null, flash, shiny = false, sat = 1.15, steps = 10 } = {}) {
+// smooth: light with the mesh's vertex normals (crease-split, see crease-normals.js)
+//         instead of one flat normal per triangle; default false (the faceted look)
+// soft:   two softer bands + a thin rim instead of the three hard steps
+// normalMap / normalK: optional tangent-space normal map and its strength
+export function modelMat({ color = 0xffffff, map = null, flash, shiny = false, sat = 1.15, steps = 10, smooth = false, soft = false, normalMap = null, normalK = 1 } = {}) {
   const m = new THREE.ShaderMaterial({
     uniforms: {
       uColor: { value: new THREE.Color(color) },
@@ -213,6 +257,11 @@ export function modelMat({ color = 0xffffff, map = null, flash, shiny = false, s
       uMap: { value: map },
       uSat: { value: sat },
       uSteps: { value: steps },
+      uSmooth: { value: smooth ? 1 : 0 },
+      uSoft: { value: soft ? 1 : 0 },
+      uHasNormalMap: { value: normalMap ? 1 : 0 },
+      uNormalMap: { value: normalMap },
+      uNormalK: { value: normalK },
     },
     vertexShader: MODEL_VERT,
     fragmentShader: MODEL_FRAG,

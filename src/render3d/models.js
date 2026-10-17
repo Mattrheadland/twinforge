@@ -9,7 +9,8 @@
 // What happens to a loaded GLB:
 //   - scaled to the toy's height (~190 units), feet on y = 0, turned to face +x
 //   - every material swapped for the '80s toon shader (texture as base color,
-//     faceted three-step light, hit flash) plus an inked outline hull
+//     three-step light, hit flash) plus an inked outline hull; lit with
+//     crease-split smooth normals by default (art.smooth: false = flat facets)
 //   - animation clips matched to idle / attack / hit / guard / special / win /
 //     tired by name (clipmap.js); actions without a clip are posed by moving
 //     the bones from the same pose values the code rigs use
@@ -21,6 +22,7 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import { modelMat, inkModelMesh } from './toon.js';
 import { matchClips, LOOPS } from './clipmap.js';
 import { addFace } from './model-face.js';
+import { creaseNormals } from './crease-normals.js';
 
 // Built by build.mjs from assets/models/: { 'battle-rex': '<content hash>' }.
 const MANIFEST = typeof __MODELS__ !== 'undefined' ? __MODELS__ : {};
@@ -134,6 +136,12 @@ const X = new THREE.Vector3(1, 0, 0), Y = new THREE.Vector3(0, 1, 0), Z = new TH
 //   joints   toy joints for a model with no skeleton (see autoJoints below)
 //   armScale how far bones follow the arm swings (default 0.8; ~0.35 for legs)
 //   jaw      how far the jaw opens (default 1)
+//   smooth   light with smooth vertex normals, hard edges kept above creaseDeg
+//            (default true; false = every triangle a flat facet, the v5 look)
+//   creaseDeg crease angle for smooth (default 55)
+//   soft     two softer toon bands + a thin rim instead of three hard steps (default false)
+//   normalMap use the GLB's normal map when it has one (default true)
+//   ink      outline thickness in rig units (default 3)
 export function buildModelRig(def, flash) {
   const entry = cache.get(modelId(def));
   if (!entry || entry.status !== 'ready') return null;
@@ -141,6 +149,7 @@ export function buildModelRig(def, flash) {
   const src = entry.gltf;
   const model = cloneSkinned(src.scene);
   model.updateMatrixWorld(true);
+  if (art.smooth !== false) smoothModel(model, entry, art.creaseDeg ?? 55);
 
   const root = new THREE.Group();
   root.name = `model:${art.model}`;
@@ -173,7 +182,12 @@ export function buildModelRig(def, flash) {
       const map = m.map || null;
       // set once: re-flagging a shared texture every build re-uploads it and leaks GPU memory
       if (map && map.colorSpace !== THREE.NoColorSpace) { map.colorSpace = THREE.NoColorSpace; map.needsUpdate = true; }
-      return modelMat({ color: m.color ? m.color.getHex() : 0xffffff, map, flash, shiny: !!art.shiny });
+      const nmap = art.normalMap !== false ? m.normalMap || null : null;
+      if (nmap && nmap.colorSpace !== THREE.NoColorSpace) { nmap.colorSpace = THREE.NoColorSpace; nmap.needsUpdate = true; }
+      return modelMat({
+        color: m.color ? m.color.getHex() : 0xffffff, map, flash, shiny: !!art.shiny,
+        smooth: art.smooth !== false, soft: !!art.soft, normalMap: nmap, normalK: art.normalK ?? 1,
+      });
     };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(swap) : swap(mesh.material);
     mesh.userData.shared = true; // geometry belongs to the cache
@@ -280,6 +294,52 @@ export function buildModelRig(def, flash) {
   };
   rig.apply({ t: 0, action: 'idle', eyes: 'open', mouth: 'smile' });
   return rig;
+}
+
+// ---------- smooth shading ----------
+// Swaps each mesh's geometry for a crease-split copy with smooth normals
+// (crease-normals.js). Cached per source geometry and crease angle, so every
+// rig of the same toy shares one copy (no per-battle rebuild or GPU growth).
+// glTF files from gltf-transform are interleaved: attr.array is then the whole
+// shared vertex buffer, so copy each attribute out into its own tight array.
+export function packedArray(a) {
+  if (!a.isInterleavedBufferAttribute) return a.array;
+  const out = new a.array.constructor(a.count * a.itemSize);
+  const get = ['getX', 'getY', 'getZ', 'getW'];
+  for (let i = 0; i < a.count; i++) for (let j = 0; j < a.itemSize; j++) out[i * a.itemSize + j] = a[get[j]](i);
+  return out;
+}
+
+export function smoothGeometry(geo, creaseDeg = 55) {
+  const attributes = {};
+  for (const [name, a] of Object.entries(geo.attributes)) {
+    if (name === 'position' || name === 'normal') continue;
+    attributes[name] = { array: packedArray(a), itemSize: a.itemSize, normalized: a.normalized };
+  }
+  const pos = geo.getAttribute('position');
+  const r = creaseNormals({ position: packedArray(pos), index: geo.index ? geo.index.array : null, attributes, creaseDeg });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(r.attributes.position.array, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(r.normal, 3));
+  for (const [name, a] of Object.entries(r.attributes)) {
+    if (name !== 'position') g.setAttribute(name, new THREE.BufferAttribute(a.array, a.itemSize, attributes[name].normalized));
+  }
+  g.setIndex(new THREE.BufferAttribute(r.count > 65535 ? r.index : new Uint16Array(r.index), 1));
+  for (const gr of geo.groups) g.addGroup(gr.start, gr.count, gr.materialIndex);
+  g.userData.smooth = { creaseDeg, split: r.split };
+  return g;
+}
+
+function smoothModel(model, entry, creaseDeg) {
+  entry.smoothCache = entry.smoothCache || new Map();
+  model.traverse((o) => {
+    if (!o.isMesh || !o.geometry || !o.geometry.getAttribute('position')) return;
+    const key = o.geometry;
+    let per = entry.smoothCache.get(key);
+    if (!per) entry.smoothCache.set(key, (per = new Map()));
+    if (!per.has(creaseDeg)) per.set(creaseDeg, smoothGeometry(o.geometry, creaseDeg));
+    o.geometry = per.get(creaseDeg);
+  });
 }
 
 // ---------- toy joints for static models ----------
