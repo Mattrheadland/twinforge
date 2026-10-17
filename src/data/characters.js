@@ -93,10 +93,10 @@ export const CHARACTERS = {
       armScale: 0.35, // his forearms are fused to his hips in the mesh; small swings keep that seam from stretching
       face: { pair: true, pos: [44, 138, 15], yaw: 1.0, size: [14, 14], style: { iris: '#E8A33A', lid: '#A8B0B4', brow: '#14111A', size: 0.34 } },
       joints: {
-        head: { pivot: [10, 108, 0], box: [[-5, 100, -21], [72, 176, 21]] },
+        head: { pivot: [10, 108, 0], box: [[2, 104, -21], [72, 176, 21]] },
         jaw: { pivot: [20, 128, 0], box: [[24, 104, -20], [72, 127, 20]] },
-        armF: { pivot: [8, 115, 38], box: [[-20, 48, 39], [42, 122, 72]] },
-        armB: { pivot: [8, 115, -38], box: [[-20, 48, -72], [42, 122, -39]] },
+        armF: { pivot: [8, 115, 38], box: [[-20, 50, 35], [42, 122, 72]] },
+        armB: { pivot: [8, 115, -38], box: [[-20, 50, -72], [42, 122, -35]] },
         tail: { pivot: [-22, 60, 0], box: [[-80, 0, -22], [-22, 76, 22]] },
       },
     },
