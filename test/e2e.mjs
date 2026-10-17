@@ -408,7 +408,7 @@ await sleep(800);
     const ready = await within(15000, () => page.evaluate(() => {
       const a = window.__tbb.app, b = document.querySelector('.board-fight');
       if (window.__tbb.phase === 'choose') return true; // an earlier tap did register, just slowly
-      return !!b && !b.classList.contains('hidden') && !b.disabled && !!a.boardView && !a.boardView.busy && !a._boardFighting && !document.querySelector('.vs-screen');
+      return !!b && !b.classList.contains('hidden') && !b.disabled && !!a.boardView && !a.boardView.busy && !a._boardFighting && !document.querySelector('.overlay.vs');
     }));
     if (!ready) throw new Error('board FIGHT button never became ready (visible, enabled, board settled)');
     if (await phase() === 'choose') { opened = true; break; }
@@ -440,11 +440,25 @@ await page.evaluate(() => {
 });
 await sleep(800);
 await tap('.board-die');
-await page.waitForSelector('.board-fight:not(.hidden)', { visible: true, timeout: 8000 });
-const fistBox = await (await page.$('.board-fight')).boundingBox();
-await page.touchscreen.tap(fistBox.x + fistBox.width / 2, fistBox.y + fistBox.height / 2);
-await waitPhase('choose', 20000);
-await sleep(1500);
+// The auto-fight runs 650 ms after the FIST shows, and its VS splash clears the board (FIST included).
+// On a slow box that used to land between waitForSelector, page.$ and boundingBox (separate round
+// trips), so the box came back null and the test crashed with a TypeError. Read the FIST's box in the
+// same page call that sees it appear, and accept "the fight already started" as the other outcome.
+{
+  const seen = await within(8000, () => page.evaluate(() => {
+    const a = window.__tbb.app, b = document.querySelector('.board-fight:not(.hidden)');
+    if (a._starts > 0 || a._boardFighting || document.querySelector('.overlay.vs') || window.__tbb.phase === 'choose') return { started: true };
+    if (!b || !b.isConnected || a.boardView?.busy) return null;
+    const r = b.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 ? { x: r.x + r.width / 2, y: r.y + r.height / 2 } : null;
+  }), { poll: 0 });
+  if (!seen) throw new Error('board FIGHT button never popped up after the roll (and no fight started)');
+  if (!seen.started) await page.touchscreen.tap(seen.x, seen.y);
+  // the fight screen must really open, whichever of the tap and the auto-fight got there first
+  if (!(await waitPhase('choose', 20000))) throw new Error(`board FIGHT: fight screen never opened (phase=${await phase()})`);
+  await within(5000, () => page.evaluate(() => !window.__tbb.app._boardFighting));
+}
+await sleep(1500); // observation window: a second start would show up here
 check('tapping FIGHT as it pops up starts one fight, not two', await page.evaluate(() => window.__tbb.app._starts === 1), `starts=${await page.evaluate(() => window.__tbb.app._starts)}`);
 await page.evaluate(() => { const a = window.__tbb.app; a.endBattle(); a.save.data.battle = null; const c = a.save.data.campaign; c.pos = 0; c.cleared = [0]; a._starts = 0; a.goBoard(); });
 await sleep(800);

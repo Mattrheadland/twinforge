@@ -82,7 +82,8 @@ test('recording an answer keeps totals, a capped log, days and level changes', (
 test('report flags a tough skill, a solid skill, and suggests a lever', () => {
   const L = defaultLearning();
   const rng = new Rng(9);
-  const t0 = Date.now() - 3600e3;
+  // an hour ago, but never before local midnight: between 00:00 and 01:00 "an hour ago" was yesterday and today.n read 0
+  const t0 = Math.max(Date.now() - 3600e3, new Date().setHours(0, 0, 0, 0));
   for (let i = 0; i < 10; i++) recordAnswer(L, makeMath(2, rng, 'count'), 'indep', { firstMs: 2000 }, t0 + i * 1000);
   for (let i = 0; i < 6; i++) {
     const ch = makeMath(4, rng, 'sub');
