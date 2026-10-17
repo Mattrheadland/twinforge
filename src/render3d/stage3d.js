@@ -19,7 +19,7 @@ import { Room3D } from './room.js';
 import { ImageArena3D } from './arena-image.js';
 import { ARENAS } from '../data/arenas.js';
 
-export const RETRO_H = 400; // 3D render height in retro mode (chunky, early-3D)
+export const RETRO_H = 720; // 3D render height in retro mode: was 400 (chunky); 720 keeps a light retro softness and shows model detail (Founder, 2026-10-17)
 const FOV = 30;
 const DIST = 840; // camera to hero distance: 1 world unit ≈ 1 screen unit at the hero
 const HERO_Z = 30, FOE_Z = -30;
