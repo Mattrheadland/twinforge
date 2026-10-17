@@ -40,6 +40,20 @@ export const RULES = {
   reflect: 6,
   heal: 16,
   foe: { quick: 8, power: 12, slam: 22 },
+  // Phase 5 audit (directive §8). All capped and predictable; none stacks forever.
+  //   quickRead   a quick move used again right after a quick does less: the foe has seen it
+  //               (1st in a row = full, 2nd = 4/5, 3rd and on = about 2/3). Energy still comes. So quick
+  //               is the safe opener and the finisher, not a way around the questions.
+  //   secondWind  once per battle, when the hero first drops to this share of health: +1 energy
+  //               and one pip off the foe's meter. A chance, never a rescue (the hit still landed).
+  //   retryHand   after this many defeats in a row against the same foe, a retry starts with
+  //               1 energy (never more, never a smaller foe). Capped at one pip whatever the streak.
+  //   boss        giants are harder by behaviour, not only health: meter one pip smaller (min 2)
+  //               and the charged attack hits harder. foeHp above still applies.
+  quickRead: [1, 0.8, 0.65],
+  secondWind: { at: 0.3, energy: 1, drain: 1 },
+  retryHand: { after: 2, energy: 1 },
+  boss: { pipsLess: 1, minPips: 2, chargedPower: 1.2 },
   // Per pathway (save.js PATHWAYS). Balance proven by test/balance.test.mjs.
   // Before v6 even random tapping won ~100% of fights in about 5 turns, so the
   // foe also gets more health: a fight lasts long enough for the meter to matter.
@@ -57,6 +71,8 @@ export const RULES = {
 
 export const PATHWAY_DEFAULT = 'early';
 export const stakesFor = (s) => RULES.stakes[s && s.pathway] || RULES.stakes[PATHWAY_DEFAULT];
+// The meter size for THIS battle: a giant's is one pip smaller (never below RULES.boss.minPips).
+export const pipsFor = (s) => { const p = stakesFor(s).pips; return s && s.boss ? Math.max(RULES.boss.minPips, p - RULES.boss.pipsLess) : p; };
 const WRONG_TAPS = { indep: 0, hint: 1, support: 2, none: 0 };
 
 export const SLOTS = ['quick', 'power', 'guard', 'special'];
@@ -81,7 +97,8 @@ export function learningFor(slot) {
 
 // boss: a GIANT foe (game/modes.js) with BOSS_HP times the health.
 // pathway: the player's learning pathway ('early' | 'growing'); sets the stakes.
-export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss = false, pathway = PATHWAY_DEFAULT }) {
+// startEnergy: extra starting energy for a retry hand (logic/outcome.js); capped at RULES.maxEnergy - 1 with the toy's own.
+export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss = false, pathway = PATHWAY_DEFAULT, startEnergy = 0 }) {
   const h = chars[heroId];
   const f = chars[foeId];
   if (!h || !f) throw new Error('unknown character');
@@ -96,7 +113,7 @@ export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss =
     round: 1,
     turn: 'hero',
     result: null,
-    hero: { hp: h.maxHp, maxHp: h.maxHp, energy: Math.max(0, Math.min(RULES.maxEnergy - 1, h.startEnergy | 0)), guard: null, shield: false,
+    hero: { hp: h.maxHp, maxHp: h.maxHp, energy: Math.max(0, Math.min(RULES.maxEnergy - 1, (h.startEnergy | 0) + (startEnergy | 0))), guard: null, shield: false, secondWind: false, quickStreak: 0,
       specialCost: Math.max(1, Math.min(RULES.maxEnergy, (moveFor(h, 'special') || {}).energyCost || RULES.maxEnergy)) },
     boss,
     foe: { hp: foeHp, maxHp: foeHp, charged: false, dizzy: false, step: 0, meter: 0, windup: false, windupFresh: false },
@@ -140,12 +157,13 @@ function chargeMeter(s, quality, ev) {
   const before = f.meter || 0;
   const wrong = WRONG_TAPS[quality] || 0;
   let meter = before;
-  if (wrong) meter = Math.min(st.pips, before + wrong * st.perWrong);
+  const pips = pipsFor(s);
+  if (wrong) meter = Math.min(pips, before + wrong * st.perWrong);
   else if (quality === 'indep') meter = Math.max(0, before - st.drain);
   if (meter === before) return;
   f.meter = meter;
-  ev.push({ type: 'meter', target: 'foe', meter, max: st.pips, delta: meter - before, reason: wrong ? 'wrong' : 'drain' });
-  if (meter >= st.pips) {
+  ev.push({ type: 'meter', target: 'foe', meter, max: pips, delta: meter - before, reason: wrong ? 'wrong' : 'drain' });
+  if (meter >= pips) {
     // the foe's very next move stays a normal one, so the child gets a turn
     // to see the wind-up and guard before the charged attack lands
     f.windup = true;
@@ -155,7 +173,7 @@ function chargeMeter(s, quality, ev) {
 }
 
 // What the HUD draws: pips lit, meter size, and whether the foe is winding up.
-export const meterOf = (s) => ({ meter: s.foe.meter || 0, max: stakesFor(s).pips, windup: !!s.foe.windup });
+export const meterOf = (s) => ({ meter: s.foe.meter || 0, max: pipsFor(s), windup: !!s.foe.windup });
 
 function setGuard(s, type, ev, from, move = {}) {
   s.hero.guard = type;
@@ -181,7 +199,11 @@ export function heroAct(s0, action, quality, chars) {
   ev.push({ type: 'action', who: 'hero', action: slot, quality, move: move.id });
 
   if (slot === 'quick') {
-    damage(s, 'foe', (move.quickDmg ?? RULES.quick) + bonus, ev, { kind: 'quick', quality });
+    // the foe reads a repeated quick: 2nd in a row does 4/5, 3rd and on about 2/3 (RULES.quickRead)
+    const streak = s.hero.lastSlot === 'quick' ? (s.hero.quickStreak || 1) + 1 : 1;
+    s.hero.quickStreak = streak;
+    const read = RULES.quickRead[Math.min(streak, RULES.quickRead.length) - 1];
+    damage(s, 'foe', ((move.quickDmg ?? RULES.quick) + bonus) * read, ev, { kind: 'quick', quality, read: read < 1, streak });
     if (!s.result) gainEnergy(s, move.energyGain ?? RULES.energy.quick, ev, 'hit');
   } else if (slot === 'power') {
     damage(s, 'foe', Math.max(1, RULES.power[quality] + ((move.powerDelta || {})[quality] || 0) + bonus), ev, { kind: 'power', quality });
@@ -229,6 +251,21 @@ export function heroAct(s0, action, quality, chars) {
 
 // The foe's next move. Exposed so the UI can telegraph it:
 // 'quick' | 'power' | 'charge' | 'slam' (its special, after a charge) | 'dizzy'.
+// Once per battle: the first time the hero is left at or under RULES.secondWind.at of
+// their health (and still standing), they get a breath: +1 energy and one pip off the
+// foe's meter (never cancelling a wind-up already shown). A chance to turn it round, not a rescue.
+function secondWind(s, ev) {
+  const sw = RULES.secondWind, h = s.hero;
+  if (s.result || h.secondWind || h.hp <= 0 || h.hp > h.maxHp * sw.at) return;
+  h.secondWind = true;
+  ev.push({ type: 'secondwind', target: 'hero', hp: h.hp, maxHp: h.maxHp });
+  gainEnergy(s, sw.energy, ev, 'secondwind');
+  if (!s.foe.windup && (s.foe.meter || 0) > 0) {
+    s.foe.meter = Math.max(0, s.foe.meter - sw.drain);
+    ev.push({ type: 'meter', target: 'foe', meter: s.foe.meter, max: pipsFor(s), delta: -sw.drain, reason: 'secondwind' });
+  }
+}
+
 export function foeIntent(s, chars) {
   if (s.foe.dizzy) return 'dizzy';
   if (s.foe.charged) return 'slam';
@@ -269,7 +306,7 @@ export function foeAct(s0, chars) {
     const charged = !!s.foe.windup && !s.foe.windupFresh;
     ev.push({ type: 'action', who: 'foe', action: slam ? 'slam' : intent, move: move?.id, charged });
     const plain = slam ? RULES.foe.slam : RULES.foe[intent] || RULES.foe.quick;
-    const base = (charged ? Math.max(plain, st.chargedHit) : plain) * power;
+    const base = (charged ? Math.max(plain, st.chargedHit) * (s.boss ? RULES.boss.chargedPower : 1) : plain) * power;
     const guard = s.hero.guard || (s.hero.shield ? 'block' : null);
     const kind = slam ? 'slam' : intent;
     const big = slam || charged;
@@ -286,8 +323,9 @@ export function foeAct(s0, chars) {
     if (charged) {
       s.foe.windup = false;
       s.foe.meter = 0;
-      ev.push({ type: 'meter', target: 'foe', meter: 0, max: st.pips, delta: 0, reason: 'release' });
+      ev.push({ type: 'meter', target: 'foe', meter: 0, max: pipsFor(s), delta: 0, reason: 'release' });
     }
+    secondWind(s, ev);
   }
 
   s.foe.windupFresh = false;

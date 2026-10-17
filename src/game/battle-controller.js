@@ -24,7 +24,8 @@ export const PHASE = {
 
 export class BattleController {
   // stop: { arenaId, boss } from a game-mode run (game/modes.js)
-  constructor({ app, chars, heroId, foeId, resume, stop = null }) {
+  // startEnergy: a retry hand (logic/outcome.js); 0 for a first try
+  constructor({ app, chars, heroId, foeId, resume, stop = null, startEnergy = 0 }) {
     this.app = app;
     this.chars = chars;
     this.stage = app.stage;
@@ -32,7 +33,7 @@ export class BattleController {
     this.save = app.save;
     this.rng = new Rng((Date.now() ^ 0x5eed) >>> 0);
     // the player's pathway sets the stakes (charge meter, foe strength); a resumed battle keeps its own
-    this.state = resume || createBattle({ heroId, foeId, chars, arenaId: stop?.arenaId || arenaFor(foeId), boss: !!stop?.boss, pathway: this.save.pathway });
+    this.state = resume || createBattle({ heroId, foeId, chars, arenaId: stop?.arenaId || arenaFor(foeId), boss: !!stop?.boss, pathway: this.save.pathway, startEnergy });
     if (!resume && stop?.scale) this.state.foeScale = stop.scale;
     this.resumed = !!resume;
     this.phase = PHASE.INTRO;
@@ -315,6 +316,11 @@ export class BattleController {
     this.syncFoeLook();
     for (const e of events) {
       if (e.type === 'meter') this.hud.setMeter({ meter: e.meter, max: e.max, windup: false });
+      if (e.type === 'secondwind') { // once a battle, at low health: a breath, not a rescue
+        this.stage.fx.word('HANG ON!', hero.center().x, hero.center().y - 150, { size: 40, color: '#FFC914' });
+        this.audio.sfx('powerUp');
+        await d.wait(350);
+      }
       if (e.type === 'energy' && e.gained > 0) {
         await d.energyOrbs(e.gained, (i) => this.app.toStage(this.hud.energyAnchor(i)), e.energy - e.gained);
         this.hud.setEnergy(e.energy, true);

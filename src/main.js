@@ -21,7 +21,7 @@ import { Director } from './game/director.js';
 import { h } from './ui/dom.js';
 import { loadWords } from './logic/words.js';
 import { awardXp, XP } from './logic/progression.js';
-import { retryStop } from './logic/outcome.js';
+import { retryStop, retryHand } from './logic/outcome.js';
 import { kitChars, kitDef, normalizeKit, hasChoices } from './logic/gear.js';
 import { showGear } from './ui/gear-ui.js';
 
@@ -705,7 +705,9 @@ class App {
     // the hero fights in its equipped armor and move styles (logic/gear.js); a resumed battle keeps the kit it began with
     const rec = this.toyRec(heroId);
     const kit = normalizeKit(resume && resume.kit ? resume.kit : rec.kit, rec);
-    this.battle = new BattleController({ app: this, chars: kitChars(CHARACTERS, heroId, kit, rec), heroId, foeId, resume, stop });
+    // a retry after repeated defeats against this foe starts with a little energy (logic/outcome.js retryHand)
+    const startEnergy = stop && stop.retry ? retryHand(this.save.data.progress, foeId) : 0;
+    this.battle = new BattleController({ app: this, chars: kitChars(CHARACTERS, heroId, kit, rec), heroId, foeId, resume, stop, startEnergy });
     if (!resume) this.battle.state.kit = kit;
     if (stop && !resume) {
       // remember where this fight came from (saved with the battle, so a resume knows too)
@@ -720,7 +722,7 @@ class App {
   // (campaign space or run), full health, empty meters.
   retryBattle(state) {
     this.audio.sfx('powerUp');
-    this.startBattle(state.heroId, state.foeId, null, retryStop(state));
+    this.startBattle(state.heroId, state.foeId, null, { ...retryStop(state), retry: true });
   }
 
   resumeBattle() {
