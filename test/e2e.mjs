@@ -398,8 +398,25 @@ check('rolling the die moves the token 1–3 spaces and saves', after.pos >= 1 &
 await page.evaluate(() => { const a = window.__tbb.app; const c = a.save.data.campaign; c.pos = 1; c.cleared = [0]; a.goBoard(); a.boardFight = a._bf; });
 await sleep(800);
 { const fb = await page.evaluate(() => ({ f: document.querySelector('.board-fight')?.className, d: document.querySelector('.board-die')?.className, n: document.querySelectorAll('.board-screen').length, c: JSON.stringify(window.__tbb.app.save.data.campaign) })); check('an unfought creature shows the FIGHT button instead of the die', fb.f === 'board-fight' && fb.d === 'board-die hidden', JSON.stringify(fb)); }
-await tap('.board-fight');
-await waitPhase('choose', 20000);
+// The FIGHT tap is ignored while the board is still busy (hops/intro) or the button is hidden, and
+// waitPhase() returns false silently, so a swallowed tap used to surface as a TypeError a step later.
+// Wait for the new board to settle (FIGHT visible + enabled, not busy, no fight/VS already starting),
+// tap, confirm the fight opened, and re-tap only if the state shows the tap did not register.
+{
+  let opened = false;
+  for (let attempt = 0; attempt < 4 && !opened; attempt++) {
+    const ready = await within(15000, () => page.evaluate(() => {
+      const a = window.__tbb.app, b = document.querySelector('.board-fight');
+      if (window.__tbb.phase === 'choose') return true; // an earlier tap did register, just slowly
+      return !!b && !b.classList.contains('hidden') && !b.disabled && !!a.boardView && !a.boardView.busy && !a._boardFighting && !document.querySelector('.vs-screen');
+    }));
+    if (!ready) throw new Error('board FIGHT button never became ready (visible, enabled, board settled)');
+    if (await phase() === 'choose') { opened = true; break; }
+    await tap('.board-fight');
+    opened = await waitPhase('choose', attempt === 3 ? 20000 : 6000);
+  }
+  if (!opened) throw new Error('board FIGHT tap never opened the fight screen after 4 attempts');
+}
 check('the creature fight is on its world\'s arena', await page.evaluate(() => { const a = window.__tbb.app; return a.battle.state.from === 'campaign' && a.stage.arenaId === 'bedroom' && a.battle.chars[a.battle.state.foeId].minion; }));
 await shot('25-minion-fight');
 await page.evaluate(() => { const a = window.__tbb.app; a.save.data.settings.learning = false; const b = a.battle; b.state.foe.hp = 1; b.hud.setHP('foe', 1, b.state.foe.maxHp, true); });
