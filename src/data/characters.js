@@ -37,10 +37,10 @@ export const CHARACTERS = {
       // swappable eyes over the painted ones, one on each side of the snout
       face: { pair: true, pos: [96, 146, 20], yaw: 1.0, size: [16, 16], style: { iris: '#7A4A20', lid: '#C8202E', brow: '#14111A', size: 0.34 } },
       joints: {
-        head: { pivot: [74, 128, 0], box: [[72, 120, -60], [150, 200, 60]] },
-        jaw: { pivot: [86, 127, 0], box: [[86, 95, -40], [150, 126, 40]] },
-        armF: { pivot: [60, 114, 14], box: [[60, 86, 3], [92, 120, 60]] },
-        armB: { pivot: [60, 114, -14], box: [[60, 86, -60], [92, 120, -3]] },
+        head: { pivot: [74, 128, 0], box: [[74, 118, -60], [150, 200, 60]] },
+        jaw: { pivot: [86, 127, 0], box: [[84, 92, -40], [150, 127, 40]] },
+        armF: { pivot: [60, 114, 14], box: [[60, 86, 7], [86, 95, 60]] },
+        armB: { pivot: [60, 114, -14], box: [[60, 86, -60], [86, 95, -7]] },
         tail: { pivot: [-34, 116, 0], box: [[-200, 80, -60], [-34, 160, 60]] },
       },
     },
