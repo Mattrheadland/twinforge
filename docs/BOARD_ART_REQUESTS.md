@@ -80,16 +80,18 @@ Where the result goes: `docs/art/board/<world>-concept.png` (reference only, not
 The code-built landmarks stay as the fallback forever. A Blender piece only replaces the code version of that one landmark when its GLB is present, exactly like `models.js` does for toys.
 
 ### Worth modelling (in this order)
-| id | what | triangle budget | why it's worth it |
-|---|---|---|---|
-| `board-keep` | Castle keep on its crag, 4 corner towers + central tower, banners | 2,500 | Biggest silhouette on the board; code version is all cylinders |
-| `board-hollow-tree` | Great Hollow Tree with door, windows, roots, canopy | 2,500 | The forest centrepiece; organic shapes are hard in code |
-| `board-beacon` | The Beacon (banded tower, gallery, lantern room, fish vane) + keeper's cottage | 1,800 | Hero of the pier; the gallery railing reads better modelled |
-| `board-bog-shack` | Stilt shack with tilted roof, stove pipe, porch, steps, wash line | 1,800 | Crooked charm needs hand placement |
-| `board-block-castle` | Toy-block castle (cubes, ramp arch, cylinder towers, pencil) | 1,500 | Already strong in code; model last, mainly for bevels and wood-grain facets |
-| `board-mountain` | Czernobog's mountain with crags and a crater rim for the glow | 3,000 | Optional: replaces the single cone; must keep the summit point at y = 390 so the villain, dancers and embers still line up |
+| id | what | triangle budget (lo) | hi tier budget | why it's worth it |
+|---|---|---|---|---|
+| `board-keep` | Castle keep on its crag, 4 corner towers + central tower, banners | 2,500 | 12,000 | Biggest silhouette on the board; code version is all cylinders |
+| `board-hollow-tree` | Great Hollow Tree with door, windows, roots, canopy | 2,500 | 12,000 | The forest centrepiece; organic shapes are hard in code |
+| `board-beacon` | The Beacon (banded tower, gallery, lantern room, fish vane) + keeper's cottage | 1,800 | 8,000 | Hero of the pier; the gallery railing reads better modelled |
+| `board-bog-shack` | Stilt shack with tilted roof, stove pipe, porch, steps, wash line | 1,800 | 8,000 | Crooked charm needs hand placement |
+| `board-block-castle` | Toy-block castle (cubes, ramp arch, cylinder towers, pencil) | 1,500 | 6,000 | Already strong in code; model last, mainly for bevels and wood-grain facets |
+| `board-mountain` | Czernobog's mountain with crags and a crater rim for the glow | 3,000 | 10,000 | Optional: replaces the single cone; must keep the summit point at y = 390 so the villain, dancers and embers still line up |
 
 Total extra: about 13k triangles (the board already draws about 50k at the follow camera), so keep each piece at or under its budget.
+
+`tools/blender/board_landmarks.py` builds both tiers: `build(ids, outdir, tier='lo')` is the original low-poly kit; `tier='hi'` is the mid-high detail pass (block courses, quoins, corbels, tiled roofs, plank boards, faceted rock chunks, foliage clusters, baked-in props) with the same silhouettes, palette, origins, part names, flag points and the mountain summit at z = 390. The hi tier totals about 56k triangles if all six are used, so it needs a decision on board-wide budget (or LOD switching) before it ships. Builds over budget raise instead of exporting.
 
 ### Modelling rules
 - Low-poly with visible facets: flat-shaded, no subdivision, no bevel modifiers over 1 segment.
