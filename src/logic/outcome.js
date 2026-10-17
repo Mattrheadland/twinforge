@@ -3,7 +3,7 @@
 // A win adds stars and XP. A loss only counts the battle: it never takes stars,
 // XP, levels, campaign spaces or run progress away. A retry is a fresh battle
 // against the same foe in the same place (full health, empty meters), not a penalty.
-import { starsFor, createBattle } from './battle.js';
+import { starsFor, createBattle, RULES } from './battle.js';
 import { awardXp, xpForWin } from './progression.js';
 
 // progress: save.data.progress, player: save.data.player.
@@ -17,6 +17,10 @@ export function settleBattle({ progress, player }, state) {
     p.wins = (p.wins || 0) + 1;
     p.stars = (p.stars || 0) + stars;
     pl = awardXp(player, xpForWin(stars)).player;
+    delete p.lossStreak;
+  } else {
+    const prev = progress.lossStreak;
+    p.lossStreak = { foeId: state.foeId, n: prev && prev.foeId === state.foeId ? prev.n + 1 : 1 };
   }
   return { progress: p, player: pl, stars };
 }
@@ -35,8 +39,14 @@ export function retryStop(state) {
   };
 }
 
+// Starting energy a retry against this foe gets (0 or RULES.retryHand.energy, never more).
+export function retryHand(progress, foeId) {
+  const ls = progress && progress.lossStreak;
+  return ls && ls.foeId === foeId && ls.n >= RULES.retryHand.after ? RULES.retryHand.energy : 0;
+}
+
 // A fresh battle for a retry (what startBattle builds from retryStop).
-export function retryBattle(state, chars) {
+export function retryBattle(state, chars, progress = null) {
   const st = retryStop(state);
-  return createBattle({ heroId: state.heroId, foeId: st.foeId, chars, arenaId: st.arenaId, boss: st.boss, pathway: state.pathway });
+  return createBattle({ heroId: state.heroId, foeId: st.foeId, chars, arenaId: st.arenaId, boss: st.boss, pathway: state.pathway, startEnergy: retryHand(progress, st.foeId) });
 }

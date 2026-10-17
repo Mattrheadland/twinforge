@@ -194,7 +194,7 @@ test('losing never takes stars, XP or levels; winning adds them', () => {
   const a = settleBattle(data, lost);
   assert.equal(a.stars, 0);
   assert.deepEqual(a.player, data.player);
-  assert.deepEqual(a.progress, { ...data.progress, battles: 5 });
+  assert.deepEqual(a.progress, { ...data.progress, battles: 5, lossStreak: { foeId: 'tree', n: 1 } });
   assert.equal(a.progress.tutorial, data.progress.tutorial);
   assert.equal(data.progress.battles, 4, 'pure: the input is not changed');
 
@@ -227,4 +227,118 @@ test('a retry is the same fight from the top: full health, empty meter, same pla
   const run = { ...s, from: 'run', runMode: 'tournament', at: undefined };
   assert.equal(retryStop(run).kind, 'run');
   assert.equal(retryStop(run).mode, 'tournament');
+});
+
+// ---- Phase 5 audit (directive §8): quick spam, bosses beyond health, comebacks, retry hand ----
+import { pipsFor } from '../src/logic/battle.js';
+import { retryHand } from '../src/logic/outcome.js';
+import { winRate } from './_sim.mjs';
+import { ROSTER } from '../src/data/characters.js';
+
+test('a repeated quick is read by the foe: 4/5 then about 2/3, never less, energy still comes', () => {
+  let s = fresh('early');
+  const full = RULES.quick + C.rex.attackBonus;
+  const hits = [];
+  for (let i = 0; i < 4; i++) {
+    const r = heroAct(s, 'quick', 'none', C);
+    const d = r.events.find((e) => e.type === 'damage');
+    hits.push(d);
+    assert.ok(r.events.some((e) => e.type === 'energy' && e.gained > 0) || r.state.hero.energy === RULES.maxEnergy, 'quick still charges energy');
+    s = { ...foeAct(r.state, C).state };
+  }
+  assert.deepEqual(hits.map((d) => d.amount), [full, Math.round(full * 0.8), Math.round(full * 0.65), Math.round(full * 0.65)]);
+  assert.deepEqual(hits.map((d) => !!d.read), [false, true, true, true]);
+  assert.deepEqual(RULES.quickRead, [1, 0.8, 0.65], 'capped: the floor is the last entry');
+  // any other move resets it: the next quick is a full one again
+  let r = heroAct(s, 'power', 'indep', C);
+  s = foeAct(r.state, C).state;
+  r = heroAct(s, 'quick', 'none', C);
+  assert.equal(r.events.find((e) => e.type === 'damage').amount, full);
+  assert.equal(r.events.find((e) => e.type === 'damage').read, false);
+});
+
+test('quick spam alone loses; quick mixed into real play still wins (test/_sim.mjs scripted child)', () => {
+  const spam = winRate({ chars: C, roster: ROSTER, pathway: 'early', accuracy: 'random', rounds: 1, seed: 3 });
+  assert.ok(spam.rate > 0.75, 'a random tapper (uses every button) still wins most of the time');
+  let s = fresh('early'), turns = 0;
+  while (!s.result && turns++ < 80) { s = heroAct(s, 'quick', 'none', C).state; if (!s.result) s = foeAct(s, C).state; }
+  assert.equal(s.result, 'lose', 'only ever tapping quick does not beat a toy');
+});
+
+test('a giant is harder by behaviour, not only health: smaller meter, heavier charged hit', () => {
+  const plain = fresh('early'), giant = fresh('early', { boss: true });
+  assert.equal(pipsFor(plain), RULES.stakes.early.pips);
+  assert.equal(pipsFor(giant), RULES.stakes.early.pips - RULES.boss.pipsLess);
+  assert.ok(pipsFor(fresh('growing', { boss: true })) >= RULES.boss.minPips, 'never below the floor');
+  assert.equal(meterOf(giant).max, pipsFor(giant));
+  // fill the meter and compare the charged hit
+  const hit = (s0) => {
+    let s = s0;
+    while (!s.foe.windup) s = foeAct(heroAct(s, 'power', 'support', C).state, C).state;
+    let d = null, guard = 0;
+    while (!d && guard++ < 6) { // the move right after the wind-up is a normal one; a 'charge' in the pattern does not attack
+      const r = foeAct(heroAct(s, 'quick', 'none', C).state, C);
+      d = r.events.find((e) => e.type === 'damage' && e.target === 'hero' && e.charged);
+      s = r.state;
+    }
+    assert.ok(d, 'the charged attack landed');
+    return d.amount;
+  };
+  assert.ok(hit(giant) > hit(plain), 'the giant\'s charged hit is heavier');
+  assert.ok(RULES.boss.chargedPower <= 1.25, 'capped');
+});
+
+test('second wind: once a battle, at low health, +1 energy and one pip off the meter; never a rescue', () => {
+  let s = fresh('early');
+  s.hero.hp = Math.floor(s.hero.maxHp * 0.3) + 3; // one plain hit drops under 30%
+  s.foe.meter = 2;
+  s.turn = 'foe';
+  let r = foeAct(s, C);
+  const sw = r.events.find((e) => e.type === 'secondwind');
+  assert.ok(sw, 'second wind fired');
+  assert.ok(r.events.find((e) => e.type === 'damage' && e.target === 'hero').amount > 0, 'the hit still landed');
+  assert.equal(r.state.hero.energy, 1);
+  assert.equal(r.state.foe.meter, 1);
+  assert.ok(r.events.some((e) => e.type === 'meter' && e.reason === 'secondwind'));
+  // only once: drop further and nothing more happens
+  let s2 = { ...r.state, turn: 'foe' };
+  s2.hero.hp = 5; s2.hero.guard = null; s2.hero.shield = false;
+  r = foeAct(s2, C);
+  assert.ok(!r.events.some((e) => e.type === 'secondwind'), 'does not repeat');
+  // a knockout is a knockout: no second wind on the hit that ends it
+  let s3 = fresh('early'); s3.hero.hp = 3; s3.turn = 'foe';
+  r = foeAct(s3, C);
+  assert.equal(r.state.result, 'lose');
+  assert.ok(!r.events.some((e) => e.type === 'secondwind'));
+  // a shown wind-up stays shown
+  let s4 = fresh('early'); s4.hero.hp = Math.floor(s4.hero.maxHp * 0.3) + 3; s4.foe.meter = 3; s4.foe.windup = true; s4.foe.windupFresh = true; s4.turn = 'foe';
+  r = foeAct(s4, C);
+  assert.ok(r.state.foe.windup && r.state.foe.meter === 3, 'second wind never cancels a wind-up the child was warned about');
+});
+
+test('retry hand: from the third try against the same foe a retry starts with 1 energy, never more; a win clears it', () => {
+  const data = { progress: { battles: 0 }, player: { xp: 0, level: 1 } };
+  const lost = { ...fresh('early'), result: 'lose' };
+  let p = settleBattle(data, lost).progress;
+  assert.equal(retryHand(p, 'tree'), 0, 'first defeat: no help');
+  p = settleBattle({ ...data, progress: p }, lost).progress;
+  assert.equal(p.lossStreak.n, 2);
+  assert.equal(retryHand(p, 'tree'), 1, 'two defeats in a row: the next try starts with 1 energy');
+  assert.equal(retryHand(p, 'rockfish'), 0, 'only against that foe');
+  for (let i = 0; i < 5; i++) p = settleBattle({ ...data, progress: p }, lost).progress;
+  assert.equal(retryHand(p, 'tree'), RULES.retryHand.energy, 'capped: it never grows');
+  const rb = retryBattle(lost, C, p);
+  assert.equal(rb.hero.energy, 1);
+  assert.equal(rb.hero.hp, rb.hero.maxHp);
+  assert.equal(rb.foe.maxHp, lost.foe.maxHp, 'the foe is not made smaller');
+  assert.equal(retryBattle(lost, C, null).hero.energy, 0, 'no streak, no hand');
+  // a different foe's defeat restarts the count; a win clears it
+  p = settleBattle({ ...data, progress: p }, { ...fresh('early', { foeId: 'rockfish' }), result: 'lose' }).progress;
+  assert.deepEqual(p.lossStreak, { foeId: 'rockfish', n: 1 });
+  p = settleBattle({ ...data, progress: p }, { ...fresh('early'), result: 'win' }).progress;
+  assert.equal(p.lossStreak, undefined);
+  assert.equal(retryHand(p, 'rockfish'), 0);
+  // the hand never pushes a toy's own starting energy past the cap
+  const kitted = { ...C, rex: { ...C.rex, startEnergy: 2 } };
+  assert.equal(createBattle({ heroId: 'rex', foeId: 'tree', chars: kitted, startEnergy: 1 }).hero.energy, RULES.maxEnergy - 1);
 });
