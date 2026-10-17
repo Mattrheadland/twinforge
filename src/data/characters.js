@@ -116,12 +116,12 @@ export const CHARACTERS = {
     ],
     foePattern: ['quick', 'quick', 'charge', 'slam'],
     art: {
-      kind: 'procedural', draw: 'arthur', model: 'young-arthur',
+      kind: 'procedural', draw: 'arthur', model: 'young-arthur', inkBias: 1.5,
       // imported model (Hunyuan 3D, static): head from the chin up, arms from the shoulders; the cape and sword stay on the body
       face: { pos: [26, 153, 0], size: [30, 12], style: { iris: '#2F7FD0', lid: '#F2C29B', brow: '#C98A2B', size: 0.36 } },
       joints: {
         head: { pivot: [2, 132, 0], box: [[-45, 134, -45], [45, 200, 45]] },
-        armF: { pivot: [2, 115, 24], box: [[-14, 52, 22], [26, 121, 50]] },
+        armF: { pivot: [2, 115, 24], box: [[-14, 52, 26], [26, 121, 50]] },
         armB: { pivot: [2, 115, -24], box: [[-14, 52, -50], [26, 121, -22]] },
       },
     },
