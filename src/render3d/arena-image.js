@@ -8,6 +8,7 @@
 // in the background; until they arrive the floor and backdrop show flat colors.
 import * as THREE from 'three';
 import { WALL_Z } from './room.js';
+import { getArenaLook } from '../data/arena-looks.js';
 
 const CAM_Z = 870; // camera distance from z = 0 (stage3d: HERO_Z + DIST)
 const FRONT_Z = 380;
@@ -114,7 +115,8 @@ export class ImageArena3D {
     band.position.set(0, 0.5, WALL_Z + 30);
     this.group.add(band);
     // props
-    this.props = (def.props || []).map(([n, slot, h], i) => {
+    const look = getArenaLook(def.id);
+    this.props =(def.props || []).map(([n, slot, h], i) => {
       const card = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.5 }));
       card.visible = false;
       const holder = new THREE.Group();
@@ -128,9 +130,9 @@ export class ImageArena3D {
         card.position.y = h / 2;
         card.visible = true;
       });
-      return { card, holder, slot, h, phase: i * 1.7, sway: (def.look && def.look.sway || {})[n] || 0 };
+      return { card, holder, slot, h, phase: i * 1.7, sway: (look && look.sway || {})[n] || 0 };
     });
-    this.atmos = def.look ? buildAtmosphere(this.group, def.look) : null;
+    this.atmos = look ? buildAtmosphere(this.group, look) : null;
   }
 
   // halfW = visible half-width at z = FRONT_Z for the current screen shape.
