@@ -142,7 +142,7 @@ export const CHARACTERS = {
     foePattern: ['quick', 'power', 'charge', 'slam'],
     art: {
       portrait: { y: 6, r: 38 }, // HUD head frame nudge (rig units): x, y, r
-      kind: 'procedural', draw: 'witch', model: 'wanda-wickwhistle',
+      kind: 'procedural', draw: 'witch', model: 'wanda-wickwhistle', inkBias: 1.5,
       // imported model (Hunyuan 3D, static): head from the collar up (hair tower + hat), broom arm on the
       // camera side, spark hand on the far side; the painted wicked face stays
       anchors: { muzzle: [30, 150, 0] },
