@@ -142,6 +142,8 @@ const X = new THREE.Vector3(1, 0, 0), Y = new THREE.Vector3(0, 1, 0), Z = new TH
 //   soft     two softer toon bands + a thin rim instead of three hard steps (default false)
 //   normalMap use the GLB's normal map when it has one (default true)
 //   ink      outline thickness in rig units (default 3)
+//   inkBias  push the outline hull back this many ink widths so it stays out of deep folds
+//            (default 0 = off; ~1.5 for dense meshes with deep eye sockets)
 export function buildModelRig(def, flash) {
   const entry = cache.get(modelId(def));
   if (!entry || entry.status !== 'ready') return null;
@@ -193,7 +195,7 @@ export function buildModelRig(def, flash) {
     mesh.userData.shared = true; // geometry belongs to the cache
     mesh.frustumCulled = false;
     mesh.getWorldScale(ws);
-    inkModelMesh(mesh, art.ink || 3, (Math.abs(ws.x) + Math.abs(ws.y) + Math.abs(ws.z)) / 3);
+    inkModelMesh(mesh, art.ink || 3, (Math.abs(ws.x) + Math.abs(ws.y) + Math.abs(ws.z)) / 3, art.inkBias || 0);
   }
 
   // animation

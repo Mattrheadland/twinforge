@@ -274,14 +274,19 @@ const MODEL_HULL_VERT = /* glsl */ `
   #include <common>
   #include <skinning_pars_vertex>
   uniform float uThick;
+  uniform float uBias;
   void main() {
     #include <beginnormal_vertex>
     #include <skinbase_vertex>
     #include <skinnormal_vertex>
     #include <begin_vertex>
     #include <skinning_vertex>
-    vec3 p = transformed + normalize(objectNormal) * uThick;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+    vec3 off = normalize(objectNormal) * uThick;
+    vec4 mv = modelViewMatrix * vec4(transformed + off, 1.0);
+    // pushed straight back from the camera by uBias ink widths: still rings the silhouette,
+    // but stays out of deep folds (eye sockets, gem settings) that dense meshes keep
+    mv.xyz += normalize(mv.xyz) * uBias * length((modelViewMatrix * vec4(off, 0.0)).xyz);
+    gl_Position = projectionMatrix * mv;
   }`;
 
 // Outline geometry for an imported mesh: same vertices (and skin weights), with
@@ -323,11 +328,11 @@ function modelHullGeometry(geo) {
 }
 
 const modelHullMats = new Map();
-function modelHullMat(thick) {
-  const k = thick.toPrecision(4);
+function modelHullMat(thick, bias) {
+  const k = `${thick.toPrecision(4)}:${bias}`;
   if (!modelHullMats.has(k)) {
     modelHullMats.set(k, new THREE.ShaderMaterial({
-      uniforms: { uThick: { value: thick }, uInk: { value: new THREE.Color(INK) } },
+      uniforms: { uThick: { value: thick }, uBias: { value: bias }, uInk: { value: new THREE.Color(INK) } },
       vertexShader: MODEL_HULL_VERT,
       fragmentShader: HULL_FRAG,
       side: THREE.BackSide,
@@ -338,9 +343,10 @@ function modelHullMat(thick) {
 
 // Ink outline for an imported (possibly skinned) mesh. `worldScale` is how many
 // rig units one unit of the mesh's own space spans, so `thick` stays in rig units.
-export function inkModelMesh(mesh, thick, worldScale) {
+// `bias` pushes the hull away from the camera by that many ink widths (0 = plain inverted hull).
+export function inkModelMesh(mesh, thick, worldScale, bias = 0) {
   const geo = modelHullGeometry(mesh.geometry);
-  const mat = modelHullMat(thick / (worldScale || 1));
+  const mat = modelHullMat(thick / (worldScale || 1), bias);
   let hull;
   if (mesh.isSkinnedMesh) {
     hull = new THREE.SkinnedMesh(geo, mat);
