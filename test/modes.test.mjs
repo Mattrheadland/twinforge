@@ -56,17 +56,18 @@ test('records count trophies, arcade wins and campaign clears', () => {
 });
 
 test('a giant foe has more health and can still be beaten by every hero', () => {
-  for (const h of ROSTER) for (const f of ROSTER) {
+  // answering first try and guarding what the foe telegraphs (its slam, a full charge meter)
+  for (const pathway of ['early', 'growing']) for (const h of ROSTER) for (const f of ROSTER) {
     if (h === f) continue;
-    let s = createBattle({ heroId: h, foeId: f, chars: C, arenaId: 'castle', boss: true });
+    let s = createBattle({ heroId: h, foeId: f, chars: C, arenaId: 'castle', boss: true, pathway });
     assert.ok(s.foe.maxHp > C[f].maxHp && s.boss && s.arenaId === 'castle');
     let turns = 0;
     while (!s.result && turns++ < 80) {
-      const intent = foeIntent({ ...s, turn: 'foe' }, C);
-      const slot = canAct(s, 'special') ? 'special' : intent === 'slam' ? 'guard' : 'power';
-      s = heroAct(s, slot, slot === 'guard' ? 'none' : 'support', C).state;
+      const threat = foeIntent({ ...s, turn: 'foe' }, C) === 'slam' || s.foe.windup;
+      const slot = canAct(s, 'special') ? 'special' : threat && canAct(s, 'guard') ? 'guard' : 'power';
+      s = heroAct(s, slot, slot === 'guard' ? 'none' : 'indep', C).state;
       if (!s.result) s = foeAct(s, C).state;
     }
-    assert.equal(s.result, 'win', `${h} vs giant ${f}`);
+    assert.equal(s.result, 'win', `${pathway} ${h} vs giant ${f}`);
   }
 });

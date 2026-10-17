@@ -21,6 +21,7 @@ import { Director } from './game/director.js';
 import { h } from './ui/dom.js';
 import { loadWords } from './logic/words.js';
 import { awardXp, XP } from './logic/progression.js';
+import { retryStop } from './logic/outcome.js';
 
 const BUILD = typeof __BUILD__ !== 'undefined' ? __BUILD__ : 'dev';
 const MIN_W = 976; // narrowest UI world (the select grid + GO button); the iPhone landscape is ~978 wide, so it is never scaled
@@ -570,11 +571,14 @@ class App {
   onBattleEnd({ win, stars, total, state, xpStart = null }) {
     const home = () => this.goModes();
     const result = (opts) => showRunResult(this.ui, { ...opts, xp: { from: xpStart ?? this.save.data.player.xp, to: this.save.data.player.xp } });
+    // a lost fight: "Try again" restarts the same fight right away (no VS splash);
+    // nothing was taken away, the run or campaign space is still where it was
+    const retry = () => this.retryBattle(state);
     // campaign board fight
     const c = this.save.data.campaign;
     if (state.from === 'campaign' && c && !c.done && c.pos === state.at && c.heroId === state.heroId) {
       const board = buildBoard(c.heroId);
-      if (!win) return result({ win, stars, total, onAgain: () => this.boardFight(), onHome: () => this.goBoard() });
+      if (!win) return result({ win, stars, total, onAgain: retry, onHome: () => this.goBoard() });
       const next = winSpace(c, board, stars);
       if (!c.cleared.includes(c.pos)) this.save.data.player = awardXp(this.save.data.player, XP.space).player;
       this.save.data.campaign = next;
@@ -594,17 +598,17 @@ class App {
     const run = mode && runs[mode];
     const inRun = state.from === 'run' && fits(run);
     if (!inRun) {
-      return result({ win, stars, total, onAgain: () => this.startBattle(state.heroId, state.foeId), onHome: home });
+      return result({ win, stars, total, onAgain: win ? () => this.startBattle(state.heroId, state.foeId) : retry, onHome: home });
     }
     if (run.mode === 'arcade') {
       if (win) {
         this.save.data.records = recordRun(this.records, winStop(run, stars));
         this.save.save();
       }
-      return result({ win, stars, total, onAgain: () => this.playStop('arcade'), onHome: home });
+      return result({ win, stars, total, onAgain: win ? () => this.playStop('arcade') : retry, onHome: home });
     }
     // tournament
-    if (!win) return result({ win, stars, total, onAgain: () => this.playStop('tournament'), onHome: home });
+    if (!win) return result({ win, stars, total, onAgain: retry, onHome: home });
     const next = winStop(run, stars);
     runs.tournament = next.done ? null : next;
     this.save.data.records = recordRun(this.records, next);
@@ -653,6 +657,13 @@ class App {
       if (stop.mode) this.battle.state.runMode = stop.mode;
     }
     this.battle.guard(this.battle.start());
+  }
+
+  // The same fight again from the top: same foe, arena, giant size and origin
+  // (campaign space or run), full health, empty meters.
+  retryBattle(state) {
+    this.audio.sfx('powerUp');
+    this.startBattle(state.heroId, state.foeId, null, retryStop(state));
   }
 
   resumeBattle() {

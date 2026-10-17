@@ -50,7 +50,8 @@ Each agent commits small, with tests, as Matt Headland; the lead deploys.
 | What | Where |
 |---|---|
 | Characters, moves, minions | `src/data/characters.js` (`ROSTER`, `MINIONS`, `MINION_OF`); the four arcade-only toys in `src/data/characters-new-four.js` |
-| Battle rules | `src/logic/battle.js` |
+| Battle rules | `src/logic/battle.js` (v6 stakes: foe charge meter, charged attack, per-pathway numbers in `RULES.stakes`; balance proven by `test/balance.test.mjs`) |
+| Win/loss settlement, retry | `src/logic/outcome.js` (a loss never takes stars/XP/progress; `retryStop` = same fight again) |
 | Modes: Tournament, Arcade | `src/game/modes.js`, `src/ui/modes-ui.js` |
 | Campaign board logic | `src/game/campaign.js` (`WORLDS`, `buildBoard`, `move`, `winSpace`) |
 | Campaign board view | `src/render3d/board3d.js` (3D diorama), `src/ui/board-ui.js` (HUD + flat fallback) |

@@ -18,20 +18,22 @@ test('every character has exactly one move per slot, with names and colors', () 
   }
 });
 
+// Since v6 a wrong answer charges the foe, so needing the answer shown every
+// time ('support') can lose; test/balance.test.mjs covers how often.
 test('every matchup ends in a win with a simple strategy, in a sensible number of turns', () => {
-  for (const h of ROSTER_IDS) for (const f of ROSTER_IDS) {
+  for (const pathway of ['early', 'growing']) for (const h of ROSTER_IDS) for (const f of ROSTER_IDS) {
     if (h === f) continue;
-    for (const q of ['indep', 'support', 'none']) {
-      let s = createBattle({ heroId: h, foeId: f, chars: C });
+    for (const q of ['indep', 'none']) {
+      let s = createBattle({ heroId: h, foeId: f, chars: C, pathway });
       let turns = 0;
       while (!s.result && turns++ < 60) {
-        const intent = foeIntent({ ...s, turn: 'foe' }, C);
-        const slot = canAct(s, 'special') ? 'special' : intent === 'slam' ? 'guard' : 'power';
+        const threat = foeIntent({ ...s, turn: 'foe' }, C) === 'slam' || s.foe.windup;
+        const slot = canAct(s, 'special') ? 'special' : threat && canAct(s, 'guard') ? 'guard' : 'power';
         s = heroAct(s, slot, slot === 'guard' ? 'none' : q, C).state;
         if (!s.result) s = foeAct(s, C).state;
       }
-      assert.equal(s.result, 'win', `${h} vs ${f} (${q})`);
-      assert.ok(turns >= 4 && turns <= 14, `${h} vs ${f} (${q}) took ${turns}`);
+      assert.equal(s.result, 'win', `${pathway} ${h} vs ${f} (${q})`);
+      assert.ok(turns >= 4 && turns <= 14, `${pathway} ${h} vs ${f} (${q}) took ${turns}`);
     }
   }
 });

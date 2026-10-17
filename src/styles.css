@@ -67,6 +67,7 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 .round-btn.again { --b: var(--go); --l: #8CF29B; --d: #157A33; }
 .round-btn.home { --b: var(--blue); --l: #6F9BFF; --d: #0B2A85; width: 76px; height: 76px; padding: 14px; }
 .round-btn.small { width: 64px; height: 64px; padding: 12px; }
+.round-btn.big { width: 128px; height: 128px; padding: 24px; }
 .round-btn.pulse { animation: pop-in 0.45s both, pulse 1.2s ease-in-out 0.6s infinite; }
 .corner-btn {
   position: absolute; top: 12px; width: 56px; height: 56px; border-radius: 50%; padding: 10px;
@@ -219,6 +220,13 @@ button svg, span svg, div svg { display: block; width: 100%; height: 100%; overf
 .pip { width: 22px; height: 22px; opacity: 0.3; filter: grayscale(1); transition: opacity 0.2s, filter 0.2s; }
 .pip.on { opacity: 1; filter: drop-shadow(0 0 4px rgba(255, 201, 20, 0.9)); }
 .pip.pop { animation: pop-in 0.45s; }
+/* the foe's charge meter (wrong answers light a flame; full = a charged attack is coming) */
+.charge-meter { display: flex; gap: 3px; margin-top: 4px; padding: 2px 4px; border-radius: 6px; }
+.cpip { width: 22px; height: 22px; opacity: 0.25; filter: grayscale(1); transition: opacity 0.25s, filter 0.25s; }
+.cpip.on { opacity: 1; filter: drop-shadow(0 0 4px rgba(244, 96, 54, 0.95)); }
+.cpip.pop { animation: pop-in 0.45s; }
+.charge-meter.full { background: rgba(215, 38, 61, 0.45); box-shadow: 0 0 0 2px #D7263D, 0 0 12px #F46036; animation: pulse 0.6s infinite; }
+html.reduced .charge-meter.full { animation: none; }
 .status { display: flex; gap: 4px; margin-top: 3px; }
 .st { width: 28px; height: 28px; animation: pop-in 0.3s both; background: #120E26; border: 3px solid var(--ink); padding: 3px; box-shadow: 0 0 0 2px #E8B83A; }
 .st-fire { animation: pop-in 0.3s both, pulse 0.6s infinite; }
