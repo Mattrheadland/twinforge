@@ -27,11 +27,11 @@ test('Pumpkin Patch look resolves to the same values as before', () => {
 });
 
 test('arenas without a look return undefined and carry no look', () => {
-  for (const id of ['bedroom', 'castle', 'skull-cove', 'star-bridge', 'nope', '__proto__', 'toString']) {
+  for (const id of ['bedroom', 'castle', 'grandmas-woods', 'star-bridge', 'nope', '__proto__', 'toString']) {
     assert.equal(getArenaLook(id), undefined, id);
   }
   for (const [id, def] of Object.entries(ARENAS)) {
-    if (id !== 'pumpkin-patch') assert.ok(!('look' in def), `${id} has no look`);
+    if (!['pumpkin-patch', 'skull-cove'].includes(id)) assert.ok(!('look' in def), `${id} has no look`);
   }
 });
 
