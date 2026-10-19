@@ -20,6 +20,16 @@ const LOOKS = {
     pools: [{ slot: 'backR', color: 0x7DFF5A, r: 170, k: 0.6 }, { slot: 'frontR', color: 0xFF9A3A, r: 120, k: 0.5 }, { slot: 'frontL', color: 0xFF8A2A, r: 110, k: 0.45 }],
     sway: { 6: 0.05, 3: 0.02 },
   },
+  'skull-cove': {
+    // v6 Phase 6: moonlit pirate cove. Colours are the cove's own (backdrop.jpg / official poster): cream moon
+    // as the rim light, pale sea-mist over the water, amber lantern glow, drifting lantern sparks and pale foam
+    // glints; the palm and the lantern post sway, the anchor barely moves.
+    rim: 0xFFE3A0, rimK: 0.55, tint: 0xDCE6FF,
+    mist: 0x9CC4F0, mistK: 0.3,
+    fireflies: { count: 36, colors: ['#FFC15A', '#FFE3A0', '#CFEFFF'], size: 28 },
+    pools: [{ slot: 'backR', color: 0xFFA83A, r: 160, k: 0.55 }, { slot: 'frontR', color: 0xFFB04A, r: 110, k: 0.4 }, { slot: 'frontL', color: 0xFFD27A, r: 100, k: 0.35 }],
+    sway: { 4: 0.04, 5: 0.025, 6: 0.01 },
+  },
 };
 
 const SLOTS = ['backL', 'backL2', 'backR', 'backR2', 'frontL', 'frontR'];
