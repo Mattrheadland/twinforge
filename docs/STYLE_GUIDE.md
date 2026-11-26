@@ -12,7 +12,7 @@ v5 replaces v1–v4; v5.1 adds the campaign board, wild creatures, giants and th
 
 ## Geometry
 - **Low-poly on purpose:** boxes, low-segment spheres (8–10 sides), icosahedrons, 4–8-sided cones and cylinders. Facets should be visible. A code-built toy is roughly 300–800 triangles; an imported model (image-to-3D) up to about 6,000.
-- **Faceted shading:** every polygon is lit flat (normals come from the face, not smoothed), so curved parts read as clean facets.
+- **Faceted shading:** code-built toys light every polygon flat (normals come from the face, not smoothed), so curved parts read as clean facets. Imported (image-to-3D) toys use crease-split smooth normals instead (2026-10-17): round parts shade clean, edges sharper than about 55° stay hard. Flat-lighting a decimated scan turned simplification noise into jaggies; `art.smooth: false` brings the flat look back per toy.
 - **Toy scale:** about 190 units tall, feet at y = 0, facing +x. In battle, toys turn about 50° toward the camera (3/4 view). The opponent is a mirror image.
 - **Faces** are textures painted onto the model (a screen for robots, a decal on the head and snout for creatures). They switch expression live: open, angry, happy, squint, closed, dizzy swirl; mouths smile, open, grit, o, flat.
 

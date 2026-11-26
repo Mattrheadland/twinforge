@@ -37,10 +37,10 @@ export const CHARACTERS = {
       // swappable eyes over the painted ones, one on each side of the snout
       face: { pair: true, pos: [96, 146, 20], yaw: 1.0, size: [16, 16], style: { iris: '#7A4A20', lid: '#C8202E', brow: '#14111A', size: 0.34 } },
       joints: {
-        head: { pivot: [74, 128, 0], box: [[72, 120, -60], [150, 200, 60]] },
-        jaw: { pivot: [86, 127, 0], box: [[86, 95, -40], [150, 126, 40]] },
-        armF: { pivot: [60, 114, 14], box: [[60, 86, 3], [92, 120, 60]] },
-        armB: { pivot: [60, 114, -14], box: [[60, 86, -60], [92, 120, -3]] },
+        head: { pivot: [74, 128, 0], box: [[74, 118, -60], [150, 200, 60]] },
+        jaw: { pivot: [86, 127, 0], box: [[84, 92, -40], [150, 127, 40]] },
+        armF: { pivot: [60, 114, 14], box: [[60, 86, 7], [86, 95, 60]] },
+        armB: { pivot: [60, 114, -14], box: [[60, 86, -60], [86, 95, -7]] },
         tail: { pivot: [-34, 116, 0], box: [[-200, 80, -60], [-34, 160, 60]] },
       },
     },
@@ -67,7 +67,7 @@ export const CHARACTERS = {
       armScale: 0.6,
       joints: {
         armF: { pivot: [0, 108, 26], box: [[-30, 92, 27], [30, 155, 70]] },
-        armB: { pivot: [0, 95, -24], box: [[-30, 45, -70], [30, 115, -24]] },
+        armB: { pivot: [0, 95, -24], box: [[-30, 45, -70], [30, 115, -27]] },
       },
     },
   },
@@ -93,10 +93,10 @@ export const CHARACTERS = {
       armScale: 0.35, // his forearms are fused to his hips in the mesh; small swings keep that seam from stretching
       face: { pair: true, pos: [44, 138, 15], yaw: 1.0, size: [14, 14], style: { iris: '#E8A33A', lid: '#A8B0B4', brow: '#14111A', size: 0.34 } },
       joints: {
-        head: { pivot: [10, 108, 0], box: [[-5, 100, -21], [72, 176, 21]] },
+        head: { pivot: [10, 108, 0], box: [[2, 104, -21], [72, 176, 21]] },
         jaw: { pivot: [20, 128, 0], box: [[24, 104, -20], [72, 127, 20]] },
-        armF: { pivot: [8, 115, 38], box: [[-20, 48, 39], [42, 122, 72]] },
-        armB: { pivot: [8, 115, -38], box: [[-20, 48, -72], [42, 122, -39]] },
+        armF: { pivot: [8, 115, 38], box: [[-20, 50, 35], [42, 122, 72]] },
+        armB: { pivot: [8, 115, -38], box: [[-20, 50, -72], [42, 122, -35]] },
         tail: { pivot: [-22, 60, 0], box: [[-80, 0, -22], [-22, 76, 22]] },
       },
     },
@@ -116,12 +116,12 @@ export const CHARACTERS = {
     ],
     foePattern: ['quick', 'quick', 'charge', 'slam'],
     art: {
-      kind: 'procedural', draw: 'arthur', model: 'young-arthur',
+      kind: 'procedural', draw: 'arthur', model: 'young-arthur', inkBias: 1.5,
       // imported model (Hunyuan 3D, static): head from the chin up, arms from the shoulders; the cape and sword stay on the body
       face: { pos: [26, 153, 0], size: [30, 12], style: { iris: '#2F7FD0', lid: '#F2C29B', brow: '#C98A2B', size: 0.36 } },
       joints: {
         head: { pivot: [2, 132, 0], box: [[-45, 134, -45], [45, 200, 45]] },
-        armF: { pivot: [2, 115, 24], box: [[-14, 52, 22], [26, 121, 50]] },
+        armF: { pivot: [2, 115, 24], box: [[-14, 52, 26], [26, 121, 50]] },
         armB: { pivot: [2, 115, -24], box: [[-14, 52, -50], [26, 121, -22]] },
       },
     },
@@ -142,7 +142,7 @@ export const CHARACTERS = {
     foePattern: ['quick', 'power', 'charge', 'slam'],
     art: {
       portrait: { y: 6, r: 38 }, // HUD head frame nudge (rig units): x, y, r
-      kind: 'procedural', draw: 'witch', model: 'wanda-wickwhistle',
+      kind: 'procedural', draw: 'witch', model: 'wanda-wickwhistle', inkBias: 1.5,
       // imported model (Hunyuan 3D, static): head from the collar up (hair tower + hat), broom arm on the
       // camera side, spark hand on the far side; the painted wicked face stays
       anchors: { muzzle: [30, 150, 0] },
@@ -176,10 +176,10 @@ export const CHARACTERS = {
       anchors: { muzzle: [30, 148, 0] },
       armScale: 0.6,
       joints: {
-        head: { pivot: [4, 150, 0], box: [[-14, 152, -24], [40, 200, 24]] },
-        armF: { pivot: [0, 130, 36], box: [[-16, 60, 30], [30, 142, 70]] },
-        armB: { pivot: [0, 130, -36], box: [[-16, 60, -70], [30, 142, -30]] },
-        tail: { pivot: [-14, 150, 0], box: [[-50, 40, -70], [-13, 180, 70]] },
+        head: { pivot: [4, 150, 0], box: [[-12, 152, -24], [40, 200, 24]] },
+        armF: { pivot: [0, 130, 36], box: [[-16, 56, 30], [30, 142, 70]] },
+        armB: { pivot: [0, 130, -36], box: [[-16, 56, -70], [30, 142, -30]] },
+        tail: { pivot: [-14, 150, 0], box: [[-50, 44, -70], [-20, 180, 70]] },
       },
     },
   },
