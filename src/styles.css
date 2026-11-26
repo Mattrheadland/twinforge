@@ -840,3 +840,12 @@ html.reduced .xp-bar i { transition: none; }
 .skill-input.hit .si-word { opacity: 1; transition: opacity 0.12s; }
 .skill-input.q-indep .si-target { box-shadow: 0 0 0 10px #FFC914, 0 8px 0 rgba(10, 6, 30, 0.55); }
 @media (prefers-reduced-motion: reduce) { .si-cheer { animation: none; } }
+
+/* Upper ladder questions (logic/challenges-upper.js): four choices, sums, sentences, groups */
+.ch-opts.four { gap: 16px; flex-wrap: wrap; max-width: 520px; }
+.ch-opts.four .opt { width: 92px; height: 92px; font-size: 48px; }
+.ch-opts.four .opt-word { width: auto; min-width: 104px; font-size: 34px; }
+.sent-card { font-size: 34px; letter-spacing: 0; line-height: 1.25; max-width: 560px; height: auto; min-height: 120px; padding: 12px 22px; text-align: center; }
+.groups-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; max-width: 520px; }
+.group-box { padding: 8px; border: 4px dashed var(--ink); border-radius: 14px; background: #FFF3D6; }
+.ten-frames.many { flex-wrap: wrap; max-width: 560px; }

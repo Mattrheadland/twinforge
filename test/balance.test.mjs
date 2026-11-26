@@ -7,6 +7,8 @@
 //                  sometimes loses [93.2]  giants at 50%: ≥ 80% [83.7]
 //   Growing (5–7)  90%: ≥ 95% [100]        50%: 70–97% [95.2]   random: 50–85% [68.9]
 //                  giants at 50%: ≥ 50% [67.4]
+//   Older (8–10)   90%: ≥ 95% [99.5]        50%: 60–95% [92.7]   random: 35–75% [51.8]
+//                  giants at 50%: ≥ 40% [57.2]   (design fix 2, Nov 2026: real losses are OK at 8–10)
 // (Re-measured after the shared damage formula, design fix 1: a wrong answer now hits for
 // the base 16 instead of 14. Learning off has its own test: test/balance-off.test.mjs.)
 // Phase 5 audit (directive §8) moved giants from 96.6 / 77.7 to the numbers above without
@@ -23,6 +25,7 @@ import { winRate } from './_sim.mjs';
 const BANDS = {
   early: { 0.9: [0.97, 1], 0.5: [0.9, 1], random: [0.75, 0.97], giant50: [0.8, 1] },
   growing: { 0.9: [0.95, 1], 0.5: [0.7, 0.97], random: [0.5, 0.85], giant50: [0.5, 1] },
+  older: { 0.9: [0.95, 1], 0.5: [0.6, 0.95], random: [0.35, 0.75], giant50: [0.4, 1] },
 };
 const ACC = [0.9, 0.5, 'random'];
 
@@ -50,11 +53,12 @@ test('early: a child tapping at random sometimes loses, one answering half right
 });
 
 test('more right answers never win less; Early is never harder than Growing', () => {
-  for (const p of ['early', 'growing']) {
+  for (const p of ['early', 'growing', 'older']) {
     assert.ok(rates[p][0.9] >= rates[p][0.5], p);
     assert.ok(rates[p][0.5] >= rates[p].random, p);
   }
   for (const k of [...ACC, 'giant50']) assert.ok(rates.early[k] >= rates.growing[k], String(k));
+  for (const k of [...ACC, 'giant50']) assert.ok(rates.growing[k] >= rates.older[k], `older ${k}`);
 });
 
 test('the simulation is deterministic', () => {

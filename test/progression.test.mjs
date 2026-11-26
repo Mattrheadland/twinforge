@@ -149,8 +149,10 @@ test('progression: XP is saved per profile and survives a restart', () => {
 });
 
 test('pathways: default Early; the pathway sets the starting band and the ceiling', () => {
-  assert.deepEqual(PATHWAYS, ['early', 'growing']);
-  assert.ok(PATHWAY_BANDS.early && PATHWAY_BANDS.growing);
+  assert.deepEqual(PATHWAYS, ['early', 'growing', 'older']);
+  assert.ok(PATHWAY_BANDS.early && PATHWAY_BANDS.growing && PATHWAY_BANDS.older);
+  assert.equal(PATHWAY_BANDS.older.max, MAX_SKILL, 'Older reaches the top of the ladder (L6)');
+  assert.ok(PATHWAY_BANDS.older.min > PATHWAY_BANDS.growing.min);
   assert.equal(bandFor('nonsense'), PATHWAY_BANDS.early);
   mem.clear();
   const st = new SaveStore(C);

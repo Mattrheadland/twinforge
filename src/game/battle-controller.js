@@ -203,14 +203,15 @@ export class BattleController {
       const force = window.__TBB_FORCE__ || {};
       const off = this.save.data.settings.offKinds;
       const L = this.save.data.learning;
-      const ch = pickQuestion(domain === 'math' ? 'math' : 'reading', lvl, this.rng, { force: domain === 'math' ? force.math : force.reading, off, mem: L && L.mem });
+      const ch = pickQuestion(domain === 'math' ? 'math' : 'reading', lvl, this.rng, { force: domain === 'math' ? force.math : force.reading, off, mem: L && L.mem, pathway });
       this.currentChallenge = ch;
       this.stage.dim = 0.35;
       quality = await this.challenge.run(ch, kind === 'special' ? 'special' : 'attack', moveFor(this.chars[this.state.heroId], kind));
       this.currentChallenge = null;
       this.stage.dim = 0;
       if (tok !== this.token) return;
-      this.save.data.skills[skillKey] = recordResult(this.save.data.skills[skillKey], quality, bandFor(pathway));
+      // a strand asked a level easier (logic/elo.js) doesn't step the subject level
+      if (!ch.eased) this.save.data.skills[skillKey] = recordResult(this.save.data.skills[skillKey], quality, bandFor(pathway));
       recordAnswer(L, ch, quality, this.challenge.lastStats || {});
       noteLevel(L, skillKey, lvl, playLevel(this.save.data.skills[skillKey], pathway), 'auto');
       this.save.data.player = awardXp(this.save.data.player, xpForAnswer(quality)).player;

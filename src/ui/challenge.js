@@ -7,6 +7,7 @@ import { ICON } from './icons.js';
 import { qualityFor, PICS, wordLabel } from '../logic/challenges.js';
 import { say, speechOn } from '../audio/speech.js';
 import { answerGate } from './answer-gate.js';
+import { UPPER_KINDS, UPPER_MATH_KINDS } from '../logic/challenges-upper.js';
 
 const INK = '#14111A';
 const ITEM_SVG = {
@@ -16,7 +17,7 @@ const ITEM_SVG = {
   duck: () => `<svg viewBox="0 0 60 60"><path d="M10 34 Q10 52 30 52 Q52 52 52 36 Q52 28 44 28 Q46 12 32 10 Q20 10 20 22 Q20 28 26 30 Q16 30 10 34 Z" fill="#FFC914" stroke="${INK}" stroke-width="4.5" stroke-linejoin="round"/><path d="M42 18 L54 20 L44 25 Z" fill="#F46036" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/><circle cx="35" cy="18" r="3" fill="${INK}"/></svg>`,
 };
 const ITEM_COLORS = ['#D7263D', '#1B4FD8', '#2E9E44', '#6A3FA0', '#F46036'];
-const OPT_COLORS = ['#FF8A5C', '#6CC4F0', '#8FE07A'];
+const OPT_COLORS = ['#FF8A5C', '#6CC4F0', '#8FE07A', '#C9A0F2'];
 const TOKEN_HEX = { red: '#D7263D', blue: '#1B4FD8', yellow: '#FFC914', green: '#2E9E44', purple: '#6A3FA0' };
 
 const SHAPE_PATH = {
@@ -34,7 +35,7 @@ const tokenSvg = (tok) => {
   return shapeSvg(shape, TOKEN_HEX[color] || color);
 };
 
-const MATH_KINDS = new Set(['count', 'flash', 'add', 'sub', 'story', 'numeral', 'compare', 'shape', 'pattern', 'oneMore', 'seq', 'bigger', 'teen']);
+const MATH_KINDS = new Set(['count', 'flash', 'add', 'sub', 'story', 'numeral', 'compare', 'shape', 'pattern', 'oneMore', 'seq', 'bigger', 'teen', ...UPPER_MATH_KINDS]);
 // dice faces on a 3×3 grid (cells 0–8), for the quick-look dots
 const DICE = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
@@ -185,6 +186,26 @@ export class ChallengeUI {
         body = target = h('button', { class: 'hear-btn', 'aria-label': 'Hear the word again', html: ICON.sound });
         onTap(body, () => say(ch.say), 300);
         break;
+      // upper ladder (logic/challenges-upper.js)
+      case 'groups':
+        body = target = h('div', { class: 'groups-row' }, ...Array.from({ length: ch.a }, () => h('span', { class: 'group-box' }, this.dots(ch.b))));
+        break;
+      case 'tens':
+        body = target = ch.a <= 5
+          ? h('div', { class: 'ten-frames many' }, ...Array.from({ length: ch.a }, () => this.tenFrame(10)), ch.b ? this.tenFrame(ch.b) : null)
+          : h('span', { class: 'word-card sent-card' }, ch.show);
+        break;
+      case 'skip':
+        body = target = h('div', { class: 'num-row seq up' },
+          ...ch.seq.map((x, i) => h('span', { class: `num-tile ${x == null ? 'tile-q' : ''}`, style: { '--d': i * 60 + 'ms' } }, x == null ? '?' : String(x))));
+        break;
+      case 'digraph':
+        body = h('div', { class: 'ltr-target' },
+          target = h('span', { class: 'pic-card' }, h('span', { class: 'emoji' }, ch.pic), h('b', { class: 'pic-word show' }, ch.word)),
+          h('span', { class: `sound-pos ${ch.pos === 'end' ? 'end' : ''}` }, h('i'), h('i'), h('i')));
+        break;
+      default:
+        if (UPPER_KINDS.has(ch.kind)) body = target = h('span', { class: `word-card ${ch.show.length > 14 ? 'sent-card' : ''}` }, ch.show);
     }
     return { body, items, target };
   }
@@ -228,7 +249,7 @@ export class ChallengeUI {
       const slots = this.slots, wordLetters = this.wordLetters;
       // what hides after a moment: the quick-look dots, or the peeked word
       const coverEl = ch.kind === 'flash' ? target : this.coverEl;
-      const optsBox = h('div', { class: 'ch-opts' });
+      const optsBox = h('div', { class: `ch-opts ${(ch.options || []).length > 3 ? 'four' : ''}` });
       let opts = [];
       const isMath = MATH_KINDS.has(ch.kind);
       const badge = h('div', { class: `ch-badge ch-badge-${actionKind}`, style: move ? { '--mc': move.color } : null, html: actionKind === 'special' ? ICON.bolt : ICON.fist });
