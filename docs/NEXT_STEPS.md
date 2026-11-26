@@ -53,6 +53,10 @@
 - **Signature power moves** for the new four (parrot, howl rings, pumpkin lob, gravity well) and **HUD portrait framing** fixed per toy (Billy Bass was cut off).
 - **Sounds** for all 16 new-four moves plus win stings (`move.sfx`, `move.sfxHit`, `def.winSfx`).
 
+## Board detail pass (v6/board-detail, draft PR)
+- Every island: stepped faceted cliffs, beach + foam + shallows, raised tier with a landmark, 49–78 themed props; boardwalks on stilts; waterfalls on castle and bog; islets, sea stacks, buoys, boats. Spaces, path and game logic unchanged (`test/board-layout.test.mjs`, e2e board check).
+- Next: Founder's creative OK; concept sheets and Blender landmark GLBs per `docs/BOARD_ART_REQUESTS.md`; check frame rate on the iPhone (headless software GL went 66.7 → 83.3 ms median at 4× throttle).
+
 ## Board night crew (done)
 `src/render3d/board3d.js`, rigs from `src/render3d/night-crew.js`.
 - **Fire dancers**: five on Czernobog's summit slope (spread across the face the camera sees, feet on the cone) and three along the Haunted Forest's back edge, left of the mountain's foot. Each hops on its own beat at about 2 Hz, scaled 1.2–1.3 so they read at the follow camera.
