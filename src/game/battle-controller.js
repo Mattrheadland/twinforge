@@ -18,6 +18,8 @@ import { ChallengeUI } from '../ui/challenge.js';
 import { SkillInputUI } from '../ui/skill-input.js';
 import { Director } from './director.js';
 import { buzz } from '../haptics.js';
+import { say } from '../audio/speech.js';
+import { COACH } from '../logic/first-session.js';
 
 export const PHASE = {
   INTRO: 'intro', CHOOSE: 'choose', CHALLENGE: 'challenge', HERO_ANIM: 'hero-anim',
@@ -35,7 +37,7 @@ export class BattleController {
     this.save = app.save;
     this.rng = new Rng((Date.now() ^ 0x5eed) >>> 0);
     // the player's pathway sets the stakes (charge meter, foe strength); a resumed battle keeps its own
-    this.state = resume || createBattle({ heroId, foeId, chars, arenaId: stop?.arenaId || arenaFor(foeId), boss: !!stop?.boss, pathway: this.save.pathway, startEnergy });
+    this.state = resume || createBattle({ heroId, foeId, chars, arenaId: stop?.arenaId || arenaFor(foeId), boss: !!stop?.boss, pathway: this.save.pathway, startEnergy, guided: !!stop?.guided });
     if (!resume && stop?.scale) this.state.foeScale = stop.scale;
     this.resumed = !!resume;
     this.phase = PHASE.INTRO;
@@ -163,10 +165,10 @@ export class BattleController {
     });
     // first-battle helper hand
     const first = 'power';
-    if (!tut[first]) this.hud.pointAt(first);
-    else if (canAct(s, 'special') && !tut.special) this.hud.pointAt('special');
-    else if (threat && !tut.guard) this.hud.pointAt('guard');
-    else this.hud.pointAt(null);
+    const point = !tut[first] ? first : canAct(s, 'special') && !tut.special ? 'special' : threat && !tut.guard ? 'guard' : null;
+    this.hud.pointAt(point);
+    // the guided first battle says each new step out loud (logic/first-session.js)
+    if (s.guided && point && point !== this.coached) { this.coached = point; say(COACH[point]); }
     this.locked = false;
   }
 
@@ -366,6 +368,7 @@ export class BattleController {
     // a broken victory dance must never cost the stars or the results screen
     try {
       this.audio.stopMusic(s.result === 'win' ? 0.2 : 0.4);
+      if (s.guided && s.result === 'win') say(COACH.win);
       await (s.result === 'win' ? this.director.win() : this.director.lose());
       this.audio.play(s.result === 'win' ? 'victory' : 'nap');
       await this.director.wait(500);

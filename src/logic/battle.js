@@ -36,6 +36,8 @@
 // When the hero's health reaches 0 the battle is lost (result 'lose'); nothing
 // here rescues it. Losing never touches stars, XP or progress (logic/outcome.js).
 
+import { GUIDED } from './first-session.js';
+
 export const RULES = {
   maxEnergy: 3,
   quick: 12,
@@ -118,12 +120,13 @@ export function learningFor(slot) {
 // boss: a GIANT foe (game/modes.js) with BOSS_HP times the health.
 // pathway: the player's learning pathway ('early' | 'growing'); sets the stakes.
 // startEnergy: extra starting energy for a retry hand (logic/outcome.js); capped at RULES.maxEnergy - 1 with the toy's own.
-export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss = false, pathway = PATHWAY_DEFAULT, startEnergy = 0 }) {
+// guided: the first-session battle (logic/first-session.js): can't be lost, never charges.
+export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss = false, pathway = PATHWAY_DEFAULT, startEnergy = 0, guided = false }) {
   const h = chars[heroId];
   const f = chars[foeId];
   if (!h || !f) throw new Error('unknown character');
   if (!RULES.stakes[pathway]) pathway = PATHWAY_DEFAULT;
-  const foeHp = Math.round(f.maxHp * (boss ? 1.35 : 1) * RULES.stakes[pathway].foeHp);
+  const foeHp = Math.round(f.maxHp * (boss ? 1.35 : 1) * RULES.stakes[pathway].foeHp * (guided ? GUIDED.foeHp : 1));
   return {
     v: BATTLE_VERSION,
     heroId,
@@ -136,6 +139,7 @@ export function createBattle({ heroId, foeId, chars, arenaId = 'bedroom', boss =
     hero: { hp: h.maxHp, maxHp: h.maxHp, energy: Math.max(0, Math.min(RULES.maxEnergy - 1, (h.startEnergy | 0) + (startEnergy | 0))), guard: null, shield: false, secondWind: false, quickStreak: 0,
       specialCost: Math.max(1, Math.min(RULES.maxEnergy, (moveFor(h, 'special') || {}).energyCost || RULES.maxEnergy)) },
     boss,
+    ...(guided ? { guided: true } : {}),
     foe: { hp: foeHp, maxHp: foeHp, charged: false, dizzy: false, step: 0, meter: 0, windup: false, windupFresh: false },
     stats: { indep: 0, hint: 0, support: 0, turns: 0 },
   };
@@ -160,7 +164,9 @@ function gainEnergy(s, amount, events, reason) {
 function damage(s, target, amount, events, extra = {}) {
   const t = s[target];
   const amt = Math.max(0, Math.round(amount));
-  t.hp = Math.max(0, t.hp - amt);
+  // a guided battle's foe "gets tired" before the hero falls
+  const floor = s.guided && target === 'hero' ? GUIDED.heroFloor : 0;
+  t.hp = Math.max(Math.min(floor, t.hp), t.hp - amt);
   events.push({ type: 'damage', target, amount: amt, hp: t.hp, maxHp: t.maxHp, ...extra });
   if (t.hp === 0 && !s.result) {
     s.result = target === 'foe' ? 'win' : 'lose';
@@ -173,6 +179,7 @@ function damage(s, target, amount, events, extra = {}) {
 function chargeMeter(s, quality, ev) {
   const st = stakesFor(s);
   const f = s.foe;
+  if (s.guided) return; // the guided first battle never charges
   if (f.windup) return; // already winding up: the next attack is charged either way
   const before = f.meter || 0;
   let wrong = WRONG_TAPS[quality] || 0;
@@ -309,7 +316,7 @@ export function foeAct(s0, chars) {
   const fc = chars[s.foeId];
   const intent = foeIntent(s, chars);
   const st = stakesFor(s);
-  const power = (fc.foePower || 1) * st.foePower;
+  const power = (fc.foePower || 1) * st.foePower * (s.guided ? GUIDED.foePower : 1);
 
   if (intent === 'dizzy') {
     s.foe.dizzy = false;

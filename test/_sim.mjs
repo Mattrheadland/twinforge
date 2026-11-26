@@ -41,8 +41,9 @@ function offInput(rng, input, accuracy) {
 
 // One battle. Returns { result, turns, charged } (charged: charged attacks the foe threw).
 // mode: 'on' (questions) | 'off' (learning off); input overrides the pathway's off input.
-export function playBattle({ heroId, foeId, chars, pathway, accuracy, rng, boss = false, mode = 'on', input = null }) {
-  let s = createBattle({ heroId, foeId, chars, pathway, boss });
+// guided: the first-session battle (logic/first-session.js).
+export function playBattle({ heroId, foeId, chars, pathway, accuracy, rng, boss = false, mode = 'on', input = null, guided = false }) {
+  let s = createBattle({ heroId, foeId, chars, pathway, boss, guided });
   let turns = 0, charged = 0;
   const off = mode === 'off' ? input || offInputFor(pathway) : null;
   while (!s.result && turns++ < 80) {
