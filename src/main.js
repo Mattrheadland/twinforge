@@ -1,5 +1,6 @@
 // TwinForge: Toy Box Tactics — app shell: layout, screens, audio unlock, saves, PWA.
 import { CHARACTERS, ROSTER, opponentFor } from './data/characters.js';
+import { isFirstSession, FIRST_BATTLE } from './logic/first-session.js';
 import { VH } from './render/stage.js';
 import { createStage, headFrame } from './render3d/stage3d.js';
 import { preloadModels } from './render3d/models.js';
@@ -329,8 +330,10 @@ class App {
     this.endBattle();
     const d = this.save.data;
     const heroId = CHARACTERS[d.progress.lastHero] ? d.progress.lastHero : ROSTER[0];
+    // a first session shows the fight that Play will start
+    const firstFight = isFirstSession(d) && FIRST_BATTLE;
     this.stage.setArena('bedroom');
-    this.stage.setFighters(CHARACTERS[heroId], CHARACTERS[opponentFor(heroId)]);
+    this.stage.setFighters(CHARACTERS[firstFight ? firstFight.heroId : heroId], CHARACTERS[firstFight ? firstFight.foeId : opponentFor(heroId)]);
     this.stage.cam.drift = 1;
     this.stage.cam.zoom = 1;
     this.stage.dim = 0;
@@ -343,11 +346,18 @@ class App {
       onPlay: () => {
         this.audio.sfx('select');
         buzz('light');
+        // a brand-new player's first Play goes straight into the guided fight (logic/first-session.js)
+        if (isFirstSession(this.save.data, this.save.index.profiles.filter(Boolean).length)) return this.startFirst();
         this.goPlayers();
       },
       onParent: () => this.openParent(),
     });
     this.ui.warmSelect(CHARACTERS, ROSTER);
+  }
+
+  startFirst() {
+    const { heroId, foeId, arenaId } = FIRST_BATTLE;
+    this.startBattle(heroId, foeId, null, { kind: 'first', guided: true, arenaId });
   }
 
   // ---------------- players (save.js profiles, ui/profiles-ui.js) ----------------
