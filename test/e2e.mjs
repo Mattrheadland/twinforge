@@ -396,6 +396,17 @@ const bd = await page.evaluate(() => {
     standees: b ? b.spaces.filter((s) => s.standee).length : 0, islands: b ? b.worldX.length : 0, finalBig: b ? b.spaces.at(-1).standee.scale.x > b.spaces[1].standee.scale.x * 1.5 : false };
 });
 check('campaign board: a 3D island diorama, five worlds, Czernobog giant at the end', bd.is3D && bd.spaces > 25 && bd.islands === 5 && bd.standees > 15 && bd.finalBig);
+{
+  // v6 detail pass: same spaces in the same places, and every island really dressed
+  const dt = await page.evaluate(() => {
+    const b = window.__tbb.app.stage.board, d = b.detail;
+    const same = b.pts.every((p, i) => p.x === i * 130 + b.board[i].world * 120 && Math.abs(p.z - Math.sin(i * 0.85) * 70) < 1e-9);
+    return { same, n: b.pts.length, isl: d.islands.map((q) => [q.name, q.props, q.falls, q.tiers, q.pieces]), bridges: d.bridges, boats: d.boats, falls: b.amb.falls.length };
+  });
+  const by = Object.fromEntries(dt.isl.map((q) => [q[0], q]));
+  check('board detail: spaces unchanged; every island has tiers, a landmark and 40+ props; waterfalls on castle and bog; boardwalks and boats',
+    dt.same && dt.n === bd.spaces && dt.isl.length === 5 && dt.isl.every((q) => q[1] >= 40 && q[3] >= 1 && q[4] > 300) && by.castle[2] >= 1 && by['bog-shack'][2] >= 1 && dt.bridges === 4 && dt.boats >= 2 && dt.falls >= 2, JSON.stringify(dt));
+}
 // hold the auto-fight so this roll can't race the next step
 await page.evaluate(() => { const a = window.__tbb.app; a._bf = a.boardFight; a.boardFight = () => { a._fought = true; }; });
 await tap('.board-die', { wait: 3200 });

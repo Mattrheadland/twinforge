@@ -12,7 +12,7 @@ v5 replaces v1–v4; v5.1 adds the campaign board, wild creatures, giants and th
 
 ## Geometry
 - **Low-poly on purpose:** boxes, low-segment spheres (8–10 sides), icosahedrons, 4–8-sided cones and cylinders. Facets should be visible. A code-built toy is roughly 300–800 triangles; an imported model (image-to-3D) up to about 6,000.
-- **Faceted shading:** every polygon is lit flat (normals come from the face, not smoothed), so curved parts read as clean facets.
+- **Faceted shading:** code-built toys light every polygon flat (normals come from the face, not smoothed), so curved parts read as clean facets. Imported (image-to-3D) toys use crease-split smooth normals instead (2026-10-17): round parts shade clean, edges sharper than about 55° stay hard. Flat-lighting a decimated scan turned simplification noise into jaggies; `art.smooth: false` brings the flat look back per toy.
 - **Toy scale:** about 190 units tall, feet at y = 0, facing +x. In battle, toys turn about 50° toward the camera (3/4 view). The opponent is a mirror image.
 - **Faces** are textures painted onto the model (a screen for robots, a decal on the head and snout for creatures). They switch expression live: open, angry, happy, squint, closed, dizzy swirl; mouths smile, open, grit, o, flat.
 
@@ -50,11 +50,13 @@ Toys keep their own colors. Shared palette:
 A boss at the end of a tournament or a campaign world is a GIANT: the same toy at 1.22× (a giant wild creature at 1.6×), more health, a crown on the VS screen.
 
 ## Campaign board (diorama)
-- A little 3D tabletop world, not a flat map: one chunky low-poly island per world over flat blue water, dirt sides and a thin colored top slab, wooden plank bridges between islands.
+- A little 3D tabletop world, not a flat map: one chunky low-poly island per world over calm blue water. v6 detail pass: each island has stepped faceted cliffs (rim ink band, cliff, a ledge band, lower cliff), a beach with a white foam line and pale shallows, a raised back tier carrying the world's landmark, and dense themed dressing behind the path (low props only in front, so the path always reads). Arched wooden boardwalks on stilts link the islands along the path; waterfalls (castle, bog) spill off the tier and the front cliff; islets, sea stacks, buoys and drifting boats dot the sea.
+- Landmarks (our own designs): Bedroom — a toy-block castle on a book-spine shelf; Castle — the keep on its crag with a curtain wall; Fishing Pier — the Beacon (banded octagonal tower, gallery, lantern room, fish vane) and two docks; Bog Shack — a crooked stilt shack plus little stilt shacks in the shallows; Haunted Forest — the Great Hollow Tree (round glowing door, lantern ring, mushroom fairy ring), spooky-cute, never scary.
+- Board dressing is baked: many pieces per island in one vertex-coloured toon mesh plus one ink hull per slice (`board-kit.js`); tiny pieces get no outline.
 - Island tops: Bedroom warm wood, Castle green, Fishing Pier sand, Bog Shack mossy green, Haunted Forest dusky purple. Sky and water darken toward the forest.
 - Spaces are octagon discs with a flat icon on top: fight red, star yellow, lucky green (dice), boss purple (crown, bigger), start white (house). Cleared spaces dim and show a green check.
 - The hero's real 3D toy is the game piece at half size and hops along a dotted pebble path. Foes stand on their spaces as flat "cardboard standee" snapshots that face the camera; giants are bigger.
-- A few props per world, tall ones behind the path only (block towers, castle keep and towers, pier posts and a lighthouse, reeds and a shack, dark cone trees), and Czernobog's dark mountain with a glowing peak behind the last space.
+- Czernobog's dark mountain (now on a craggy base) with a glowing peak behind the last space.
 - Same toon shader and ink outlines as the battle. The camera looks down at about 35° and follows the piece.
 
 ## Learning cards
@@ -77,4 +79,4 @@ Low-poly bedroom at dusk: faceted wooden floorboards, blue-violet striped wallpa
 - Numbers and letters in the learning challenges stay in the upright rounded font, so a 4-year-old reads the shapes cleanly.
 
 ## Code map
-`src/render3d/toon.js` (shader and outlines) · `src/render3d/rigs.js` (code-built toys and faces) · `src/render3d/models.js` (imported GLB toys) · `src/render3d/clipmap.js` (clip → action) · `src/render3d/family-rigs.js` (Remy Roo, Billy Bass) · `src/render3d/room.js` (stage) · `src/render3d/stage3d.js` (camera, layers, projection, portraits) · `src/render3d/minion-rigs.js` (wild creatures) · `src/render3d/board3d.js` (campaign diorama) · `src/ui/challenge.js` (learning cards) · `src/render/` (2D effects, lettering and the 2D fallback).
+`src/render3d/toon.js` (shader and outlines) · `src/render3d/rigs.js` (code-built toys and faces) · `src/render3d/models.js` (imported GLB toys) · `src/render3d/clipmap.js` (clip → action) · `src/render3d/family-rigs.js` (Remy Roo, Billy Bass) · `src/render3d/room.js` (stage) · `src/render3d/stage3d.js` (camera, layers, projection, portraits) · `src/render3d/minion-rigs.js` (wild creatures) · `src/render3d/board3d.js` (campaign diorama; layout in `board-layout.js`, terrain in `board-terrain.js`, props and landmarks in `board-dress.js`, baking in `board-kit.js`) · `src/ui/challenge.js` (learning cards) · `src/render/` (2D effects, lettering and the 2D fallback).

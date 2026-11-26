@@ -2,6 +2,7 @@
 //
 //   node scripts/import-model.mjs <asset-id> <main.glb> [more-animations.glb ...]
 //   node scripts/import-model.mjs battle-rex ~/Downloads/rex.glb ~/Downloads/rex_roar.glb
+//   node scripts/import-model.mjs battle-rex rex.glb --tris 25000 --tex 2048 --normal
 //
 // - takes the mesh, skeleton and textures from the first file
 // - copies every animation from the other files onto it (matched by bone name),
@@ -19,9 +20,16 @@ import sharp from 'sharp';
 
 // --tris N: simplify to about N triangles (default 6000; the toon shader draws
 // every triangle as a flat facet, so fewer triangles = chunkier, more '90s look)
+// --tex N: largest texture side in px (default 1024)
+// --normal: keep the tool's normal map (the toon shader can use it; default: dropped)
+// --out DIR: write <DIR>/<id>.glb instead of assets/models/<id>/<id>.glb (A/B studies)
 const args = process.argv.slice(2);
-const ti = args.indexOf('--tris');
-const TARGET_TRIS = ti >= 0 ? +args.splice(ti, 2)[1] : 6000;
+const opt = (name, fallback) => { const i = args.indexOf(name); return i >= 0 ? args.splice(i, 2)[1] : fallback; };
+const flag = (name) => { const i = args.indexOf(name); return i >= 0 ? (args.splice(i, 1), true) : false; };
+const TARGET_TRIS = +opt('--tris', 6000);
+const TEX = +opt('--tex', 1024);
+const OUT_DIR = opt('--out', null);
+const KEEP_NORMAL = flag('--normal');
 const [id, main, ...extra] = args;
 if (!id || !main) {
   console.error('usage: node scripts/import-model.mjs <asset-id> <main.glb> [more.glb ...]');
@@ -77,9 +85,10 @@ function copyAccessor(a) {
   return doc.createAccessor().setType(a.getType()).setArray(a.getArray().slice()).setBuffer(buffer);
 }
 
-// the game's toon shader uses only the base color; drop PBR extras
+// the game's toon shader uses the base color (and optionally the normal map); drop PBR extras
 for (const m of root.listMaterials()) {
-  m.setNormalTexture(null).setMetallicRoughnessTexture(null).setOcclusionTexture(null).setEmissiveTexture(null);
+  if (!KEEP_NORMAL) m.setNormalTexture(null);
+  m.setMetallicRoughnessTexture(null).setOcclusionTexture(null).setEmissiveTexture(null);
   for (const ext of m.listExtensions()) ext.dispose();
 }
 const countTris = () => {
@@ -98,7 +107,7 @@ await doc.transform(
   dedup(),
   resample(),
   ...(ratio < 1 && !hasSkin ? [weld(), simplify({ simplifier: MeshoptSimplifier, ratio, error: 0.01, lockBorder: false })] : []),
-  textureCompress({ encoder: sharp, targetFormat: 'jpeg', quality: 88, resize: [1024, 1024] }),
+  textureCompress({ encoder: sharp, targetFormat: 'jpeg', quality: 88, resize: [TEX, TEX] }),
   prune(),
   unpartition()
 );
@@ -106,7 +115,7 @@ console.log(`  simplified ${Math.round(before)} → ${Math.round(countTris())} t
 // keep the output plain (no compression extensions the game would need decoders for)
 for (const ext of root.listExtensionsUsed()) if (/draco|meshopt|ktx|webp|avif/i.test(ext.extensionName)) ext.dispose();
 
-const outDir = path.join('assets/models', id);
+const outDir = OUT_DIR || path.join('assets/models', id);
 fs.mkdirSync(outDir, { recursive: true });
 const out = path.join(outDir, `${id}.glb`);
 await io.write(out, doc);
