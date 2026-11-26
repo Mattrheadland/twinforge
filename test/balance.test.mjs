@@ -4,9 +4,11 @@
 //
 // Bands (what v6 promises; measured with these seeds in brackets, 396 battles a cell):
 //   Early (3–5)    90%: ≥ 97% wins [100]   50%: ≥ 90% [99.7]    random: 75–97%, so it
-//                  sometimes loses [92.4]  giants at 50%: ≥ 80% [84.5]
-//   Growing (5–7)  90%: ≥ 95% [100]        50%: 70–97% [93.7]   random: 50–85% [65.2]
-//                  giants at 50%: ≥ 50% [65.9]
+//                  sometimes loses [93.2]  giants at 50%: ≥ 80% [83.7]
+//   Growing (5–7)  90%: ≥ 95% [100]        50%: 70–97% [95.2]   random: 50–85% [68.9]
+//                  giants at 50%: ≥ 50% [67.4]
+// (Re-measured after the shared damage formula, design fix 1: a wrong answer now hits for
+// the base 16 instead of 14. Learning off has its own test: test/balance-off.test.mjs.)
 // Phase 5 audit (directive §8) moved giants from 96.6 / 77.7 to the numbers above without
 // touching their health: a smaller charge meter and a heavier charged hit (RULES.boss).
 // A child who only ever taps Quick now loses (RULES.quickRead); random tapping still wins.

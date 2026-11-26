@@ -50,6 +50,7 @@ export function defaultSave() {
       showFps: false,
       tvLook: true,
       learning: true,
+      offTiming: true, // learning off: power moves and specials use the timing ring (off = the cheer star)
       readAloud: true, // the phone's voice reads each question (audio/speech.js)
       voice: 1, // narration volume (0–1), separate from the effects
       voiceSlow: false, // a slower narrator for the youngest

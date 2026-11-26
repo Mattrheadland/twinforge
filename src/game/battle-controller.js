@@ -11,9 +11,11 @@ import { recordResult, playLevel, bandFor } from '../logic/difficulty.js';
 import { awardXp, xpForAnswer, xpForWin } from '../logic/progression.js';
 import { awardToyXp, levelOf } from '../logic/gear.js';
 import { recordAnswer, noteLevel } from '../logic/learning-log.js';
+import { offInputFor, xpQualityFor } from '../logic/skill-input.js';
 import { Rng } from '../logic/rng.js';
 import { Hud } from '../ui/hud.js';
 import { ChallengeUI } from '../ui/challenge.js';
+import { SkillInputUI } from '../ui/skill-input.js';
 import { Director } from './director.js';
 import { buzz } from '../haptics.js';
 
@@ -65,6 +67,7 @@ export class BattleController {
     this.director = new Director(this.stage, this.audio);
     this.hud = new Hud(this.app.ui.layer, { heroDef, foeDef, px: this.app.px, toVirtual: this.app.ui.toVirtual, learning: this.learning });
     this.challenge = new ChallengeUI(this.app.ui.layer, this.audio, buzz);
+    this.skillInput = new SkillInputUI(this.app.ui.layer, this.audio, buzz);
     this.hud.on('action', (k) => this.guard(this.onAction(k)));
     this.hud.on('pause', () => this.pause());
     this.hud.setHP('hero', s.hero.hp, s.hero.maxHp, true);
@@ -109,7 +112,7 @@ export class BattleController {
     if (this.phase === PHASE.END || ++this.fails > 3) return this.app.goModes();
     this.token++; // stop whatever was still running
     this.currentChallenge = null;
-    this.app.ui.layer.querySelectorAll('.challenge').forEach((n) => n.remove());
+    this.app.ui.layer.querySelectorAll('.challenge, .skill-input').forEach((n) => n.remove());
     this.stage.dim = 0;
     const s = this.state;
     try {
@@ -159,7 +162,7 @@ export class BattleController {
       suggestSpecial: canAct(s, 'special'),
     });
     // first-battle helper hand
-    const first = this.learning ? 'power' : 'quick';
+    const first = 'power';
     if (!tut[first]) this.hud.pointAt(first);
     else if (canAct(s, 'special') && !tut.special) this.hud.pointAt('special');
     else if (threat && !tut.guard) this.hud.pointAt('guard');
@@ -212,6 +215,18 @@ export class BattleController {
       noteLevel(L, skillKey, lvl, playLevel(this.save.data.skills[skillKey], pathway), 'auto');
       this.save.data.player = awardXp(this.save.data.player, xpForAnswer(quality)).player;
       this.save.data.toys = awardToyXp(this.save.data.toys, this.state.heroId, xpForAnswer(quality)).toys; // the toy learns with you
+    } else if (learningFor(kind)) {
+      // learning off: a power move or special still asks for a little skill (logic/skill-input.js),
+      // with the same bonus range and the same foe meter as a question. Nothing goes in the learning log.
+      this.setPhase(PHASE.CHALLENGE);
+      const input = offInputFor(this.save.pathway, { timing: this.save.data.settings.offTiming !== false });
+      this.stage.dim = 0.25;
+      quality = await this.skillInput.run(input, kind === 'special' ? 'special' : 'attack', moveFor(this.chars[this.state.heroId], kind));
+      this.stage.dim = 0;
+      if (tok !== this.token) return;
+      const xp = xpForAnswer(xpQualityFor(quality)); // same toy and player XP as an answer of that quality
+      this.save.data.player = awardXp(this.save.data.player, xp).player;
+      this.save.data.toys = awardToyXp(this.save.data.toys, this.state.heroId, xp).toys;
     }
 
     this.setPhase(PHASE.HERO_ANIM);
@@ -271,7 +286,7 @@ export class BattleController {
       // charge meter: wrong taps light flames, a first-try answer puts one out
       if (e.type === 'meter') {
         this.hud.setMeter({ meter: e.meter, max: e.max, windup: false }, true);
-        this.audio.sfx(e.reason === 'wrong' ? 'blockDrop' : 'pop');
+        this.audio.sfx(e.delta > 0 ? 'blockDrop' : 'pop');
         await d.wait(300);
       }
       if (e.type === 'windup') {
@@ -390,7 +405,7 @@ export class BattleController {
     this.token++;
     this.setPhase(PHASE.GONE);
     this.hud && this.hud.destroy();
-    this.app.ui.layer.querySelectorAll('.challenge').forEach((n) => n.remove());
+    this.app.ui.layer.querySelectorAll('.challenge, .skill-input').forEach((n) => n.remove());
     this.stage.dim = 0;
     this.stage.vignette = 0;
     this.director.storm = null;

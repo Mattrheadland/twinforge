@@ -99,7 +99,8 @@ export const STYLES = {
   },
   special: {
     signature: { id: 'signature', level: 1, tag: null, says: 'Your own special' },
-    quickSpecial: { id: 'quickSpecial', level: 30, tag: 'FAST', says: 'Ready sooner, smaller blast', energyCost: 2, specialPower: 0.62 },
+    // specialPower 0.68 (was 0.62): power's base hit rose 14 -> 16 with the shared damage formula (logic/battle.js)
+    quickSpecial: { id: 'quickSpecial', level: 30, tag: 'FAST', says: 'Ready sooner, smaller blast', energyCost: 2, specialPower: 0.68 },
     superSpecial: { id: 'superSpecial', level: 35, tag: 'SUPER', says: 'Evolved blast: bigger, but no extra trick', specialPower: 1.22, extraHits: 1, dropEffect: true },
   },
 };

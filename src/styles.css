@@ -821,3 +821,22 @@ html.reduced .xp-bar i { transition: none; }
 .result-card:has(.toy-result) .star-slot { width: 58px; height: 58px; }
 .result-card:has(.toy-result) .star-total { margin-top: 2px; }
 .overlay.result:has(.toy-result) { gap: 10px; }
+
+/* Learning-off skill input (ui/skill-input.js): the timing ring and the cheer star */
+.skill-input { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; opacity: 0; transition: opacity 0.2s; background: rgba(10, 6, 30, 0.35); }
+.skill-input.in { opacity: 1; }
+.skill-input.out { opacity: 0; transition: opacity 0.24s; }
+.si-stage { position: relative; width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; }
+.si-target { width: 150px; height: 150px; border-radius: 50%; border: 6px solid var(--ink); background: var(--mc); box-shadow: 0 8px 0 rgba(10, 6, 30, 0.55); padding: 26px; cursor: pointer; touch-action: manipulation; }
+.si-target svg { width: 100%; height: 100%; }
+.si-target.pressed { transform: translateY(4px) scale(0.97); }
+.si-cheer { background: #FFE58A; animation: si-cheer 0.9s ease-in-out infinite; }
+@keyframes si-cheer { 50% { transform: scale(1.08); } }
+.si-ring { position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; margin: -75px 0 0 -75px; border-radius: 50%; border: 10px solid #fff; box-shadow: 0 0 0 4px var(--ink); pointer-events: none; animation: si-ring var(--beat) linear infinite; }
+/* the ring lands on the button at the end of every beat (logic/skill-input.js judgeRing) */
+@keyframes si-ring { 0% { transform: scale(2); opacity: 0.35; } 92% { opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.skill-input.hit .si-ring { animation-play-state: paused; }
+.si-word { position: absolute; top: -10px; left: 0; right: 0; text-align: center; font-size: 46px; font-weight: 900; color: #FFC914; -webkit-text-stroke: 2px var(--ink); opacity: 0; }
+.skill-input.hit .si-word { opacity: 1; transition: opacity 0.12s; }
+.skill-input.q-indep .si-target { box-shadow: 0 0 0 10px #FFC914, 0 8px 0 rgba(10, 6, 30, 0.55); }
+@media (prefers-reduced-motion: reduce) { .si-cheer { animation: none; } }

@@ -7,9 +7,15 @@
 //   power   — bigger hit; asks a MATH question when Learning is on, +1 energy (+2 if answered alone)
 //   guard   — protects against the foe's next move (block / reflect / dodge), +1 energy
 //   special — needs full energy; asks a READING question when Learning is on
-// Quality of an answer: 'indep' (first try), 'hint' (second try), 'support'
-// (shown the answer), or 'none' (no question: Learning off, or a quick/guard move).
-// A wrong answer never causes a miss.
+// Quality of a skill input: 'indep' (first try), 'hint' (second try), 'support'
+// (shown the answer), 'cheer' (the youngest learning-off tap), or 'none' (no input:
+// a quick/guard move). A wrong answer never causes a miss.
+//
+// One damage formula for learning on AND off (design fix 1, logic/skill-input.js):
+//   hit = base[slot] x skillBonus[quality]      skillBonus 1.0 (base) to 1.4
+// Learning on, the skill input is the question. Learning off, it is a timing ring
+// (or a cheer tap for the youngest). Misses on either light the foe's charge meter
+// the same way, so learning off is a fair battle mode, not an easy one.
 //
 // Stakes (v6): the foe has a CHARGE meter, counted in whole pips so it can be
 // drawn as a row of lights. Each wrong tap on a math or reading question adds
@@ -33,8 +39,11 @@
 export const RULES = {
   maxEnergy: 3,
   quick: 12,
-  power: { indep: 22, hint: 18, support: 14, none: 20 },
-  special: { indep: 38, hint: 33, support: 28, none: 35 },
+  // the shared damage formula: base hit per slot, times the skill bonus the input earned.
+  // 'none' (no input) and 'support' (a miss, or needing the answer shown) are the base:
+  // a wrong answer never hits for less than learning off with no skill at all.
+  base: { power: 16, special: 28 },
+  skillBonus: { indep: 1.4, hint: 1.15, cheer: 1.15, support: 1, none: 1 },
   energy: { quick: 1, power: 1, powerIndepBonus: 1, guard: 1, perfect: 1 },
   guardFactor: 0.2,
   reflect: 6,
@@ -51,6 +60,10 @@ export const RULES = {
   //   boss        giants are harder by behaviour, not only health: meter one pip smaller (min 2)
   //               and the charged attack hits harder. foeHp above still applies.
   quickRead: [1, 0.8, 0.65],
+  // a cheer tap can't miss, so the foe gets braver on its own instead: every `cheerEvery`th
+  // cheer lights one pip of its meter. That keeps the same wind-up and charged attack in
+  // play (guard is the answer), so the cheer mode can still be lost. Tuned in test/balance.test.mjs.
+  cheerEvery: 2,
   secondWind: { at: 0.3, energy: 1, drain: 1 },
   retryHand: { after: 2, energy: 1 },
   boss: { pipsLess: 1, minPips: 2, chargedPower: 1.2 },
@@ -69,14 +82,21 @@ export const RULES = {
   },
 };
 
+// The whole-number hit tables the formula gives (RULES.power / RULES.special, kept for readers and tests).
+export const hitFor = (slot, quality) => Math.round(RULES.base[slot] * (RULES.skillBonus[quality] ?? 1));
+RULES.power = Object.fromEntries(Object.keys(RULES.skillBonus).map((q) => [q, hitFor('power', q)]));
+RULES.special = Object.fromEntries(Object.keys(RULES.skillBonus).map((q) => [q, hitFor('special', q)]));
+
 export const PATHWAY_DEFAULT = 'early';
 export const stakesFor = (s) => RULES.stakes[s && s.pathway] || RULES.stakes[PATHWAY_DEFAULT];
 // The meter size for THIS battle: a giant's is one pip smaller (never below RULES.boss.minPips).
 export const pipsFor = (s) => { const p = stakesFor(s).pips; return s && s.boss ? Math.max(RULES.boss.minPips, p - RULES.boss.pipsLess) : p; };
-const WRONG_TAPS = { indep: 0, hint: 1, support: 2, none: 0 };
+// misses per input: wrong taps on a question, or how far a timing tap landed off the beat.
+// A cheer tap can't miss and never moves the meter.
+const WRONG_TAPS = { indep: 0, hint: 1, support: 2, cheer: 0, none: 0 };
 
 export const SLOTS = ['quick', 'power', 'guard', 'special'];
-export const QUALITIES = ['indep', 'hint', 'support', 'none'];
+export const QUALITIES = ['indep', 'hint', 'support', 'cheer', 'none'];
 export const BATTLE_VERSION = 2;
 
 // Old action names from saves/tests.
@@ -155,14 +175,18 @@ function chargeMeter(s, quality, ev) {
   const f = s.foe;
   if (f.windup) return; // already winding up: the next attack is charged either way
   const before = f.meter || 0;
-  const wrong = WRONG_TAPS[quality] || 0;
+  let wrong = WRONG_TAPS[quality] || 0;
+  if (quality === 'cheer') {
+    f.cheers = (f.cheers || 0) + 1;
+    wrong = f.cheers % RULES.cheerEvery === 0 ? 1 : 0;
+  }
   let meter = before;
   const pips = pipsFor(s);
   if (wrong) meter = Math.min(pips, before + wrong * st.perWrong);
   else if (quality === 'indep') meter = Math.max(0, before - st.drain);
   if (meter === before) return;
   f.meter = meter;
-  ev.push({ type: 'meter', target: 'foe', meter, max: pips, delta: meter - before, reason: wrong ? 'wrong' : 'drain' });
+  ev.push({ type: 'meter', target: 'foe', meter, max: pips, delta: meter - before, reason: quality === 'cheer' ? 'brave' : wrong ? 'wrong' : 'drain' });
   if (meter >= pips) {
     // the foe's very next move stays a normal one, so the child gets a turn
     // to see the wind-up and guard before the charged attack lands
@@ -193,8 +217,10 @@ export function heroAct(s0, action, quality, chars) {
   const hc = chars[s.heroId];
   const move = moveFor(hc, slot) || { slot, id: slot, name: slot };
   s.stats.turns++;
-  if (quality !== 'none') s.stats[quality]++;
+  if (quality !== 'none') s.stats[quality] = (s.stats[quality] || 0) + 1;
   const bonus = hc.attackBonus || 0;
+  // gear styles are written per answer quality; a cheer tap uses the second-try column
+  const gq = quality === 'cheer' ? 'hint' : quality;
 
   ev.push({ type: 'action', who: 'hero', action: slot, quality, move: move.id });
 
@@ -206,8 +232,8 @@ export function heroAct(s0, action, quality, chars) {
     damage(s, 'foe', ((move.quickDmg ?? RULES.quick) + bonus) * read, ev, { kind: 'quick', quality, read: read < 1, streak });
     if (!s.result) gainEnergy(s, move.energyGain ?? RULES.energy.quick, ev, 'hit');
   } else if (slot === 'power') {
-    damage(s, 'foe', Math.max(1, RULES.power[quality] + ((move.powerDelta || {})[quality] || 0) + bonus), ev, { kind: 'power', quality });
-    const heal = (move.healOn || {})[quality] || 0;
+    damage(s, 'foe', Math.max(1, hitFor('power', quality) + ((move.powerDelta || {})[gq] || 0) + bonus), ev, { kind: 'power', quality });
+    const heal = (move.healOn || {})[gq] || 0;
     if (heal && !s.result && s.hero.hp < s.hero.maxHp) {
       const before = s.hero.hp;
       s.hero.hp = Math.min(s.hero.maxHp, s.hero.hp + heal);
@@ -225,7 +251,7 @@ export function heroAct(s0, action, quality, chars) {
     s.hero.energy = Math.max(0, s.hero.energy - cost);
     ev.push({ type: 'energy', gained: -cost, energy: s.hero.energy, reason: 'spent' });
     const sp = move;
-    const dmg = RULES.special[quality] * (sp.power || 1);
+    const dmg = hitFor('special', quality) * (sp.power || 1);
     damage(s, 'foe', dmg, ev, { kind: 'special', quality, big: true, hits: sp.hits || 1 });
     if (!s.result) {
       if (sp.effect === 'dizzy') {
