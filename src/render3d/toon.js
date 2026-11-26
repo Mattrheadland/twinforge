@@ -131,6 +131,8 @@ function hullMat(thick) {
   return hullMats.get(k);
 }
 
+export { hullMat as inkHullMat }; // render3d/static-batch.js
+
 // Adds an ink outline `thick` world units wide. Call after the mesh's scale is set.
 export function inked(mesh, thick = 2) {
   const s = mesh.scale;

@@ -15,6 +15,7 @@ import { setArtScale } from '../render/pixel.js';
 import { buildRig } from './rigs.js';
 import { setLighting, lighting } from './toon.js';
 import { modelReady, modelInfo } from './models.js';
+import { QualityGovernor } from './quality-governor.js';
 import { Room3D } from './room.js';
 import { ImageArena3D } from './arena-image.js';
 import { ARENAS } from '../data/arenas.js';
@@ -263,7 +264,18 @@ export class Stage3D extends Stage {
     this.arena = { excite: 0, spots: (W) => this.spots(W) };
     this.homes = { hero: new THREE.Vector3(-240, 0, HERO_Z), foe: new THREE.Vector3(240, 0, FOE_Z) };
     this.is3D = true;
+    // older phones only: steps the picture down after a few slow seconds (render3d/quality-governor.js)
+    this.governor = new QualityGovernor();
     active = this;
+  }
+
+  // Frame pacing (render/stage.js) also feeds the older-phone safety net: after a few slow seconds in a row
+  // it makes the 3D pixels one size chunkier. A phone holding 60 fps never trips it.
+  trackFps(ft) {
+    super.trackFps(ft);
+    if (!this.pixel || !this._size || window.__TBB_TEST__) return; // screenshot scripts run on a slow software GPU
+    const [w, h, dpr] = this._size, dev = h * Math.min(dpr || 1, 3);
+    if (this.governor.sample(ft, (x) => dev / (this._k0 + x))) this.resize(w, h, dpr);
   }
 
   // 2D world position of a 3D point (no shake/zoom).
@@ -288,7 +300,10 @@ export class Stage3D extends Stage {
     this.scale = s;
     this.W = cssW / s;
     this.full = s * r;
-    const k = this.pixel ? Math.max(1, Math.round((cssH * r) / RETRO_H)) : 1;
+    this._size = [cssW, cssH, dpr];
+    const k0 = this.pixel ? Math.max(1, Math.round((cssH * r) / RETRO_H)) : 1;
+    const k = k0 + (this.pixel ? this.governor?.extraK || 0 : 0);
+    this._k0 = k0;
     this.renderer.setPixelRatio(r / k);
     this.renderer.setSize(cssW, cssH, false);
     for (const c of [this.glCanvas, this.canvas]) {

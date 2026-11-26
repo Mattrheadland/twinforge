@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { toonMat, glowMat, part } from './toon.js';
 import { Rng } from '../logic/rng.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { batchStatic } from './static-batch.js';
 
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 const P = (geo, color, opts = {}) => part(geo, color, { ink: 1.6, ...opts });
@@ -18,6 +19,11 @@ export class Room3D {
     this.group = new THREE.Group();
     this.excite = 0;
     this.build();
+    // same picture in about 50 draws instead of about 150 (render3d/static-batch.js). The bobbing teddy and
+    // duck are merged inside themselves so they still bob, the teddy's waving arm stays as it is, and the
+    // corner blocks (rebuilt for each screen width) are merged in placeFront
+    this.saved = batchStatic(this.group, [this.teddy, this.duck, this.front]);
+    this.saved += batchStatic(this.teddy, [this.teddyArm]) + batchStatic(this.duck);
   }
 
   // Static pieces that share a color are merged into one mesh (fewer draw calls).
@@ -169,10 +175,12 @@ export class Room3D {
   // Big blocks at the bottom corners, placed for the current screen width.
   placeFront(halfW) {
     const f = this.front;
+    f.traverse((o) => o !== f && o.geometry && o.geometry.dispose());
     f.clear();
     f.add(P(box(110, 110, 110), 0x1b4fd8, { pos: [-halfW * 1.02, 30, 380], rot: [0, 0.35, 0], shiny: true, ink: 2.4 }));
     f.add(P(box(110, 110, 110), 0xffc914, { pos: [halfW * 1.05, 26, 370], rot: [0, -0.3, 0], shiny: true, ink: 2.4 }));
     f.add(P(new THREE.IcosahedronGeometry(38, 1), 0xd7263d, { pos: [halfW * 0.86, 36, 420], shiny: true, ink: 2.2 }));
+    batchStatic(f);
   }
 
   starShape(outer, inner) {
