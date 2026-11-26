@@ -14,10 +14,11 @@ import { modelReady } from './models.js';
 import { buildFireDancer, buildShadowPeeker } from './night-crew.js';
 import { WORLDS } from '../game/campaign.js';
 import { VH } from '../render/stage.js';
-
-const STEP = 130; // between spaces
-const GAP = 120; // extra water between worlds
-const WAVE = 70; // how far the path wiggles toward/away from the camera
+import { layout, pathPoints, edgeDist, GAP, LEVEL } from './board-layout.js';
+import { Baker, bakedMat } from './board-kit.js';
+import { bakeIsland, bakeTier, shoreRings, PAL } from './board-terrain.js';
+import { dressProp, landmark, castleWalls, boardwalk, dock, stiltShack, seaPiece, sailboat, rowboat } from './board-dress.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 const TOKEN_SCALE = 0.5;
 const STANDEE = 140; // standee sprite size (a 250-unit snapshot frame)
 const CAM = new THREE.Vector3(-40, 430, 560); // camera offset from the piece
@@ -117,7 +118,8 @@ export class Board3D {
     this.camera = new THREE.PerspectiveCamera(34, 2, 20, 6000);
     this.tex = {};
     this.fx = []; // little animations (star bursts)
-    this.pts = board.map((sp, i) => new THREE.Vector3(i * STEP + sp.world * GAP, 0, Math.sin(i * 0.85) * WAVE));
+    // the spaces: same positions and order as ever (board-layout.js pathPoints)
+    this.pts = pathPoints(board).map((p) => new THREE.Vector3(p.x, 0, p.z));
     this.buildWorld();
     this.buildSpaces();
     this.buildPeekers();
@@ -138,15 +140,22 @@ export class Board3D {
     return m;
   }
 
-  // islands, bridges, water, props
+  // islands, bridges, water, props (v6 detail pass: stepped cliffs, beaches,
+  // foam, waterfalls, boardwalks, landmarks and dense themed dressing; the
+  // layout lives in board-layout.js, the shapes in board-terrain/board-dress.js).
+  // Each island bakes into one lit mesh + one ink hull + one glow mesh, so the
+  // whole board is a few dozen draw calls however much is on it.
   buildWorld() {
+    const L = (this.layout = layout(this.board));
+    const xMid = this.pts.at(-1).x / 2, xSpan = this.pts.at(-1).x + 4000;
+    // the sea: a flat colour (lerped per world as before), a faint deep-water
+    // pattern, and two scrolling ripple layers drifting in different directions
     this.waterMat = new THREE.MeshBasicMaterial({ color: LOOK.bedroom.water });
     const water = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.waterMat);
     water.rotation.x = -Math.PI / 2;
-    water.position.set(this.pts.at(-1).x / 2, -34, 0);
-    water.scale.set(this.pts.at(-1).x + 4000, 3000, 1);
+    water.position.set(xMid, LEVEL.water, 0);
+    water.scale.set(xSpan, 3000, 1);
     this.scene.add(water);
-    // shimmer: a second, lighter plane with a scrolling ripple texture
     const rip = document.createElement('canvas');
     rip.width = rip.height = 128;
     const rx = rip.getContext('2d');
@@ -155,53 +164,136 @@ export class Board3D {
     rx.lineCap = 'round';
     for (let k = 0; k < 9; k++) {
       const y = 8 + k * 14, x0 = (k * 37) % 128;
-      rx.beginPath(); rx.moveTo(x0, y); rx.lineTo(x0 + 22 + (k % 3) * 8, y); rx.stroke();
+      rx.beginPath(); rx.moveTo(x0, y); rx.quadraticCurveTo(x0 + 14, y - 4, x0 + 26 + (k % 3) * 8, y); rx.stroke();
     }
     const rtex = new THREE.CanvasTexture(rip);
     rtex.wrapS = rtex.wrapT = THREE.RepeatWrapping;
     rtex.repeat.set(40, 18);
     rtex.magFilter = THREE.NearestFilter;
     this.rippleTex = rtex;
-    const shimmer = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: rtex, transparent: true, opacity: 0.1, depthWrite: false }));
-    shimmer.rotation.x = -Math.PI / 2;
-    shimmer.position.set(water.position.x, -33, 0);
-    shimmer.scale.copy(water.scale);
-    this.scene.add(shimmer);
+    for (const [t, y, op] of [[rtex, LEVEL.water + 0.3, 0.13]]) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: op, depthWrite: false }));
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(xMid, y, 0);
+      m.scale.copy(water.scale);
+      this.scene.add(m);
+    }
+    // shared transparent materials for foam and shallows (alpha in vertex colours)
+    this.foamMat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+    this.shallowMat = new THREE.MeshBasicMaterial({ color: 0x8ff0f0, vertexColors: true, transparent: true, depthWrite: false, opacity: 0.55, side: THREE.DoubleSide });
+    this.amb.foam = [];
+    this.amb.falls = [];
+    this.amb.boats = [];
     this.worldX = [];
+    this.detail = { islands: [] };
     let rnd = 7;
     const r = () => ((rnd = (rnd * 16807) % 2147483647) / 2147483647);
+    // every shore ring on the board merges into three meshes (shallows, foam, the outer foam line)
+    const rings = (this.rings = { shallow: [], foam: [], foamOuter: [] });
+    const shore = (sh, rim, opts) => {
+      const g = shoreRings(sh, rim, opts);
+      for (const k of Object.keys(rings)) { g[k].translate(sh.cx, 0, sh.cz); rings[k].push(g[k]); }
+    };
     WORLDS.forEach((w, wi) => {
       const look = LOOK[w.arena] || LOOK.bedroom;
-      const idx = this.board.map((s, i) => (s.world === wi ? i : -1)).filter((i) => i >= 0);
-      const x0 = this.pts[idx[0]].x - 90, x1 = this.pts[idx.at(-1)].x + 90;
+      const sh = L.isles[wi];
+      const pal = { ...(PAL[w.arena] || PAL.castle) };
+      const x0 = sh.path[0].x - 90, x1 = sh.path.at(-1).x + 90;
       const cx = (x0 + x1) / 2, hx = (x1 - x0) / 2;
-      const W = { x0, x1, sky: new THREE.Color(look.sky), water: new THREE.Color(look.water), name: w.arena, base: { sky: new THREE.Color(look.sky), water: new THREE.Color(look.water), top: new THREE.Color(look.top), side: new THREE.Color(look.side) }, dark: 0 };
+      // the gloom creeps over an island through one uniform shared by its baked meshes
+      const darkU = { value: 0 };
+      const W = { x0, x1, sky: new THREE.Color(look.sky), water: new THREE.Color(look.water), name: w.arena, base: { sky: new THREE.Color(look.sky), water: new THREE.Color(look.water), top: new THREE.Color(look.top), side: new THREE.Color(look.side) }, dark: 0, darkU };
       this.worldX.push(W);
-      // chunky island: dirt sides, a thin top slab a little larger
-      const side = new THREE.CylinderGeometry(1, 0.86, 1, 11, 1);
-      const pos = side.attributes.position;
-      for (let k = 0; k < pos.count; k++) {
-        const a = Math.atan2(pos.getZ(k), pos.getX(k));
-        const j = 1 + Math.sin(a * 3 + wi) * 0.05 + Math.cos(a * 5 + wi * 2) * 0.04;
-        pos.setX(k, pos.getX(k) * j); pos.setZ(k, pos.getZ(k) * j);
+      const bk = new Baker(), gk = new Baker();
+      // terrain: notches (straight drops) where the waterfalls and bridges meet the sea
+      const notches = [];
+      for (const f of L.falls) if (f.w === wi && f.kind === 'sea') notches.push({ a: f.ang, w: 30 });
+      for (const b of L.bridges) {
+        if (b.from === wi) notches.push({ a: Math.atan2(b.a.z - sh.cz + 0, b.a.x + 60 - sh.cx), w: 34 });
+        if (b.to === wi) notches.push({ a: Math.atan2(b.b.z - sh.cz, b.b.x - 60 - sh.cx), w: 34 });
       }
-      side.computeVertexNormals();
-      W.sideMesh = this.P(side, look.side, [cx, -26, 0], [hx + 40, 52, 230], { ink: 3 });
-      const top = side.clone();
-      W.topMesh = this.P(top, look.top, [cx, -2, 0], [hx + 52, 8, 242], { ink: 3 });
-      // bridge to the next world
-      if (wi < WORLDS.length - 1) {
-        const a = this.pts[idx.at(-1)], b = this.pts[idx.at(-1) + 1];
-        const mid = a.clone().add(b).multiplyScalar(0.5);
-        const len = a.distanceTo(b);
-        const ang = Math.atan2(b.z - a.z, b.x - a.x);
-        for (let k = -2; k <= 2; k++) {
-          const p = mid.clone().add(new THREE.Vector3(Math.cos(ang), 0, Math.sin(ang)).multiplyScalar(k * (len / 6)));
-          this.P(g.box, 0xa8723c, [p.x, 0, p.z], [len / 6 - 4, 6, 58], { rot: [0, -ang, 0], ink: false });
+      const rim = bakeIsland(bk, sh, pal, { notches, floor: w.arena === 'bedroom' ? 'boards' : 'patch', seed: wi + 1 });
+      for (const [k, t] of sh.tiers.entries()) bakeTier(bk, t, pal, wi * 3 + k);
+      // the path: a worn trail under the pebbles (flat discs, no ink)
+      for (let i = 0; i < sh.wpath.length - 1; i++) {
+        const a = sh.wpath[i], b = sh.wpath[i + 1];
+        const n = Math.max(2, Math.round(Math.hypot(b.x - a.x, b.z - a.z) / 22));
+        for (let k = 0; k <= n; k++) {
+          const x = a.x + ((b.x - a.x) * k) / n, z = a.z + ((b.z - a.z) * k) / n;
+          if (edgeDist(sh, x, z) < 24) continue; // stop at the cliff (bridges carry on)
+          bk.add('disc8', pal.path, [x, LEVEL.top + 0.15, z], [19, 0.3, 19], [0, k, 0], { ink: false, shade: 0.94 + ((i + k) % 3) * 0.04 });
         }
       }
-      this.props(look.props, cx, hx, r, idx);
+      // landmark, set dressing, extras
+      const lm = landmark(bk, gk, w.arena, sh.landmark);
+      for (const f of lm.flags) this.flagAt(f[0], f[1], f[2], f[3]);
+      if (lm.beam) this.beamAt(lm.beam);
+      if (sh.wall) for (const f of castleWalls(bk, sh.wall)) this.flagAt(f[0], f[1], f[2], 0xd7263d);
+      for (const d of sh.docks || []) dock(bk, gk, d);
+      for (const st of sh.stilts || []) stiltShack(bk, gk, st, LEVEL.water);
+      let props = 0;
+      for (const p of L.props) if (p.w === wi) { dressProp(bk, gk, p); props++; }
+      // waterfalls: a pool on the plateau, the falling sheet, splash foam below
+      let falls = 0;
+      for (const f of L.falls) {
+        if (f.w !== wi) continue;
+        this.waterfall(bk, f, pal);
+        falls++;
+      }
+      // the sea around this island: rocks, sea stacks, buoys, little islets
+      for (const q of L.sea) {
+        if (q.w !== wi) continue;
+        if (q.kind === 'islet') {
+          const ish = { cx: q.x, cz: q.z, rx: 70 * q.s + 20, rz: 46 * q.s + 14, n: 2.2, seed: q.v * 9, lumpK: 0.12 };
+          const irim = bakeIsland(bk, ish, PAL[q.v < 0.5 ? 'islet' : w.arena === 'haunted-forest' ? 'mountain' : 'islet'], { seed: q.v * 99, top: -20 });
+          shore(ish, irim, { shallowW: 60, foamOut: 16 });
+          // a tree or two and a rock on it
+          dressProp(bk, gk, { kind: w.arena === 'haunted-forest' ? 'twisted' : w.arena === 'fishing-pier' ? 'palm' : w.arena === 'bog-shack' ? 'cypress' : 'tree', x: q.x - 10, y: -20, z: q.z - 6, rot: q.rot, s: 0.8, v: q.v });
+          dressProp(bk, gk, { kind: 'rock', x: q.x + 26, y: -20, z: q.z + 8, rot: q.rot, s: 0.8, v: q.v });
+          if (q.v > 0.5) dressProp(bk, gk, { kind: w.arena === 'bedroom' ? 'block' : 'bush', x: q.x + 4, y: -20, z: q.z + 18, rot: q.rot, s: 0.8, v: q.v });
+        } else seaPiece(bk, gk, q, LEVEL.water);
+      }
+      shore(sh, rim);
+      const lit = bk.build(bakedMat(darkU), { name: `island-${w.arena}`, chunk: 220 });
+      const glow = gk.build(new THREE.MeshBasicMaterial({ vertexColors: true }), { name: `glow-${w.arena}`, chunk: 220 });
+      for (const h of glow.children.filter((c) => c.name === 'ink')) glow.remove(h); // glowing bits have no ink
+      this.scene.add(lit, glow);
+      this.detail.islands.push({ name: w.arena, props, falls, tiers: sh.tiers.length, landmark: true, pieces: lit.userData.pieces + glow.userData.pieces, triangles: lit.userData.triangles + glow.userData.triangles });
+      // the forest keeps Czernobog's mountain, the villain, his crew and the fireflies
+      if (w.arena === 'haunted-forest') this.mountain(cx, hx, r);
     });
+    const ringMesh = (list, mat, order) => { const m = new THREE.Mesh(mergeGeometries(list), mat); m.renderOrder = order; this.scene.add(m); for (const q of list) q.dispose(); return m; };
+    this.outerFoamMat = this.foamMat.clone();
+    // boardwalks on stilts between the islands, following the path exactly
+    const bw = new Baker();
+    for (const b of L.bridges) {
+      const A = L.isles[b.from], B = L.isles[b.to];
+      const over = (u) => {
+        const x = b.a.x + (b.b.x - b.a.x) * u, z = b.a.z + (b.b.z - b.a.z) * u;
+        return edgeDist(A, x, z) < 6 && edgeDist(B, x, z) < 6;
+      };
+      boardwalk(bw, b.a, b.b, over, { y: LEVEL.top + 3, arch: 14 });
+    }
+    this.scene.add(bw.build(bakedMat(), { name: 'boardwalks', chunk: 220 }));
+    this.detail.bridges = L.bridges.length;
+    // boats out at sea (each its own small baked mesh so it can bob and drift)
+    for (const [k, b] of L.boats.entries()) {
+      const bb = new Baker();
+      const a = (shape, color, p, s, rot = null, o = {}) => bb.add(shape, color, p, s, rot, o);
+      if (k % 2) rowboat(a, b.color); else sailboat(a, b.color);
+      const m = bb.build(bakedMat(), { name: 'boat' });
+      m.position.set(b.x, LEVEL.water, b.z);
+      m.rotation.y = b.rot;
+      m.userData.boat = b;
+      this.scene.add(m);
+      this.amb.boats.push(m);
+    }
+    this.detail.boats = L.boats.length;
+    this.detail.sea = L.sea.length;
+    ringMesh(rings.shallow, this.shallowMat, 1);
+    ringMesh(rings.foam, this.foamMat, 2);
+    this.amb.foam.push(ringMesh(rings.foamOuter, this.outerFoamMat, 2));
+    this.rings = null;
     // the path: pebbles between spaces, one draw call
     const n = (this.pts.length - 1) * 2;
     const peb = new THREE.InstancedMesh(g.pebble, new THREE.MeshBasicMaterial({ color: 0xfff1c4 }), n);
@@ -210,87 +302,109 @@ export class Board3D {
     for (let i = 0; i < this.pts.length - 1; i++) {
       for (const f of [0.36, 0.64]) {
         const p = this.pts[i].clone().lerp(this.pts[i + 1], f);
-        m.makeScale(1, 0.5, 1).setPosition(p.x, 2, p.z);
+        const bridge = this.board[i].world !== this.board[i + 1].world;
+        m.makeScale(1, 0.5, 1).setPosition(p.x, bridge ? 9 + Math.sin(f * Math.PI) * 10 : 3, p.z);
         peb.setMatrixAt(k++, m);
       }
     }
     this.scene.add(peb);
   }
 
-  // a little flag on a pole, waving (the pole is drawn by the caller)
-  flag(x, y, z, color) {
-    const f = this.P(g.box, color, [x + 14, y, z], [28, 16, 2], { ink: 1.2 });
+  // A waterfall: the sheet is a scrolling striped texture on a thin bent strip
+  // (one shared texture for all of them), with white splash at the foot.
+  waterfall(bk, f, pal) {
+    if (!this.fallTex) {
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 64;
+      const x = c.getContext('2d');
+      x.fillStyle = '#5ac8f0'; x.fillRect(0, 0, 32, 64);
+      x.fillStyle = '#9ae6ff';
+      for (let k = 0; k < 7; k++) x.fillRect((k * 11) % 28, (k * 23) % 64, 3, 18);
+      x.fillStyle = '#ffffff';
+      for (let k = 0; k < 5; k++) x.fillRect((k * 7 + 3) % 30, (k * 29) % 64, 2, 10);
+      const t = new THREE.CanvasTexture(c);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.magFilter = THREE.NearestFilter;
+      this.fallTex = t;
+      this.fallMat = new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide });
+    }
+    const out = f.kind === 'sea' ? 1 : -1; // tier falls spill toward the front too (outward from the tier)
+    const ca = Math.cos(f.ang), sa = Math.sin(f.ang);
+    const width = f.kind === 'sea' ? 30 : 24;
+    // strip: from the lip, a little out, then straight down
+    const prof = f.kind === 'sea' ? [[-4, f.top + 1], [6, f.top - 2], [12, f.top - 14], [16, f.bottom + 1]] : [[-4, f.top + 1], [5, f.top - 2], [9, f.top - 14], [11, f.bottom + 1]];
+    const pos = [], uv = [];
+    const nx = -sa, nz = ca;
+    for (let k = 0; k < prof.length; k++) {
+      const [d, y] = prof[k];
+      for (const s of [-1, 1]) {
+        pos.push(f.x + ca * d + nx * s * width / 2, y, f.z + sa * d + nz * s * width / 2);
+        uv.push((s + 1) / 2, k / (prof.length - 1) * 2);
+      }
+    }
+    const idx = [];
+    for (let k = 0; k < prof.length - 1; k++) { const a = k * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.setIndex(idx);
+    const sheet = new THREE.Mesh(geo, this.fallMat);
+    this.scene.add(sheet);
+    // the stream: a pool on the plateau feeding the lip, ink-free
+    const sp = f.kind === 'sea' ? f.pool : f.spring;
+    if (sp) {
+      bk.add('disc12', 0x3a2a1e, [sp.x, f.top + 0.2, sp.z], [26, 0.8, 26], null, { ink: false });
+      bk.add('disc12', 0x4ec0e8, [sp.x, f.top + 0.6, sp.z], [22, 0.8, 22], null, { ink: false });
+      const dx = f.x - sp.x, dz = f.z - sp.z, len = Math.hypot(dx, dz);
+      bk.add('box', 0x4ec0e8, [(f.x + sp.x) / 2, f.top + 0.5, (f.z + sp.z) / 2], [len, 0.8, width * 0.8], [0, -Math.atan2(dz, dx), 0], { ink: false });
+      for (let k = 0; k < 4; k++) bk.add('dodec', 0x948a84, [sp.x + Math.cos(k * 1.7) * 24, f.top + 2, sp.z + Math.sin(k * 1.7) * 24], [6, 4, 5], [k, k * 2, 0], { ink: 0.8 });
+    }
+    // splash at the foot: a ring of foam blobs that puff in update()
+    const foot = { x: f.x + ca * (prof.at(-1)[0] + 4), z: f.z + sa * (prof.at(-1)[0] + 4), y: f.bottom + 1 };
+    const puffs = [];
+    for (let k = 0; k < 5; k++) {
+      const p = new THREE.Mesh(g.ball, this.splashMat ||= new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      p.userData = { x: foot.x + nx * (k - 2) * width * 0.22, z: foot.z + nz * (k - 2) * width * 0.22, y: foot.y, ph: k * 1.3 };
+      this.scene.add(p);
+      puffs.push(p);
+    }
+    if (f.kind === 'tier') bk.add('disc12', 0x4ec0e8, [foot.x, LEVEL.top + 0.5, foot.z], [20, 0.8, 16], null, { ink: false });
+    this.amb.falls.push({ sheet, puffs, out });
+  }
+
+  // a waving flag (no pole: the landmark builds its own)
+  flagAt(x, y, z, color) {
+    const f = this.P(g.box, color, [x + 10, y, z], [20, 12, 1.6], { ink: 1.2 });
     f.userData.baseY = y;
     this.amb.flags.push(f);
   }
 
-  // a few cheap low-poly props per world, kept off the path
-  props(kind, cx, hx, r, idx) {
-    const spots = [];
-    for (let k = 0; k < Math.round(hx / 70); k++) {
-      const x = cx - hx + 30 + r() * (hx * 2 - 60);
-      const tall = kind === 'castle' || kind === 'forest';
-      const zs = tall || r() < 0.55 ? -1 : 1;
-      spots.push([x, zs * (130 + r() * 70)]);
-    }
-    const C = [0xe84a3a, 0x2456e0, 0xffc914, 0x3fc46a];
-    for (const [x, z] of spots) {
-      const s = 0.8 + r() * 0.5;
-      if (kind === 'blocks') {
-        const c = C[Math.floor(r() * 4)];
-        this.P(g.box, c, [x, 20 * s, z], [40 * s, 40 * s, 40 * s], { rot: [0, r() * 3, 0] });
-        if (r() < 0.4) this.P(g.box, C[Math.floor(r() * 4)], [x, 50 * s, z], [30 * s, 26 * s, 30 * s], { rot: [0, r() * 3, 0] });
-      } else if (kind === 'castle') {
-        this.P(g.cyl, 0xb8b0a8, [x, 50 * s, z], [22 * s, 100 * s, 22 * s]);
-        this.P(g.cone, 0x2456e0, [x, 118 * s, z], [28 * s, 40 * s, 28 * s]);
-      } else if (kind === 'pier') {
-        if (r() < 0.5) this.P(g.cyl, 0x8a5a32, [x, 24 * s, z], [8, 60 * s, 8]);
-        else { this.P(g.box, 0xe84a3a, [x, 10, z], [60 * s, 18, 26 * s]); this.P(g.box, 0xffffff, [x, 30, z], [8, 30 * s, 20 * s]); }
-      } else if (kind === 'bog') {
-        for (let q = 0; q < 3; q++) this.P(g.cone4, 0x3f7a2a, [x + q * 9, 22 * s, z + (q % 2) * 8], [5, 46 * s, 5], { ink: 1.2 });
-        if (r() < 0.3) this.P(g.cyl, 0x6fbf4a, [x + 30, 1, z], [18, 2, 18], { ink: 1 });
-      } else if (kind === 'forest') {
-        this.P(g.cyl, 0x3a2b2a, [x, 14 * s, z], [7, 28 * s, 7], { ink: 1.5 });
-        this.P(g.cone, 0x2c4a3a, [x, 60 * s, z], [36 * s, 70 * s, 36 * s]);
-      }
-    }
-    if (kind === 'castle') {
-      // the keep behind the boss space
-      const b = this.pts[idx.at(-1)];
-      this.P(g.box, 0xb8b0a8, [b.x - 40, 60, -250], [150, 120, 70]);
-      for (const dx of [-110, 30]) { this.P(g.cyl, 0xb8b0a8, [b.x + dx, 80, -250], [30, 160, 30]); this.P(g.cone, 0xd7263d, [b.x + dx, 182, -250], [38, 50, 38]); this.flag(b.x + dx, 207, -250, 0xffc914); }
-    }
-    if (kind === 'blocks') {
-      // a pennant on the block fortress
-      const b = this.pts[idx.at(-1)];
-      this.P(g.cyl, 0xffffff, [b.x + 40, 50, -200], [4, 100, 4], { ink: 1 });
-      this.flag(b.x + 40, 96, -200, 0x3fc46a);
-    }
-    if (kind === 'pier') {
-      // a lighthouse
-      const b = this.pts[idx.at(-1)];
-      this.P(g.cyl, 0xffffff, [b.x - 60, 80, -260], [26, 160, 26]);
-      this.P(g.cyl, 0xe84a3a, [b.x - 60, 120, -260], [27, 30, 27], { ink: 1 });
-      this.P(g.cone, 0xe84a3a, [b.x - 60, 186, -260], [32, 40, 32]);
-      // the beam sweeps around
-      const beam = new THREE.Mesh(g.cone, new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0.35, depthWrite: false }));
-      beam.rotation.z = Math.PI / 2;
-      beam.scale.set(36, 420, 36);
-      const pivot = new THREE.Group();
-      pivot.position.set(b.x - 60, 136, -260);
-      beam.position.set(-210, 0, 0);
-      pivot.add(beam);
-      this.scene.add(pivot);
-      this.amb.beams.push(pivot);
-    }
-    if (kind === 'bog') {
-      const b = this.pts[idx.at(-1)];
-      this.P(g.box, 0x6a4a2e, [b.x - 30, 40, -250], [110, 80, 80]);
-      this.P(g.cone4, 0x3a2a2a, [b.x - 30, 110, -250], [92, 60, 70], { rot: [0, Math.PI / 4, 0] });
-    }
-    if (kind === 'forest') {
-      // Czernobog's mountain behind the last space, glowing at the peak
+  // the Beacon's sweeping light
+  beamAt([x, y, z]) {
+    const beam = new THREE.Mesh(g.cone, new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true, opacity: 0.3, depthWrite: false }));
+    beam.rotation.z = Math.PI / 2;
+    beam.scale.set(30, 380, 30);
+    const pivot = new THREE.Group();
+    pivot.position.set(x, y, z);
+    beam.position.set(-190, 0, 0);
+    pivot.add(beam);
+    this.scene.add(pivot);
+    this.amb.beams.push(pivot);
+  }
+
+  // Czernobog's mountain behind the last space (unchanged from v5.1, now on a rocky base)
+  mountain(cx, hx, r) {
+    {
       const b = this.pts.at(-1);
+      // a craggy base so the mountain rises out of the sea like the islands do
+      const mb = new Baker();
+      const msh = { cx: b.x + 60, cz: -420, rx: 300, rz: 170, n: 2.2, seed: 5, lumpK: 0.08 };
+      const mrim = bakeIsland(mb, msh, PAL.mountain, { seed: 77 });
+      for (let k = 0; k < 7; k++) mb.add('frust6', k % 2 ? 0x2a1f44 : 0x352a50, [b.x + 60 + Math.cos(k * 0.9) * 210, 20, -420 + Math.sin(k * 0.9) * 120], [40 + (k % 3) * 14, 70 + (k % 4) * 26, 40], [0, k, 0]);
+      const mm = mb.build(bakedMat(this.worldX.at(-1).darkU), { name: 'mountain-base' });
+      this.scene.add(mm);
+      const gs = shoreRings(msh, mrim);
+      for (const k of Object.keys(this.rings)) { gs[k].translate(msh.cx, 0, msh.cz); this.rings[k].push(gs[k]); }
       this.P(g.cone, 0x2a1f44, [b.x + 60, 190, -420], [320, 400, 260], { ink: 3 });
       this.peakGlow = this.P(g.cone, 0xff4a3a, [b.x + 60, 370, -420], [70, 50, 56], { ink: 2 });
       // the villain himself, alive on the summit (his real toy, bigger than life)
@@ -716,6 +830,23 @@ export class Board3D {
       peekAt(e, s);
     }
     if (this.rippleTex) { this.rippleTex.offset.x = now / 9000; this.rippleTex.offset.y = Math.sin(now / 4000) * 0.02; }
+    // foam breathes in and out at the waterline; waterfalls scroll and splash; boats bob
+    if (this.outerFoamMat) this.outerFoamMat.opacity = 0.45 + 0.4 * Math.sin(now / 900);
+    if (this.fallTex) this.fallTex.offset.y = (now / 700) % 1;
+    for (const f of A.falls) {
+      for (const p of f.puffs) {
+        const u = p.userData, k = ((now / 600 + u.ph) % 1);
+        p.position.set(u.x, u.y + k * 6, u.z);
+        p.scale.setScalar(3 + Math.sin(k * Math.PI) * 4);
+      }
+    }
+    for (const b of A.boats) {
+      const u = b.userData.boat;
+      b.position.y = LEVEL.water + Math.sin(now / 700 + u.ph) * 1.6;
+      b.position.x = u.x + Math.sin(now / 9000 + u.ph) * u.drift;
+      b.rotation.z = Math.sin(now / 800 + u.ph) * 0.06;
+      b.rotation.x = Math.sin(now / 1100 + u.ph) * 0.04;
+    }
     if (this.peakGlow) this.peakGlow.scale.setScalar(1 + 0.12 * Math.sin(now / 260) + (this.villain?.stir || 0) * 0.3);
     // Czernobog on the summit: breathing idle, slow turn, wings in the wind; angrier the further Luca gets
     if (this.villain) {
@@ -746,8 +877,7 @@ export class Board3D {
         w.dark = d;
         w.sky.copy(w.base.sky).lerp(GLOOM.sky, d);
         w.water.copy(w.base.water).lerp(GLOOM.water, d);
-        w.topMesh.material.uniforms.uColor.value.copy(w.base.top).lerp(GLOOM.top, d);
-        w.sideMesh.material.uniforms.uColor.value.copy(w.base.side).lerp(GLOOM.side, d);
+        w.darkU.value = d; // every baked mesh on the island (terrain, props, landmark) sinks toward the forest palette
       });
       this.crew.want = -1; // re-place the peekers on the newly dark islands
     }
