@@ -11,6 +11,7 @@ import { levelBadge } from './level-badge.js';
 export const PATHWAY_LABEL = {
   early: 'Early learner, 3–5',
   growing: 'Growing learner, 5–7',
+  older: 'Older learner, 8–10',
 };
 const SLOT_COLOR = ['#D7263D', '#1B4FD8', '#2E9E44'];
 

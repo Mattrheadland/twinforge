@@ -17,6 +17,12 @@ export const KIND_LABEL = {
   add: 'Adding', sub: 'Take away', story: 'Story problems', teen: 'Teen numbers',
   letter: 'Letter match', starts: 'Starts with (letter)', pickStart: 'Starts with (picture)', ends: 'Ends with',
   rhyme: 'Rhymes', missing: 'Missing letter', word: 'Read a word', sight: 'Sight words', spell: 'Spelling',
+  // L4-L6 (ages 6-10, logic/challenges-upper.js)
+  add20: 'Adding to 20', sub20: 'Take away to 20', missingAdd: 'Missing number (7 + ? = 12)', tens: 'Tens and ones',
+  add100: 'Adding to 100', sub100: 'Take away to 100', groups: 'Equal groups', skip: 'Skip counting',
+  times: 'Times tables', divide: 'Sharing (division)', fraction: 'Fractions', twoStep: 'Two-step stories',
+  digraph: 'sh / ch / th sounds', sentence: 'Read a sentence', bigWord: 'Longer words', comprehend: 'Story questions',
+  vocab: 'Same / opposite words', paragraph: 'Read a paragraph',
 };
 export const KIND_ORDER = Object.keys(KIND_LABEL);
 
@@ -122,7 +128,7 @@ export function describe(ch) {
     case 'missing': return `${[...ch.word].map((c, i) => (i === ch.pos ? '_' : c)).join('')} (${ch.word})`;
     case 'sight': return `Find “${ch.word}”`;
     case 'spell': return `${{ copy: 'Copy', peek: 'Peek and spell', sound: 'Spell' }[ch.mode] || 'Spell'} “${ch.word}”`;
-    default: return ch.kind;
+    default: return ch.prompt || ch.kind;
   }
 }
 

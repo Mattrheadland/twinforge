@@ -24,7 +24,7 @@ import { isValidCampaign } from './game/campaign.js';
 export const SAVE_VERSION = 1;
 export const SAVE_REV = 2; // additive revision: player xp + per-toy records
 export const PROFILE_SLOTS = 3;
-export const PATHWAYS = ['early', 'growing']; // Early learner (3–5), Growing learner (5–7)
+export const PATHWAYS = ['early', 'growing', 'older']; // Early (3–5), Growing (5–7), Older (8–10)
 export const MAX_PLAYER_LEVEL = 100;
 export const NAME_MAX = 12;
 // settings that belong to the device, not to a child: switching players keeps these

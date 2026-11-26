@@ -5,11 +5,16 @@ import { ICON } from './icons.js';
 import { portrait } from './hud.js';
 import { drawToy } from '../render/toys.js';
 import { bandFor, playLevel } from '../logic/difficulty.js';
+import { LADDER } from '../logic/challenges.js';
+import { PATHWAY_LABEL } from './profiles-ui.js';
 import { levelBadge } from './level-badge.js';
 import { noteLevel } from '../logic/learning-log.js';
 import { pixelLabel, getArtScale, isPixel, pixelize } from '../render/pixel.js';
 import { get3D } from '../render3d/stage3d.js';
 import { onModelsChanged, modelId, modelReady, hasModel } from '../render3d/models.js';
+
+// '6' reads as 'L4: Add & take away to 20…' (the L1-L6 ladder over levels 1-8)
+const rungDesc = (desc, lv) => `${LADDER[lv]?.rung || ''}: ${desc[lv] || ''}`;
 
 // Select-card portraits, rendered once per toy + pose + size (and whether its
 // imported model had loaded), then copied. Building a 3D toy and reading the
@@ -317,14 +322,14 @@ export class UI {
         if (d.learning) noteLevel(d.learning, domain, from, sk.level, 'manual');
         sk.streak = 0; sk.recent = [];
         val.textContent = String(sk.level);
-        desc_.textContent = desc[sk.level];
+        desc_.textContent = rungDesc(desc, sk.level);
         onChange();
       };
       const minus = h('button', { class: 'mini' }, '–');
       const plus = h('button', { class: 'mini' }, '+');
       minus.addEventListener('click', () => bump(-1));
       plus.addEventListener('click', () => bump(1));
-      const desc_ = h('small', {}, desc[playLevel(sk, pathway)]);
+      const desc_ = h('small', {}, rungDesc(desc, playLevel(sk, pathway)));
       return h('div', { class: 'row level' },
         h('span', {}, label, desc_),
         h('div', { class: 'stepper' }, minus, val, plus),
@@ -337,6 +342,9 @@ export class UI {
       3: 'Count 5–10 · adding to 5 · one more · missing number · ABB patterns · most & fewest',
       4: 'Count 8–15 · add to 10 · take away from 5 · one more/less · bigger number · toy stories · ABC patterns',
       5: 'Count 10–20 · add & take away to 10 · teen numbers · count back · smallest/biggest · toy stories',
+      6: 'Add & take away to 20 · missing number (7 + ? = 12) · tens and ones',
+      7: 'Add & take away to 100 · equal groups · skip counting · missing number · tens and ones',
+      8: 'Times tables · sharing (division) · halves, thirds and quarters · two-step stories · equal groups',
     };
     const LET = {
       1: 'Match capitals (very different shapes)',
@@ -344,6 +352,9 @@ export class UI {
       3: 'Match lowercase · first sounds · rhymes · missing first letter (_at) · copy a 3–4 letter word',
       4: 'Capital → lowercase · all first sounds · last sounds · rhymes · read a word · sight words · missing letter · peek, then spell',
       5: 'Tricky lowercase (b d p q…) · last sounds · longer words · sight words · missing vowel · spell 3–5 letter words from sound',
+      6: 'sh, ch, th sounds · read a short sentence · read a word · sight words · spell from sound',
+      7: 'Longer words · short story questions (who, what, color) · sentences · sh/ch/th · spell from sound',
+      8: 'Same and opposite words · read a paragraph and answer · story questions · spell from sound',
     };
     const reportBtn = h('button', { class: 'pbtn rp-open' }, 'Learning report');
     const previewBtn = h('button', { class: 'pbtn pv-open' }, 'Preview questions');
@@ -388,7 +399,7 @@ export class UI {
           level('Math (power moves)', 'math', MATH),
           level('Reading (specials)', 'letters', LET),
           h('p', { class: 'note' }, 'Auto moves up after 3 right-first-try answers in a row, and down if he needs full help twice in his last 4. Answers with a hint never move it up.'),
-          h('p', { class: 'note' }, `Math and reading move on their own: doing well at one never changes the other. The learning pathway (${pathway === 'growing' ? 'Growing learner' : 'Early learner'}, set under Players → Edit) keeps both between level ${band.min} and ${band.max}; changing it never erases progress. Player level ${d.player?.level || 1} (${d.player?.xp || 0} XP) comes from right answers, wins and campaign spaces.`),
+          h('p', { class: 'note' }, `Math and reading move on their own: doing well at one never changes the other. The learning pathway (${PATHWAY_LABEL[pathway] || PATHWAY_LABEL.early}, set under Players → Edit) keeps both between level ${band.min} and ${band.max}; changing it never erases progress. Player level ${d.player?.level || 1} (${d.player?.xp || 0} XP) comes from right answers, wins and campaign spaces.`),
           h('div', { class: 'pbtns' }, reportBtn, previewBtn)),
         h('section', {}, h('h3', {}, 'Comfort'),
           toggle('Reduced motion', 'reducedMotion', 'No screen shake or big flashes'),

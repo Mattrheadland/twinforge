@@ -11,12 +11,14 @@
 // Reading (specials):
 //   letter match · starts with (letter for a picture) · which picture starts with a letter
 //   · rhymes · ends with · missing letter · read a word · first sight words · spell a word
-// Both scale over 5 levels (logic/difficulty.js moves the level automatically).
-// Word lists live in logic/words.js.
+// Both scale over 8 levels (logic/difficulty.js moves the level automatically).
+// Levels 6-8 (grades 1 to 4, four choices each) live in logic/challenges-upper.js;
+// the kid-facing ladder L1-L6 over all eight is LADDER below. Word lists: logic/words.js.
 import {
   PICS, wordLabel, STARTS, SAME_SOUND, EASY_STARTS, ENDS, RHYMES, CVC, LONG_WORDS, SPELL, SPELL_LONG, SPELL_LONGER, SIGHT,
   VOWELS, CONSONANTS, ALL_WORDS, STORY_NAMES, wordsReady,
 } from './words.js';
+import { UPPER_MATH, UPPER_READ, UPPER_KINDS, makeUpper, validateUpper } from './challenges-upper.js';
 
 export { PICS, wordLabel };
 export const COUNT_ITEMS = ['block', 'star', 'ball', 'duck'];
@@ -34,7 +36,18 @@ export const MATH_KINDS = {
   3: ['count', 'numeral', 'add', 'pattern', 'compare', 'oneMore', 'seq', 'flash'],
   4: ['count', 'numeral', 'add', 'sub', 'pattern', 'oneMore', 'seq', 'bigger', 'story'],
   5: ['count', 'add', 'sub', 'numeral', 'compare', 'oneMore', 'seq', 'bigger', 'story', 'teen'],
+  ...UPPER_MATH,
 };
+
+// The ladder a grown-up sees: L1-L6 over the eight levels (research doc, Nov 2026).
+// L1-L3 are the original five levels (about Pre-K to first grade); L4-L6 are new.
+export const LADDER = {
+  1: { rung: 'L1', ages: '3-4' }, 2: { rung: 'L2', ages: '4-5' },
+  3: { rung: 'L3', ages: '5-6' }, 4: { rung: 'L3', ages: '5-6' }, 5: { rung: 'L3', ages: '5-6' },
+  6: { rung: 'L4', ages: '6-7' }, 7: { rung: 'L5', ages: '7-8' }, 8: { rung: 'L6', ages: '8-10' },
+};
+export const MAX_CHALLENGE_LEVEL = 8;
+const upper = (kind) => UPPER_KINDS.has(kind);
 
 // off: question types a grown-up switched off in the learning report. If that
 // leaves nothing at this level, the level's normal mix is used instead.
@@ -47,7 +60,7 @@ const MATH_MAKERS = {};
 export function makeMath(level, rng, force, off) {
   const lv = clampLevel(level);
   const kind = force || rng.pick(allowed(MATH_KINDS[lv], off));
-  return MATH_MAKERS[kind](lv, rng);
+  return upper(kind) ? makeUpper(kind, Math.max(6, lv), rng) : MATH_MAKERS[kind](Math.min(5, lv), rng);
 }
 
 function numberOptions(n, lv, rng, lo = 0, hi = 20) {
@@ -257,6 +270,7 @@ export const READ_KINDS = {
   3: ['letter', 'starts', 'pickStart', 'rhyme', 'missing', 'spell', 'spell'],
   4: ['letter', 'starts', 'rhyme', 'word', 'ends', 'missing', 'sight', 'spell', 'spell'],
   5: ['letter', 'rhyme', 'word', 'ends', 'missing', 'sight', 'spell', 'spell'],
+  ...UPPER_READ,
 };
 
 const READ_MAKERS = {};
@@ -264,7 +278,9 @@ export function makeReading(level, rng, force, off) {
   const lv = clampLevel(level);
   // letter matches need no word list (public/words.json), so they cover the first moments
   const kind = !wordsReady() ? 'letter' : force || rng.pick(allowed(READ_KINDS[lv], off));
-  return READ_MAKERS[kind](lv, rng);
+  if (upper(kind)) return makeUpper(kind, Math.max(6, lv), rng);
+  // older kinds asked above level 5 (word, sight, spell) play at their level-5 form, spelled from sound
+  return READ_MAKERS[kind](kind === 'letter' ? Math.min(5, lv) : lv, rng);
 }
 
 const FAMILY = { round: 'COGQDUS', straight: 'EFHILT', diagonal: 'AKMNVWXYZ', mixed: 'BPRJ' };
@@ -411,7 +427,7 @@ function letterChoices(word, pos, rng) {
 //          shows it again briefly
 //   sound (level 5):    picture only; the phone says the word (not its letters)
 // Words: 3 letters at level 2, 3–4 at levels 3–4, 3–5 at level 5.
-export const SPELL_MODE = { 1: 'copy', 2: 'copy', 3: 'copy', 4: 'peek', 5: 'sound' };
+export const SPELL_MODE = { 1: 'copy', 2: 'copy', 3: 'copy', 4: 'peek', 5: 'sound', 6: 'sound', 7: 'sound', 8: 'sound' };
 export const spellBank = (lv) => (lv <= 2 ? SPELL : lv <= 4 ? [...SPELL, ...SPELL_LONG] : [...SPELL, ...SPELL_LONG, ...SPELL_LONGER]);
 function makeSpell(lv, rng) {
   const mode = SPELL_MODE[lv];
@@ -456,6 +472,7 @@ Object.assign(READ_MAKERS, {
 const isNum = (o) => Number.isInteger(o);
 export function validate(ch) {
   if (!ch) return false;
+  if (upper(ch.kind)) return validateUpper(ch);
   if (ch.kind === 'spell') {
     return spellBank(5).includes(ch.word) && ['copy', 'peek', 'sound'].includes(ch.mode) && Array.isArray(ch.steps) && ch.steps.length === ch.word.length &&
       ch.steps.every((s, i) => s.answer === ch.word[i] && s.options.length === 3 && new Set(s.options).size === 3 && s.options.filter((o) => o === s.answer).length === 1) &&
@@ -539,7 +556,7 @@ export const qualityFor = (wrongs) => (wrongs === 0 ? 'indep' : wrongs === 1 ? '
 export const KINDS = (() => {
   const out = {};
   for (const [domain, table] of [['math', MATH_KINDS], ['reading', READ_KINDS]])
-    for (let lv = 1; lv <= 5; lv++) for (const k of table[lv]) if (!out[k]) out[k] = { domain, from: lv };
+    for (let lv = 1; lv <= MAX_CHALLENGE_LEVEL; lv++) for (const k of table[lv]) if (!out[k]) out[k] = { domain, from: lv };
   return out;
 })();
 export const kindsAt = (domain, level) => [...new Set((domain === 'math' ? MATH_KINDS : READ_KINDS)[clampLevel(level)])];
@@ -572,5 +589,5 @@ export const REVIEW_AS = {
 };
 
 function clampLevel(l) {
-  return Math.max(1, Math.min(5, Math.round(l || 1)));
+  return Math.max(1, Math.min(MAX_CHALLENGE_LEVEL, Math.round(l || 1)));
 }

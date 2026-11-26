@@ -79,6 +79,7 @@ export const RULES = {
   stakes: {
     early: { pips: 3, perWrong: 1, drain: 1, chargedHit: 36, foePower: 0.9, foeHp: 1.5 },
     growing: { pips: 2, perWrong: 1, drain: 1, chargedHit: 46, foePower: 1, foeHp: 1.4 },
+    older: { pips: 2, perWrong: 1, drain: 1, chargedHit: 50, foePower: 1.05, foeHp: 1.45 }, // 8–10: real losses are OK
   },
 };
 

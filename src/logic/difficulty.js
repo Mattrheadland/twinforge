@@ -14,7 +14,7 @@
 // band only clamps the level that's played, so switching back restores it exactly.
 
 export const MIN_LEVEL = 1;
-export const MAX_LEVEL = 5;
+export const MAX_LEVEL = 8; // L1-L6 ladder over levels 1-8 (logic/challenges.js LADDER)
 
 export function defaultSkills() {
   return {
@@ -24,10 +24,11 @@ export function defaultSkills() {
 }
 
 // min is also the starting band: a new player (stored math 2, reading 1) plays at
-// least at `min`, so Early starts at math 2 / reading 1 and Growing at 3 / 3.
+// least at `min`, so Early starts at math 2 / reading 1, Growing at 3 / 3, Older at 5 / 5.
 export const PATHWAY_BANDS = {
-  early: { min: 1, max: 4 }, // Early learner, 3–5
-  growing: { min: 3, max: 5 }, // Growing learner, 5–7
+  early: { min: 1, max: 4 }, // Early learner, 3–5 (L1-L3)
+  growing: { min: 3, max: 6 }, // Growing learner, 5–7 (L3-L4)
+  older: { min: 5, max: 8 }, // Older learner, 8–10 (L3-L6)
 };
 
 export const bandFor = (pathway) => PATHWAY_BANDS[pathway] || PATHWAY_BANDS.early;
@@ -40,7 +41,7 @@ export function playLevel(skill, pathway) {
   return clampTo(skill?.level, b.min, b.max);
 }
 
-// band: an optional pathway band { min, max }; without one the full 1–5 range applies.
+// band: an optional pathway band { min, max }; without one the full 1–8 range applies.
 // The level steps from the level being played; when it doesn't step, the stored level
 // is left exactly as it was (a pathway switch never costs progress).
 export function recordResult(skill, quality, band = null) {

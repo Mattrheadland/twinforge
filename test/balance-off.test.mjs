@@ -68,7 +68,7 @@ test('growing: learning off with the ring is never easier than answering, and ca
 
 test('cheer tap (Early, or timing switched off) plays like a child answering half right, never like a perfect one', (t) => {
   const rows = [];
-  for (const pathway of ['early', 'growing']) {
+  for (const pathway of ['early', 'growing', 'older']) {
     const cheerGiant = off(pathway, 0.5, true, 'cheer').rate;
     const onGiant = on(pathway, 0.5, true).rate;
     const cheer = off(pathway, 0.9, false, 'cheer');
@@ -83,5 +83,5 @@ test('cheer tap (Early, or timing switched off) plays like a child answering hal
 });
 
 test('before the fix learning off never lost; now no learning-off giant fight is a sure win', () => {
-  for (const pathway of ['early', 'growing']) assert.ok(off(pathway, 0.5, true).rate < 1, pathway);
+  for (const pathway of ['early', 'growing', 'older']) assert.ok(off(pathway, 0.5, true).rate < 1, pathway);
 });
